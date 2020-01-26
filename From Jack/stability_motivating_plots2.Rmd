@@ -1,0 +1,325 @@
+---
+title: "stability_motivating_plots"
+author: "Jack Jewson"
+date: "May 2019"
+output: html_document
+---
+
+
+### Normal vs t
+
+Functions to calculate the calibration weight of Lyddon, Holmes and walker (2018) for the betaD under the Normal and Student-t likelihood.
+
+
+```{r weight_calib, include=TRUE,echo=TRUE, eval=TRUE,cache=TRUE,results='hide'}
+library(numDeriv)
+
+## Need to define the loss on an uncontrained paramater space
+weight_calib<-function(data,loss,theta_0){
+  p<-length(theta_0)
+  n<-length(data)
+  #theta_hat<-optim(theta_0,function(theta){loss(data,theta)},gr=function(theta){grad(function(theta){loss(data,theta)},theta)},method="BFGS")
+  theta_hat<-optim(theta_0,function(theta){loss(data,theta)})
+
+  grad_data<-matrix(NA,nrow=n,ncol=p)
+  Hess_data<-array(NA,dim=c(n,p,p))
+  mean_grad2_data<-matrix(0,nrow=p,ncol=p)
+  mean_Hess_data<-matrix(0,nrow=p,ncol=p)
+  for(i in 1:n){
+    grad_data[i,]<-grad(function(theta){loss(data[i],theta)},theta_hat$par)
+    mean_grad2_data<-mean_grad2_data+grad_data[i,]%*%t(grad_data[i,])
+    Hess_data[i,,]<-hessian(function(theta){loss(data[i],theta)},theta_hat$par)
+    mean_Hess_data<-mean_Hess_data+Hess_data[i,,]
+    #if(i%%(n/20)==1){cat("Observation",i,"done","\n")}
+  }
+  hat_I_theta_data<-mean_grad2_data/n
+  hat_J_theta_data<-mean_Hess_data/n
+
+  w_data<-sum(diag((hat_J_theta_data%*%solve(hat_I_theta_data)%*%t(hat_J_theta_data))))/sum(diag(hat_J_theta_data))
+
+  return(w_data)
+}
+
+beta_loss_norm<-function(y,mu,sigma2,beta){
+  integral_term<-1/((2*pi)^(beta/2)*(1+beta)^1.5*((sigma2)^(beta/2)))
+  likelihood_term<- (1/beta)*dnorm(y,mu,sqrt(sigma2))^(beta)
+  return(-sum(likelihood_term-integral_term))
+}
+
+beta_loss_norm_sigma2_adj<-function(y,mu,sigma2,sigma2_adj,beta){
+  integral_term<-1/((2*pi)^(beta/2)*(1+beta)^1.5*((sigma2*sigma2_adj)^(beta/2)))
+  likelihood_term<- (1/beta)*dnorm(y,mu,sqrt(sigma2*sigma2_adj))^(beta)
+  return(-sum(likelihood_term-integral_term))
+}
+
+library(metRology)
+beta_loss_t<-function(y,mu,sigma2,df,beta){
+  integral_term<-(gamma((df+1)/2)^(beta+1)*gamma((beta*df+beta+df)/2))/((1+beta)*gamma(df/2)^(beta+1)*gamma((beta*df+beta+df+1)/2)*(df)^((beta)/2)*pi^((beta)/2)*sigma2^(beta/2))
+  likelihood_term<- (1/beta)*dt.scaled(y,df,mu,sqrt(sigma2))^(beta)
+  return(-sum(likelihood_term-integral_term))
+}
+
+
+
+
+```
+
+
+Estimating the value of $\sigma^2_{adj}$ to build the neighbourhood such that $\TVD(\mathcal{N}(\mu,\sigma^2_{adj}\sigma^2),t_5(\mu,\sigma^2))<\epsilon$ for all $\mu$ and $\sigma^2>0$. Also plots the pdf and cdfs for $\mu=0,\sigma^2=1$. $\nu=5$ gives $sigma^2_{adj}=1.16$ and $\epsilon=0.043$
+
+
+```{r t_normal_neighbourhood, include=TRUE,echo=TRUE, eval=TRUE,cache=TRUE,results='hide',dev=tikzDevice::tikz()}
+library(metRology)
+
+## estimating sigma^2_adj to match the quartiles
+sigma2_adj_fun<-function(sigma2_adj){
+  return(abs(qt.scaled(0.25,df=5,0,1)-qnorm(0.25,0,sqrt(sigma2_adj*1))))
+}
+
+sigma2_adj<-optimize(sigma2_adj_fun,1,lower=0,upper=1000)
+sigma2_adj$minimum
+
+## Above tells us this is all valid for any of these parameters!
+df<-5
+mu<-0
+sigma2<-1
+
+par(mar=c(5.1, 4.5, 4.1, 2.1), mgp=c(3, 1, 0), las=0)
+x<-seq(-5,5,length.out=1000)
+plot(x,dnorm(x,mu,sqrt(sigma2*sigma2_adj$minimum)),type="l",lwd=3,col="red",xlab="x",ylab="Density",cex.lab=2, cex.axis=2)
+points(x,dt.scaled(x,df,mu,sqrt(sigma2)),type="l",lwd=3,col="blue")
+legend(-5,0.35,c("Gaussian","Student's-t"),lty=c(1,1), lwd=c(3,3), col=c("red","blue"),bty="n",cex=1.2)
+box(which = "plot")
+
+par(mar=c(5.1, 4.5, 4.1, 2.1), mgp=c(3, 1, 0), las=0)
+plot(x,pnorm(x,mu,sqrt(sigma2*sigma2_adj$minimum)),type="l",lwd=3,col="red",xlab="x",ylab="Cumulative Density",cex.lab=2, cex.axis=2)
+points(x,pt.scaled(x,df,mu,sqrt(sigma2)),type="l",lwd=3,col="blue")
+
+## estimating the TVD between the two likelihoods 
+
+norm_t_diff<-function(x){abs(dnorm(x,mu,sqrt(sigma2*sigma2_adj$minimum))-dt.scaled(x,df,mu,sqrt(sigma2)))}
+
+inter1<-optimize(norm_t_diff,c(-2,-1))
+inter2<-optimize(norm_t_diff,c(-1,0))
+inter3<-optimize(norm_t_diff,c(0,1))
+inter4<-optimize(norm_t_diff,c(1,2))
+
+inter1$minimum
+inter2$minimum
+inter3$minimum
+inter4$minimum
+
+
+TVD_est<-2*((pnorm(inter2$minimum,mu,sqrt(sigma2*sigma2_adj$minimum))-pnorm(inter1$minimum,mu,sqrt(sigma2*sigma2_adj$minimum)))-
+(pt.scaled(inter2$minimum,df,mu,sqrt(sigma2))-pt.scaled(inter1$minimum,df,mu,sqrt(sigma2))))
+
+TVD_est
+
+```
+
+
+## Data simulation
+
+Simulating an outlier contaminated dataset
+
+
+
+```{r eps_cont_data_sim, include=TRUE,echo=TRUE, eval=TRUE,cache=TRUE,results='hide'}
+n<-1000
+set.seed(3)
+mu_c<-5
+sig_c<-3
+mu<-0
+sig<-1
+eps<-0.1
+
+cont<-sample(c(0,1),n,replace=TRUE,prob=c(1-eps,eps))
+data_eps_cont<-(1-cont)*rnorm(n,mu,sig)+cont*rnorm(n,mu_c,sig_c)
+
+cont_ind<-which(cont==1)
+
+mu_0<-0
+kappa_0<-1/10
+a_0<-0.01
+b_0<-0.01
+
+
+
+
+```
+
+## Traditional Bayesian updating (minimising the KLD)
+
+### Gaussian model
+
+
+```{r eps_cont_KL_norm, include=TRUE,echo=TRUE, eval=TRUE,cache=TRUE}
+
+N<-100000
+
+library(rstan)
+# Set this guy if the .stan files are not in the same folder as the .Rmd file
+#setwd("C:/Users/jack/Documents/OxWaSP_Yr4")
+
+# Compiles the stan file
+KLBayesnorm_sigma2_adj_stan<-stan_model(file="KLBayesnorm_var_sigma2_adj.stan")
+print(sigma2_adj)
+print(sigma2_adj$minimum)
+# Defines the inputs to the sampler
+KLBayesnorm_data<-list(n=n,y=matrix(data_eps_cont,nrow=n,ncol=1),mu_m=mu_0,mu_s=1/kappa_0,sig_p1=a_0,sig_p2=b_0,w=1,sigma2_adj=sigma2_adj$minimum)
+# Runs the sampler
+KLBayesnorm <- sampling(object=KLBayesnorm_sigma2_adj_stan,data=KLBayesnorm_data,iter=N+5000,warmup=5000, chains=1, cores=1,control = list(adapt_delta=0.999,stepsize=0.01))
+#Stores the outputs in a useful format
+KLBayesnorm_params<-extract(KLBayesnorm)
+
+```
+
+### Student's-t model
+
+```{r eps_cont_KL_t, include=TRUE,echo=TRUE, eval=TRUE,cache=TRUE,results='hide'}
+
+N<-100000
+
+library(rstan)
+#setwd("C:/Users/jack/Documents/OxWaSP_Yr4")
+
+KLBayest_stan<-stan_model(file="KLBayest_var.stan")
+
+
+KLBayest_data<-list(n=n,y=matrix(data_eps_cont,nrow=n,ncol=1),mu_m=mu_0,mu_s=1/kappa_0,sig_p1=a_0,sig_p2=b_0,df=5,w=1)
+KLBayest <- sampling(object=KLBayest_stan,data=KLBayest_data,iter=N+5000,warmup=5000, chains=1, cores=1,control = list(adapt_delta=0.999,stepsize=0.01))
+KLBayest_params<-extract(KLBayest)
+
+
+
+
+```
+
+
+### Comparing the inference using the two models
+
+Comparing the posteriors and posterior predictives obtained by fitting the different models on the same data
+
+
+```{r eps_cont_KL_norm_t, include=TRUE,echo=TRUE, eval=TRUE,cache=TRUE,results='hide',dev=tikzDevice::tikz()}
+
+mean(KLBayesnorm_params$sigma2)*sigma2_adj$minimum
+mean(KLBayest_params$sigma2)*5/(5-2)
+
+par(mar=c(5.1, 4.5, 4.1, 2.1), mgp=c(3, 1, 0), las=0)
+
+x<-seq(-5,15,length.out=1000)
+hist_data1 <- hist(data_eps_cont[-cont_ind],breaks=seq(-5,17,by=0.2),plot=FALSE)
+hist_data2 <- hist(data_eps_cont[cont_ind],breaks=seq(-5,17,by=0.2),plot=FALSE)
+plot(0,0,type="n",ylab="Density",main=expression(paste("KLD")),xlab="x",ylim=c(0,0.45),xlim=c(-5,12),cex.lab=2, cex.axis=2,cex.main=2)
+hist_data1$counts <- hist_data1$counts/(n/5)# divide by 5 as the break widths are 1/5=0.2
+hist_data2$counts <- hist_data2$counts/(n/5)
+plot(hist_data1,add=TRUE,col="grey")
+plot(hist_data2,add=TRUE,col="black")
+x<-seq(-10,15,length.out=1000)
+lines(density(KLBayesnorm_params$y_predict),lwd=3,col="red")
+lines(density(KLBayest_params$y_predict),lwd=3,col="blue")
+legend(3,0.45,c(expression(paste((1-epsilon),"N(0,1)")),expression(paste(epsilon,"N(5,",3^2,")")),"Gaussian","Student's-t"),lty=c(1,1,1,1), lwd=c(3,3,3,3), col=c("grey","black","red","blue"),bty="n",cex=1.5)
+box(which = "plot")
+
+plot(density(KLBayesnorm_params$mu),lwd=3,col="red",xlim=c(-0.25,0.75),ylim=c(0,10),xlab=expression(mu),cex.lab=2, cex.axis=2,main=expression(paste("KLD")),cex.main=2)
+lines(density(KLBayest_params$mu),lwd=3,col="blue")
+
+plot(density(KLBayesnorm_params$sigma2),lwd=3,col="red",xlim=c(0.5,4.5),ylim=c(0,5.5),xlab=expression(sigma^2),cex.lab=2, cex.axis=2,main=expression(paste("KLD")),cex.main=2)
+lines(density(KLBayest_params$sigma2),lwd=3,col="blue")
+
+
+
+```
+
+
+## Bayesian updating minimising the $beta$-Divergence
+
+### Gaussian model
+
+
+```{r eps_cont_beta_norm, include=TRUE,echo=TRUE, eval=TRUE,cache=TRUE}
+beta<-0.5
+
+N<-100000
+
+library(rstan)
+#setwd("C:/Users/jack/Documents/OxWaSP_Yr4")
+
+betaBayesnorm_sigma2_adj_stan<-stan_model(file="betaBayesnorm_var_sigma2_adj.stan")
+
+# Estimating the value of the calibartion weight using the method of Lyddon, Holmes and Walker (2018) - don't worry too much about this right now, it can always be defaulted to 1 for initial experiments.
+betaD_w_norm<-weight_calib(data_eps_cont,loss=function(data,theta){beta_loss_norm_sigma2_adj(data,theta[1],theta[2],sigma2_adj = sigma2_adj$minimum,beta)},theta_0=c(mean(data_eps_cont),var(data_eps_cont)))
+print(betaD_w_norm)
+
+betaBayesnorm_data<-list(n=n,y=matrix(data_eps_cont,nrow=n,ncol=1),mu_m=mu_0,mu_s=1/kappa_0,sig_p1=a_0,sig_p2=b_0,w=betaD_w_norm,sigma2_adj=sigma2_adj$minimum,beta=beta)
+betaBayesnorm <- sampling(object=betaBayesnorm_sigma2_adj_stan,data=betaBayesnorm_data,iter=N+5000,warmup=5000, chains=1, cores=1,control = list(adapt_delta=0.95))#,stepsize=0.01))
+betaBayesnorm_params<-extract(betaBayesnorm)
+
+
+
+```
+
+### Student's-t model
+
+```{r eps_cont_beta_t, include=TRUE,echo=TRUE, eval=TRUE,cache=TRUE,results='hide'}
+beta<-0.5
+
+N<-100000
+
+library(rstan)
+#setwd("C:/Users/jack/Documents/OxWaSP_Yr4")
+
+betaBayest_stan<-stan_model(file="betaBayest_var.stan")
+
+betaD_w_t<-weight_calib(data_eps_cont,loss=function(data,theta){beta_loss_t(data,theta[1],theta[2],df = 5,beta)},theta_0=c(mean(data_eps_cont),var(data_eps_cont)))
+
+
+betaBayest_data<-list(n=n,y=matrix(data_eps_cont,nrow=n,ncol=1),mu_m=mu_0,mu_s=1/kappa_0,sig_p1=a_0,sig_p2=b_0,df=5,w=betaD_w_t,beta=beta)
+betaBayest <- sampling(object=betaBayest_stan,data=betaBayest_data,iter=N+5000,warmup=5000, chains=1, cores=1,control = list(adapt_delta=0.95))#,stepsize=0.01))
+betaBayest_params<-extract(betaBayest)
+
+
+
+
+```
+
+### Comparing the inference using the two models
+
+Comparing the posteriors and posterior predictives obtained by fitting the different models on the same data
+
+
+```{r eps_cont_beta_norm_t, include=TRUE,echo=TRUE, eval=TRUE,cache=TRUE,results='hide',dev=tikzDevice::tikz()}
+
+mean(betaBayesnorm_params$sigma2)*sigma2_adj$minimum
+mean(betaBayest_params$sigma2)*5/(5-2)
+
+par(mar=c(5.1, 4.5, 4.1, 2.1), mgp=c(3, 1, 0), las=0)
+
+x<-seq(-5,15,length.out=1000)
+hist_data1 <- hist(data_eps_cont[-cont_ind],breaks=seq(-5,17,by=0.2),plot=FALSE)
+hist_data2 <- hist(data_eps_cont[cont_ind],breaks=seq(-5,17,by=0.2),plot=FALSE)
+plot(0,0,type="n",ylab="Density",main=expression(paste(beta,"D")),xlab="x",ylim=c(0,0.45),xlim=c(-5,12),cex.lab=2, cex.axis=2,cex.main=2)
+hist_data1$counts <- hist_data1$counts/(n/5)
+hist_data2$counts <- hist_data2$counts/(n/5)
+plot(hist_data1,add=TRUE,col="grey")
+plot(hist_data2,add=TRUE,col="black")
+x<-seq(-10,15,length.out=1000)
+lines(density(betaBayesnorm_params$y_predict),lwd=3,col="red")
+lines(density(betaBayest_params$y_predict),lwd=3,col="blue")
+legend(3,0.45,c(expression(paste((1-epsilon),"N(0,1)")),expression(paste(epsilon,"N(5,",3^2,")")),"Gaussian","Student's-t"),lty=c(1,1,1,1), lwd=rep(3,4), col=c("grey","black","red","blue"),bty="n",cex=1.5)
+box(which = "plot")
+
+plot(density(KLBayesnorm_params$mu),lwd=3,col="white",xlim=c(-0.25,0.25),ylim=c(0,10.75),xlab=expression(mu),main=expression(paste(beta,"D")),cex.lab=2, cex.axis=2,cex.main=2)
+lines(density(betaBayesnorm_params$mu),lwd=3,col="red",xlim=c(-0.25,0.25),ylim=c(0,11),xlab=expression(mu),main=expression(paste(beta,"D")),cex.lab=2, cex.axis=2)
+lines(density(betaBayest_params$mu),lwd=3,col="blue")
+
+plot(density(betaBayesnorm_params$sigma2),lwd=3,col="red",xlim=c(0.5,1.5),ylim=c(0,8),xlab=expression(sigma^2),main=expression(paste(beta,"D")),cex.lab=2, cex.axis=2,cex.main=2)
+lines(density(betaBayest_params$sigma2),lwd=3,col="blue")
+
+
+
+
+```
+
+

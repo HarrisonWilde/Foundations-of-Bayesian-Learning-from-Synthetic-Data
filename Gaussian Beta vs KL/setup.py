@@ -1,0 +1,78 @@
+import stan
+import numpy as np
+import math
+import pickle
+import os
+import scipy.stats as st
+
+
+def build_cache(file, verbose, **kwargs):
+    """
+    Use just as you would build
+    """
+    cache_fn = f'models/cached-model-{file}.pkl'
+    with open(f'models/{file}.stan') as f:
+        name = f.readline()[3:-1]
+    try:
+        sm = pickle.load(open(cache_fn, 'rb'))
+    except Exception:
+        sm = stan.build(file=f'models/{file}.stan', verbose=verbose)
+        with open(cache_fn, 'wb') as f:
+            pickle.dump(sm, f)
+    else:
+        print(f"Succesfully loaded the {name} model from cache.")
+    return (name, sm)
+
+
+def open_models(filenames, verbose=True):
+    '''
+    Returns generator of tuples of a files name scraped from its first line and a string containing the content of the file
+    '''
+    if filenames is not None:
+        for filename in filenames:
+            if os.path.exists(f'models/{filename}.stan'):
+                with open(f'models/{filename}.stan') as f:
+                    name = f.readline()[3:-1]
+                    file = f.read()
+                yield (name, file)
+            else:
+                print(f"{filename} cannot be found...")
+    else:
+        for filename in os.listdir('models'):
+            if filename.rsplit('.', 1)[-1] == 'stan':
+                with open(f'models/{filename}') as f:
+                    name = f.readline()[3:-1]
+                    file = f.read()
+                yield (name, file)
+
+
+def generate_data(mu, sigma, k):
+    '''
+    Generates k normal samples from Norm(mu, sigma)
+    '''
+    return np.random.normal(mu, sigma, k)
+
+
+def apply_noise(data, scale, alpha):
+    '''
+    Applies Laplace(0, scale) noise to alpha (proportion) of the data and returns indices
+    '''
+    indices = np.ones(len(data))
+    indices[:math.floor(len(data) * alpha)] = 0
+    np.random.shuffle(indices)
+    return data + indices * np.random.laplace(0, scale, len(data)), indices.astype(bool)
+
+
+def generate_ytildes(start, finish, step):
+    '''
+    Generates a linnspace / grid
+    '''
+    return np.arange(start, finish, step)
+
+
+def calculate_dgp_pdf(ytilde, *dgp):
+    '''
+    Returns values of the dgp pdf at all passed ytilde
+    '''
+    mu, sigma, _ = dgp
+    return np.array([st.norm(mu, sigma).pdf(x) for x in ytilde])
