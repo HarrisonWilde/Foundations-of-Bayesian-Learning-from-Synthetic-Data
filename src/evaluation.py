@@ -62,10 +62,10 @@ def evaluate_fits(fit, window, pdf_ytilde, chain):
     indices = [i for i in range(chain * window, (chain + 1) * window)]
 
     # Calculate log densities at the unseen data values to average to a log loss score
-    log_loss = calculate_log_loss((fit['log_likes_unseen'].T)[indices].T)
+    log_loss = calculate_log_loss(fit['log_likes_unseen'][indices].T)
 
     # Approximate posterior predictive using ytildes from linspace to use in probability distance calculations
-    post_pred = approximate_posterior_predictive((fit['log_likes_tildes'].T)[indices].T)
+    post_pred = approximate_posterior_predictive(fit['log_likes_tildes'][indices].T)
 
     # Calculate the KL, Hellinger, TVD and Wasserstein distances between posterior predictive and true pdf
     kld, hellinger, tvd, wasserstein = probability_distances(post_pred, pdf_ytilde)

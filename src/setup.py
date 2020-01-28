@@ -1,4 +1,4 @@
-import stan
+import pystan
 import numpy as np
 import math
 import pickle
@@ -6,17 +6,17 @@ import os
 import scipy.stats as st
 
 
-def build_cache(file, verbose, **kwargs):
+def StanModel_cache(filename, verbose, **kwargs):
     """
     Use just as you would build
     """
-    cache_fn = f'models/cached-model-{file}.pkl'
-    with open(f'models/{file}.stan') as f:
+    cache_fn = f'models/cached-model-{filename}.pkl'
+    with open(f'models/{filename}.stan') as f:
         name = f.readline()[3:-1]
     try:
         sm = pickle.load(open(cache_fn, 'rb'))
     except Exception:
-        sm = stan.build(file=f'models/{file}.stan', verbose=verbose)
+        sm = pystan.StanModel(file=f'models/{filename}.stan', verbose=verbose)
         with open(cache_fn, 'wb') as f:
             pickle.dump(sm, f)
     else:
@@ -31,19 +31,13 @@ def open_models(filenames, verbose=True):
     if filenames is not None:
         for filename in filenames:
             if os.path.exists(f'models/{filename}.stan'):
-                with open(f'models/{filename}.stan') as f:
-                    name = f.readline()[3:-1]
-                    file = f.read()
-                yield (name, file)
+                yield StanModel_cache(filename, verbose)
             else:
                 print(f"{filename} cannot be found...")
     else:
         for filename in os.listdir('models'):
             if filename.rsplit('.', 1)[-1] == 'stan':
-                with open(f'models/{filename}') as f:
-                    name = f.readline()[3:-1]
-                    file = f.read()
-                yield (name, file)
+                yield StanModel_cache(filename[:-5], verbose)
 
 
 def generate_data(mu, sigma, k):

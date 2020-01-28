@@ -21,3 +21,11 @@ python run.py \
 --betas 0.5 \
 --warmup 1000 --iters 10000 --chains 96 \
 --ytildestep 0.1
+
+python3 run.py --plot \
+--mus 0 --sigmas 1 1.5 --scales 2 1.5 1 \
+--alphas 0 0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 --ks 2000 \
+--priormus 0 --prioralphas 2 --priorbetas 5 --hyperpriors 5 \
+--betas 0.5 --betaws 1.15 --ws 0.5 \
+--warmup 500 --iters 4000 --chains 12 \
+--ytildestep 0.05

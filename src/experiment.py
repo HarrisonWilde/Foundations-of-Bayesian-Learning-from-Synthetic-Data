@@ -2,7 +2,6 @@
 import os
 import sys
 import numpy as np
-import stan
 from contextlib import contextmanager
 
 
@@ -70,7 +69,7 @@ def merged_stderr_stdout():
     return stdout_redirected(to=sys.stdout, stdout=sys.stderr)
 
 
-def run_experiment(file, warmup, samples, chains, init_cheat, y, indices, y_unseen, ytildes, scale, priormu, priora, priorb, beta, hp, w, beta_w, mu, sigma2, k):
+def run_experiment(model, warmup, iters, chains, init_cheat, y, indices, y_unseen, ytildes, scale, priormu, priora, priorb, beta, hp, w, beta_w, mu, sigma2, k, cpu_count):
     '''
     Uses Stan to perform MCMC sampling on the passed model, returns the resulting fit on passed data
     '''
@@ -82,7 +81,13 @@ def run_experiment(file, warmup, samples, chains, init_cheat, y, indices, y_unse
 
     # Normal-Laplace with known scale and all data
     data = dict(n=len(y[~indices]), y1=y[~indices], m=len(y[indices]), y2=y[indices], j=len(y_unseen), y_unseen=y_unseen, k=len(ytildes),
-                y_tildes=ytildes, mu_m=priormu, sig_p1=priora, sig_p2=priorb, hp=hp, scale=np.sqrt(2) * scale, beta=beta, beta_w=beta_w, w=w)
-    model = stan.build(file, data)
-    fit = model.sample(num_warmup=warmup, num_samples=samples, num_chains=chains, save_warmup=False)
+                y_tildes=ytildes, mu_m=priormu, sig_p1=priora, sig_p2=priorb, hp=hp, scale=scale, beta=beta, beta_w=beta_w, w=w)
+    with open('sampling.txt', 'a') as f, stdout_redirected(f):
+        with merged_stderr_stdout():
+            try:
+                fit = model.sampling(data=data, warmup=warmup, iter=iters, chains=chains, init=init, n_jobs=cpu_count)
+                fit = fit.extract(permuted=True)
+            except Exception as e:
+                print(e)
+                fit = None
     return fit

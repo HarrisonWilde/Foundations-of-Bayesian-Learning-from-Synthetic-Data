@@ -25,8 +25,9 @@ def run(args):
         if not os.path.exists(i):
             os.makedirs(i)
 
-    if os.path.exists('sampling_out.txt'):
-        os.remove('sampling_out.txt')
+    os.environ['OBJC_DISABLE_INITIALIZE_FORK_SAFETY'] = 'YES'
+    if os.path.exists('sampling.txt'):
+        os.remove('sampling.txt')
     print(f'Using {args.cpu_count} cores')
     os.environ["STAN_NUM_THREADS"] = str(args.cpu_count)
     models = dict(open_models(args.models, verbose=False))
@@ -74,12 +75,15 @@ def run(args):
                 out = [{'chain': chain, 'Alpha': noise_config[1], 'Laplace Noise Scale': noise_config[0], 'Y Tilde Value': ytildes, 'DGP': pdf_ytilde}
                        for chain in range(args.chains)]
 
-                for name, model_file in tqdm(models.items(), leave=False, position=6):
+                for name, model in tqdm(models.items(), leave=False, position=6):
 
                     d.set_description(f'Running MCMC on the {name} model...')
 
-                    fit = run_experiment(model_file, args.warmup, args.iters, args.chains, args.init_cheat, contaminated_data,
-                                         indices, unseen_data, ytildes, noise_config[0], *prior_config, *dgp)
+                    fit = run_experiment(model, args.warmup, args.iters, args.chains, args.init_cheat, contaminated_data,
+                                         indices, unseen_data, ytildes, noise_config[0], *prior_config, *dgp, args.cpu_count)
+
+                    if fit is None:
+                        continue
 
                     for chain in tqdm(range(args.chains), position=8, leave=False):
 
@@ -104,11 +108,11 @@ def run(args):
             df = pd.DataFrame(outs)
             df.to_pickle(f'{output_dir}/prior{str(prior_config)}dgp{str(dgp)}.pkl')
             if args.plot:
-                plot_metric(df.filter(regex='Log Loss|Alpha|Laplace Noise|chain'), 'Log Loss', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
-                plot_metric(df.filter(regex='KLD|Alpha|Laplace Noise|chain'), 'KLD', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
-                plot_metric(df.filter(regex='HellingerD|Alpha|Laplace Noise|chain'), 'HellingerD', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
-                plot_metric(df.filter(regex='TVD|Alpha|Laplace Noise|chain'), 'TVD', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
-                plot_metric(df.filter(regex='WassersteinD|Alpha|Laplace Noise|chain'), 'WassersteinD', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
+                plot_metric(df.filter(regex='Log Loss|Alpha|Laplace Noise'), 'Log Loss', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
+                plot_metric(df.filter(regex='KLD|Alpha|Laplace Noise'), 'KLD', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
+                plot_metric(df.filter(regex='HellingerD|Alpha|Laplace Noise'), 'HellingerD', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
+                plot_metric(df.filter(regex='TVD|Alpha|Laplace Noise'), 'TVD', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
+                plot_metric(df.filter(regex='WassersteinD|Alpha|Laplace Noise'), 'WassersteinD', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
 
 
 if __name__ == '__main__':

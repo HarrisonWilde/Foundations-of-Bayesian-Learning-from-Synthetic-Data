@@ -73,3 +73,21 @@ def plot_metric(df, metric, num_alphas, prior, dgp, output_timestamp, plot_dir):
     Prior: sigma2 ~ InvGamma({prior[1]}, {prior[2]}), mu ~ Norm({prior[0]}, {prior[4]} * sigma2)'''
     df = df.melt(['Alpha', 'Laplace Noise Scale'], var_name='Minimised\nDivergence', value_name=metric)
     plot(df, metric, title, plot_dir, num_alphas, output_timestamp)
+
+
+def plot_metric_(df, metric, title, output_timestamp, plot_dir):
+    '''
+    Passed data frame is exploded and transformed to be passed to plot
+    '''
+
+    df = df.melt(['Alpha', 'Laplace Noise Scale'], var_name='Minimised\nDivergence', value_name=metric)
+    plot(df, metric, title, plot_dir, len(df.Alpha.unique()), output_timestamp)
+
+
+def plot_metric_k_(df, metric, title, output_timestamp, plot_dir):
+    '''
+    Passed data frame is exploded and transformed to be passed to plot
+    '''
+
+    df = df.melt(['Alpha', 'Laplace Noise Scale'], var_name='Minimised\nDivergence', value_name=metric)
+    plot(df, metric, title, plot_dir, len(df.Alpha.unique()), output_timestamp)

@@ -34,10 +34,10 @@ functions {
    real normal_laplace_lpdf(vector y, real mu, real sigma, real scale) {
 
       real total = 0.0;
-      real k = (sqrt(2) * sigma) / scale;
+      real k = (sigma) / scale;
       for (i in 1:num_elements(y)) {
          real r = (y[i] - mu) / sigma;
-         real thing = -log(sqrt(2) * scale) + std_normal_lpdf(r) + log_sum_exp(log_mills_ratio(k - r), log_mills_ratio(k + r));
+         real thing = -log(2 * scale) + std_normal_lpdf(r) + log_sum_exp(log_mills_ratio(k - r), log_mills_ratio(k + r));
          if (thing < -1e30) {
             print("k: ", k, ", r: ", r, ", thing: ", thing);
          }
