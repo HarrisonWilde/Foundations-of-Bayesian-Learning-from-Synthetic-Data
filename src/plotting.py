@@ -37,7 +37,7 @@ def explode(df, lst_cols, fill_value='', preserve_index=False):
     return res
 
 
-def plot(df, y, title, plot_dir, num_alphas, output_timestamp):
+def plot_alpha(df, y, title, plot_dir, num_alphas, output_timestamp):
     '''
     Generic plot function for plotting alpha on x-axis and metric on y-axis
     '''
@@ -46,6 +46,20 @@ def plot(df, y, title, plot_dir, num_alphas, output_timestamp):
     #                 inner='quartile', bw=.5, height=6, aspect=max((num_alphas - 2) * 0.3, 1), split=True, legend='full', data=df)
     g = sns.relplot(x='Alpha', y=y, hue='Minimised\nDivergence', row='Laplace Noise Scale', kind='line',
                     height=6, aspect=max((num_alphas - 2) * 0.3, 1), legend='full', data=df)
+    g.fig.suptitle(y + ' comparison for ' + title, y=1.05)
+    g.set(yscale='log')
+    g.savefig(plot_dir + '/' + y + output_timestamp + ' ' + title + '.png')
+    plt.close()
+
+
+def plot_k(df, y, title, plot_dir, num_alphas, output_timestamp):
+    '''
+    Generic plot function for plotting number of samples / contaminated samples on x-axis and metric on y-axis
+    '''
+    # g = sns.catplot(x='Alpha', y=y, hue='Minimised\nDivergence', row='Laplace Noise Scale', kind='violin',
+    #                 inner='quartile', bw=.5, height=6, aspect=max((num_alphas - 2) * 0.3, 1), split=True, legend='full', data=df)
+    g = sns.relplot(x='Total Number of Samples', y=y, hue='Number of Real Samples', row='Minimised\nDivergence',
+                    col='Laplace Noise Scale', kind='line', height=6, aspect=max((num_alphas - 2) * 0.3, 1), legend='full', data=df)
     g.fig.suptitle(y + ' comparison for ' + title, y=1.05)
     g.set(yscale='log')
     g.savefig(plot_dir + '/' + y + output_timestamp + ' ' + title + '.png')
@@ -72,7 +86,7 @@ def plot_metric(df, metric, num_alphas, prior, dgp, output_timestamp, plot_dir):
     title = f'''y[{dgp[2]}] ~ Norm({dgp[0]}, {dgp[1]}), beta = {prior[3]}, beta w = {prior[6]}, w = {prior[5]}
     Prior: sigma2 ~ InvGamma({prior[1]}, {prior[2]}), mu ~ Norm({prior[0]}, {prior[4]} * sigma2)'''
     df = df.melt(['Alpha', 'Laplace Noise Scale'], var_name='Minimised\nDivergence', value_name=metric)
-    plot(df, metric, title, plot_dir, num_alphas, output_timestamp)
+    plot_alpha(df, metric, title, plot_dir, num_alphas, output_timestamp)
 
 
 def plot_metric_(df, metric, title, output_timestamp, plot_dir):
@@ -81,7 +95,21 @@ def plot_metric_(df, metric, title, output_timestamp, plot_dir):
     '''
 
     df = df.melt(['Alpha', 'Laplace Noise Scale'], var_name='Minimised\nDivergence', value_name=metric)
-    plot(df, metric, title, plot_dir, len(df.Alpha.unique()), output_timestamp)
+    plot_alpha(df, metric, title, plot_dir, len(df.Alpha.unique()), output_timestamp)
+
+
+def plot_metric_k(df, metric, num_alphas, prior, dgp, output_timestamp, plot_dir):
+    '''
+    Passed data frame is exploded and transformed to be passed to plot
+    '''
+
+    title = f'''y[{dgp[2]}] ~ Norm({dgp[0]}, {dgp[1]}), beta = {prior[3]}, beta w = {prior[6]}, w = {prior[5]}
+    Prior: sigma2 ~ InvGamma({prior[1]}, {prior[2]}), mu ~ Norm({prior[0]}, {prior[4]} * sigma2)'''
+    df2 = df.loc[df['Total Number of Samples'] == df['Number of Real Samples']]
+    df2['Number of Real Samples'] = 'Varying'
+    df = df.append(df2)
+    df = df.melt(['Number of Real Samples', 'Total Number of Samples', 'Laplace Noise Scale'], var_name='Minimised\nDivergence', value_name=metric)
+    plot_k(df, metric, title, plot_dir, num_alphas, output_timestamp)
 
 
 def plot_metric_k_(df, metric, title, output_timestamp, plot_dir):
@@ -89,5 +117,8 @@ def plot_metric_k_(df, metric, title, output_timestamp, plot_dir):
     Passed data frame is exploded and transformed to be passed to plot
     '''
 
-    df = df.melt(['Alpha', 'Laplace Noise Scale'], var_name='Minimised\nDivergence', value_name=metric)
-    plot(df, metric, title, plot_dir, len(df.Alpha.unique()), output_timestamp)
+    df2 = df.loc[df['Total Number of Samples'] == df['Number of Real Samples']]
+    df2['Number of Real Samples'] = 'Varying'
+    df = df.append(df2)
+    df = df.melt(['Number of Real Samples', 'Total Number of Samples', 'Laplace Noise Scale'], var_name='Minimised\nDivergence', value_name=metric)
+    plot_k(df, metric, title, plot_dir, len(df['Number of Contaminated Samples'].unique()), output_timestamp)

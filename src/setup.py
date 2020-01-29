@@ -70,3 +70,7 @@ def calculate_dgp_pdf(ytilde, *dgp):
     '''
     mu, sigma, _ = dgp
     return np.array([st.norm(mu, sigma).pdf(x) for x in ytilde])
+
+
+def conditional_get_pairs(alphas, max_sum):
+    return [(a1, a2) for a1 in alphas for a2 in alphas if a1 + a2 <= max_sum + 1e-6]

@@ -1,14 +1,15 @@
 import argparse
+import math
 import multiprocessing
 import os
 import pandas as pd
 from datetime import datetime
 from tqdm import tqdm
 # from p_tqdm import p_umap
-from setup import apply_noise, generate_data, open_models, generate_ytildes, calculate_dgp_pdf
+from setup import apply_noise, generate_data, open_models, generate_ytildes, calculate_dgp_pdf, conditional_get_pairs
 from experiment import run_experiment
 from evaluation import evaluate_fits
-from plotting import plot_metric, plot_pdfs
+from plotting import plot_metric_k, plot_pdfs
 
 
 def run(args):
@@ -18,8 +19,8 @@ def run(args):
 
     # Set up directories
     print('')
-    plot_dir = 'plots/exp_' + datetime.now().strftime("%m-%d-%Y_%H.%M.%S")
-    output_dir = 'outputs/exp_' + datetime.now().strftime("%m-%d-%Y_%H.%M.%S")
+    plot_dir = 'plots/kexp_' + datetime.now().strftime("%m-%d-%Y_%H.%M.%S")
+    output_dir = 'outputs/kexp_' + datetime.now().strftime("%m-%d-%Y_%H.%M.%S")
     paths = ['plots', plot_dir, 'outputs', output_dir]
     for i in paths:
         if not os.path.exists(i):
@@ -34,11 +35,10 @@ def run(args):
 
     # Set up all combinations of passed parameters for MCMC and DGP
     dgps = [(mu, sigma, k) for mu in args.mus for sigma in args.sigmas for k in args.ks]
-    noise_configs = [(scale, alpha) for scale in args.scales for alpha in args.alphas]
     num_alphas = len(args.alphas)
-    prior_configs = [(priormu, priora, priorb, beta, hyperprior, w, beta_w)
-                     for priormu in args.priormus for priora in args.prioralphas for priorb in args.priorbetas
-                     for beta in args.betas for hyperprior in args.hyperpriors for w in args.ws for beta_w in args.betaws]
+    prior_configs = [(priormu, priora, priorb, beta, hyperprior, w, beta_w, scale)
+                     for priormu in args.priormus for priora in args.prioralphas for priorb in args.priorbetas for beta in args.betas
+                     for hyperprior in args.hyperpriors for w in args.ws for beta_w in args.betaws for scale in args.scales]
 
     if args.ytildeconfig is not None:
         ytildes = generate_ytildes(*args.ytildeconfig)
@@ -58,29 +58,34 @@ def run(args):
         if args.ytildeconfig is None:
             ytildes = generate_ytildes(dgp[0] - dgp[1] * 3, dgp[0] + dgp[1] * 3, args.ytildestep)
         data = generate_data(*dgp)
+        pre_contam_data = generate_data(*dgp)
         unseen_data = generate_data(*dgp)
         pdf_ytilde = calculate_dgp_pdf(ytildes, *dgp)
 
         for prior_config in tqdm(prior_configs, leave=False, position=2):
 
-            b.set_description_str('Prior: sigma2 ~ InverseGamma({1}, {2}), mu ~ Normal({0}, {4} * sigma2), Beta: {3}, W: {5}, Beta W: {6}'.format(*prior_config))
+            b.set_description_str('Prior: sigma2 ~ InverseGamma({1}, {2}), mu ~ Normal({0}, {4} * sigma2), Beta: {3}, W: {5}, Beta W: {6}, Laplace Noise Scale: {7}'
+                                  .format(*prior_config))
             output_timestamp = datetime.now().strftime("_%H.%M.%S")
             outs = []
+            contam_data, _ = apply_noise(pre_contam_data, prior_config[7], 0)
 
-            for noise_config in tqdm(noise_configs, leave=False, position=4):
+            for real_alpha, contam_alpha in tqdm(conditional_get_pairs(args.alphas, 1), leave=False, position=4):
 
-                c.set_description_str('Laplace Noise Scale = {}, Alpha = {}'.format(*noise_config))
+                c.set_description_str(f'Number of Real Samples: {math.floor(real_alpha*len(data))}, Number of Contaminated Samples: {math.floor(contam_alpha*len(contam_data))}')
 
-                contaminated_data, indices = apply_noise(data, *noise_config)
-                out = [{'chain': chain, 'Alpha': noise_config[1], 'Laplace Noise Scale': noise_config[0], 'Y Tilde Value': ytildes, 'DGP': pdf_ytilde}
+                out = [{'chain': chain, 'Number of Real Samples': math.floor(real_alpha * len(data)),
+                        'Total Number of Samples': math.floor(real_alpha * len(data)) + math.floor(contam_alpha * len(contam_data)),
+                        'Laplace Noise Scale': prior_config[7], 'Y Tilde Value': ytildes, 'DGP': pdf_ytilde}
                        for chain in range(args.chains)]
 
                 for name, model in tqdm(models.items(), leave=False, position=6):
 
                     d.set_description(f'Running MCMC on the {name} model...')
 
-                    fit = run_experiment(model, args.warmup, args.iters, args.chains, data[~indices], data[indices],
-                                         unseen_data, ytildes, *prior_config, noise_config[0], *dgp, args.cpu_count)
+                    fit = run_experiment(model, args.warmup, args.iters, args.chains, data[:math.floor(real_alpha * len(data))],
+                                         contam_data[:math.floor(contam_alpha * len(contam_data))], unseen_data, ytildes,
+                                         *prior_config, *dgp, args.cpu_count, args.check_hmc_diag)
 
                     if fit is None:
                         continue
@@ -103,16 +108,16 @@ def run(args):
 
                 if args.plot_pdfs:
                     out = pd.DataFrame(out)
-                    plot_pdfs(out.filter(regex='Posterior Predictive|Y Tilde Value|DGP'), output_timestamp + '_' + str(noise_config[0]) + '_' + str(noise_config[1]), plot_dir)
+                    plot_pdfs(out.filter(regex='Posterior Predictive|Y Tilde Value|DGP'), output_timestamp + '_' + str(real_alpha) + '_' + str(contam_alpha), plot_dir)
 
             df = pd.DataFrame(outs)
             df.to_pickle(f'{output_dir}/prior{str(prior_config)}dgp{str(dgp)}.pkl')
             if args.plot_metrics:
-                plot_metric(df.filter(regex='Log Loss|Alpha|Laplace Noise'), 'Log Loss', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
-                plot_metric(df.filter(regex='KLD|Alpha|Laplace Noise'), 'KLD', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
-                plot_metric(df.filter(regex='HellingerD|Alpha|Laplace Noise'), 'HellingerD', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
-                plot_metric(df.filter(regex='TVD|Alpha|Laplace Noise'), 'TVD', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
-                plot_metric(df.filter(regex='WassersteinD|Alpha|Laplace Noise'), 'WassersteinD', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
+                plot_metric_k(df.filter(regex='Log Loss|Number of|Laplace Noise'), 'Log Loss', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
+                plot_metric_k(df.filter(regex='KLD|Number of|Laplace Noise'), 'KLD', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
+                plot_metric_k(df.filter(regex='HellingerD|Number of|Laplace Noise'), 'HellingerD', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
+                plot_metric_k(df.filter(regex='TVD|Number of|Laplace Noise'), 'TVD', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
+                plot_metric_k(df.filter(regex='WassersteinD|Number of|Laplace Noise'), 'WassersteinD', num_alphas, prior_config, dgp, output_timestamp, plot_dir)
 
 
 if __name__ == '__main__':
@@ -137,8 +142,8 @@ if __name__ == '__main__':
     parser.add_argument('-yt', '--ytildeconfig', default=None, type=float, nargs=3, help='Provide ytilde grid config "start end freq" e.g. 0 10 0.1')
     parser.add_argument('-yts', '--ytildestep', default=0.1, type=float, help='Provide ytilde step to use with default range e.g. 0.1')
     parser.add_argument('-cpu', '--cpu_count', default=multiprocessing.cpu_count(), type=int, help='Number of cpus to use, defaults to maximum available')
-    parser.add_argument('-p1', '--plot_metrics', action='store_true', help='Flag to indicate whether plotting should happen automatically during execution')
-    parser.add_argument('-p2', '--plot_pdfs', action='store_true', help='Flag to indicate whether plotting should happen automatically during execution')
+    parser.add_argument('-p1', '--plot_pdfs', action='store_true', help='Flag to indicate whether plotting should happen automatically during execution')
+    parser.add_argument('-p2', '--plot_metrics', action='store_true', help='Flag to indicate whether plotting should happen automatically during execution')
     parser.add_argument('-chd', '--check_hmc_diag', action='store_true', help='Flag to indicate whether to run check_hmc_diagnostics after sampling')
     args = parser.parse_args()
     run(args)
