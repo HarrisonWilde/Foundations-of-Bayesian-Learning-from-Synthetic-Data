@@ -1,7 +1,6 @@
 # import arviz as az
 import os
 import sys
-import numpy as np
 from contextlib import contextmanager
 
 
@@ -69,23 +68,18 @@ def merged_stderr_stdout():
     return stdout_redirected(to=sys.stdout, stdout=sys.stderr)
 
 
-def run_experiment(model, warmup, iters, chains, init_cheat, y, indices, y_unseen, ytildes, scale, priormu, priora, priorb, beta, hp, w, beta_w, mu, sigma2, k, cpu_count):
+def run_experiment(model, warmup, iters, chains, y_real, y_contam, y_unseen, ytildes, priormu, priora,
+                   priorb, beta, hp, w, beta_w, scale, mu, sigma2, k, cpu_count, check_hmc_diag):
     '''
     Uses Stan to perform MCMC sampling on the passed model, returns the resulting fit on passed data
     '''
 
-    if init_cheat:
-        init = [dict(mu=np.mean(y), sigma2=np.var(y))] * chains
-    else:
-        init = 'random'
-
-    # Normal-Laplace with known scale and all data
-    data = dict(n=len(y[~indices]), y1=y[~indices], m=len(y[indices]), y2=y[indices], j=len(y_unseen), y_unseen=y_unseen, k=len(ytildes),
+    data = dict(n=len(y_real), y1=y_real, m=len(y_contam), y2=y_contam, j=len(y_unseen), y_unseen=y_unseen, k=len(ytildes),
                 y_tildes=ytildes, mu_m=priormu, sig_p1=priora, sig_p2=priorb, hp=hp, scale=scale, beta=beta, beta_w=beta_w, w=w)
     with open('sampling.txt', 'a') as f, stdout_redirected(f):
         with merged_stderr_stdout():
             try:
-                fit = model.sampling(data=data, warmup=warmup, iter=iters, chains=chains, init=init, n_jobs=cpu_count)
+                fit = model.sampling(data=data, warmup=warmup, iter=iters, chains=chains, n_jobs=cpu_count, check_hmc_diagnostics=check_hmc_diag)
                 fit = fit.extract(permuted=True)
             except Exception as e:
                 print(e)
