@@ -6,13 +6,13 @@ import tensorflow.keras.layers as layers
 from tqdm import trange
 from subprocess import PIPE, run
 from tensorflow.keras.models import Model
-from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.optimizers import Adam, Adagrad
 
 BATCH_SIZE = 512
 PLOT_EVERY = 10
 TOTAL_STEPS = 5000
 GRID_RESOLUTION = 400
-LATENT_DIM = 1
+GENERATOR_DIM = 1
 
 
 def uniform_to_normal(z):
@@ -30,11 +30,11 @@ def generate_noise(samples, dimensions=2):
     return np.random.uniform(-1, 1, (samples, dimensions))
 
 
-def build_generator(LATENT_DIM, output_dim):
+def build_generator(GENERATOR_DIM, output_dim):
     '''
     Build a generator mapping (R, R) to ([-1,1], [-1,1])
     '''
-    input_layer = layers.Input((LATENT_DIM,))
+    input_layer = layers.Input((GENERATOR_DIM,))
     X = input_layer
     for i in range(4):
         X = layers.Dense(16)(X)
@@ -61,18 +61,17 @@ def build_discriminator(dim):
     return D
 
 
-def build_GAN(G, D, LATENT_DIM):
+def build_GAN(G, D, GENERATOR_DIM):
     '''
     Given a generator and a discriminator, build a GAN
     '''
     D.trainable = False
-    input_layer = layers.Input((LATENT_DIM,))
+    input_layer = layers.Input((GENERATOR_DIM,))
     X = G(input_layer)
     output_layer = D(X)
     GAN = Model(input_layer, output_layer)
-    GAN.compile(Adam(learning_rate=0.001, beta_1=0.5),
-                loss='binary_crossentropy',
-                metrics=['accuracy'])
+    GAN.compile(Adagrad(learning_rate=0.001, beta_1=0.5), loss='binary_crossentropy', metrics=['accuracy'])
+    # GAN.compile(Adam(learning_rate=0.001, beta_1=0.5), loss='binary_crossentropy', metrics=['accuracy'])
     return GAN
 
 
@@ -149,26 +148,24 @@ def plot_gan(G, D, step, step_count, D_accuracy, D_loss, G_accuracy, G_loss, fil
     return
 
 
-if __name__ == '__main__':
+def train_gan(data, mu, sigma, k, plot):
 
-    test_noise = generate_noise(1000, LATENT_DIM)
-    test_samples = uniform_to_normal(test_noise)
-    G = build_generator(LATENT_DIM, 1)
+    G = build_generator(GENERATOR_DIM, 1)
     D = build_discriminator(1)
-    GAN = build_GAN(G, D, LATENT_DIM)
+    GAN = build_GAN(G, D, GENERATOR_DIM)
 
     step_count = []
     D_accuracy = []
     G_accuracy = []
     D_loss = []
     G_loss = []
-    count = 0
+
     for step in trange(TOTAL_STEPS):
 
         # Train discriminator
         D.trainable = True
-        real_data = uniform_to_normal(generate_noise(BATCH_SIZE // 2, LATENT_DIM))
-        fake_data = G.predict(generate_noise(BATCH_SIZE // 2, LATENT_DIM), batch_size=BATCH_SIZE // 2)
+        real_data = uniform_to_normal(generate_noise(BATCH_SIZE // 2, GENERATOR_DIM))
+        fake_data = G.predict(generate_noise(BATCH_SIZE // 2, GENERATOR_DIM), batch_size=BATCH_SIZE // 2)
         data = np.concatenate((real_data, fake_data), axis=0)
         real_labels = np.ones((BATCH_SIZE // 2, 1))
         fake_labels = np.zeros((BATCH_SIZE // 2, 1))
@@ -177,7 +174,7 @@ if __name__ == '__main__':
 
         # Train generator
         D.trainable = False
-        noise = generate_noise(BATCH_SIZE, LATENT_DIM)
+        noise = generate_noise(BATCH_SIZE, GENERATOR_DIM)
         labels = np.ones((BATCH_SIZE, 1))
         _G_loss, _G_accuracy = GAN.train_on_batch(noise, labels)
 
@@ -188,36 +185,21 @@ if __name__ == '__main__':
             G_loss.append(_G_loss)
             G_accuracy.append(_G_accuracy)
 
-    for step in trange(TOTAL_STEPS):
-        if step % PLOT_EVERY == 0 or (step < 1500 and step % np.floor(PLOT_EVERY / 5) == 0):
-            plot_gan(G=G,
-                     D=D,
-                     step=step+1,
-                     step_count=step_count[:step],
-                     D_accuracy=D_accuracy[:step],
-                     D_loss=D_loss[:step],
-                     G_accuracy=G_accuracy[:step],
-                     G_loss=G_loss[:step],
-                     filename=f'ims/1_1D_normal/a/1b.{step:05d}.png')
+    if plot:
+        for step in trange(TOTAL_STEPS):
+            if step % PLOT_EVERY == 0 or (step < 1500 and step % np.floor(PLOT_EVERY / 5) == 0):
+                plot_gan(G=G,
+                         D=D,
+                         step=step+1,
+                         step_count=step_count[:step],
+                         D_accuracy=D_accuracy[:step],
+                         D_loss=D_loss[:step],
+                         G_accuracy=G_accuracy[:step],
+                         G_loss=G_loss[:step],
+                         filename=f'ims/1_1D_normal/a/1b.{step:05d}.png')
 
-    run('ffmpeg -r 60 -pattern_type glob -i "ims/1_1D_normal/a/*.png" -vcodec mpeg4 -vb 50M ims/1_1D_normal/a/fulltrain.mp4',
-        stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
-    G.save("ims/1_1D_normal/c/G.h5")
-    D.save("ims/1_1D_normal/c/D.h5")
+        run('ffmpeg -r 60 -pattern_type glob -i "ims/1_1D_normal/a/*.png" -vcodec mpeg4 -vb 50M ims/1_1D_normal/a/fulltrain.mp4',
+            stdout=PIPE, stderr=PIPE, universal_newlines=True, shell=True)
 
-    grid_latent = np.linspace(-1, 1, 103)[1:-1].reshape((-1, 1))
-    true_mappings = uniform_to_normal(grid_latent)
-    GAN_mapping = G.predict(grid_latent)
-
-    plt.figure(figsize=(6, 6))
-    plt.scatter(grid_latent.flatten(), true_mappings.flatten(),
-                edgecolor='blue', facecolor='None', s=5, alpha=1,
-                linewidth=1, label='Inverse CDF Mapping')
-    plt.scatter(grid_latent.flatten(), GAN_mapping.flatten(),
-                edgecolor='red', facecolor='None', s=5, alpha=1,
-                linewidth=1, label='Inverse CDF Mapping')
-    plt.xlim(-1, 1)
-    plt.ylim(-4, 4)
-    plt.tight_layout()
-    plt.savefig(f'ims/1_1D_normal/color/1c.true.png')
-    plt.close()
+    G.save(f'gan/{mu}_{sigma}_{k}G.h5')
+    D.save(f'gan/{mu}_{sigma}_{k}D.h5')
