@@ -68,18 +68,14 @@ def merged_stderr_stdout():
     return stdout_redirected(to=sys.stdout, stdout=sys.stderr)
 
 
-def run_experiment(model, warmup, iters, chains, y_real, y_contam, y_unseen, ytildes, priormu, priora,
-                   priorb, beta, hp, w, beta_w, scale, mu, sigma2, k, cpu_count, check_hmc_diag):
+def run_experiment(model, data, warmup, iters, chains, n_jobs, check_hmc_diag, seed):
     '''
     Uses Stan to perform MCMC sampling on the passed model, returns the resulting fit on passed data
     '''
-
-    data = dict(n=len(y_real), y1=y_real, m=len(y_contam), y2=y_contam, j=len(y_unseen), y_unseen=y_unseen, k=len(ytildes),
-                y_tildes=ytildes, mu_m=priormu, sig_p1=priora, sig_p2=priorb, hp=hp, scale=scale, beta=beta, beta_w=beta_w, w=w)
     with open('sampling.txt', 'a') as f, stdout_redirected(f):
         with merged_stderr_stdout():
             try:
-                fit = model.sampling(data=data, warmup=warmup, iter=iters, chains=chains, n_jobs=cpu_count, check_hmc_diagnostics=check_hmc_diag)
+                fit = model.sampling(data=data, warmup=warmup, iter=iters, chains=chains, n_jobs=n_jobs, check_hmc_diagnostics=check_hmc_diag, seed=seed)
                 fit = fit.extract(permuted=True)
             except Exception as e:
                 print(e)
