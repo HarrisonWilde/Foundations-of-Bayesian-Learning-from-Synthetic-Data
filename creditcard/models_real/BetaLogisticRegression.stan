@@ -37,5 +37,18 @@ model {
     for (i in 1:b) {
         target += beta_w * ((1 / beta) * exp(bernoulli_logit_glm_lpmf(y_synth[i] | X_synth[i], alpha, coefs)) ^ (beta) - (1 / (beta + 1)) * (exp(bernoulli_logit_glm_lpmf(y_synth[i] | X_synth[i], alpha, coefs)) ^ (beta + 1) + (1 - exp(bernoulli_logit_glm_lpmf(y_synth[i] | X_synth[i], alpha, coefs))) ^ (beta + 1)));
     }
+}
+
+generated quantities {
+
+    real log_like_test;
+    vector[c] log_likes_test;
+    vector[c] probabilities_test;
+    
+    log_like_test = bernoulli_logit_glm_lpmf(y_test | X_test, alpha, coefs);
+    // for (i in 1:c) {
+    //     log_likes_test[i] = bernoulli_logit_lpmf(y_test[i] | alpha + X_test[i] * coefs);
+    // }
+    probabilities_test = inv_logit(alpha + X_test * coefs);
 
 }

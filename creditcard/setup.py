@@ -3,6 +3,7 @@ import pandas as pd
 import pickle
 import os
 import pategan
+from tqdm import tqdm
 
 
 def StanModel_cache(filename, verbose, **kwargs):
@@ -44,17 +45,19 @@ def load_data(original_path, eps, gan, targets, sep, num_teachers, epochs, delta
     path = f'{original_path.replace("raw", "splits")}_{"".join(targets)}_split{split}_gan{gan}'
 
     if (os.path.exists(
-        f'{path}_train.csv') and os.path.exists(
-        f'{path}_test.csv') and os.path.exists(
-        f'{path}_eps{str(eps)}_train.csv') and os.path.exists(
-        f'{path}_eps{str(eps)}_test.csv')):
+        f'{path}_eps{str(eps)}_real_train.csv') and os.path.exists(
+        f'{path}_eps{str(eps)}_real_test.csv') and os.path.exists(
+        f'{path}_eps{str(eps)}_synth_train.csv') and os.path.exists(
+        f'{path}_eps{str(eps)}_synth_test.csv')):
 
         b.set_description_str(f'Loaded {path} from previous runs')
 
-        train = pd.read_csv(f'{path}_train.csv')
-        test = pd.read_csv(f'{path}_test.csv')
-        synth_train = pd.read_csv(f'{path}_eps{str(eps)}_train.csv')
-        synth_test = pd.read_csv(f'{path}_eps{str(eps)}_test.csv')
+        for i in tqdm(range(1), position=3, leave=False):
+
+            train = pd.read_csv(f'{path}_eps{str(eps)}_real_train.csv')
+            test = pd.read_csv(f'{path}_eps{str(eps)}_real_test.csv')
+            synth_train = pd.read_csv(f'{path}_eps{str(eps)}_synth_train.csv')
+            synth_test = pd.read_csv(f'{path}_eps{str(eps)}_synth_test.csv')
 
     else:
         if gan == 'pate':

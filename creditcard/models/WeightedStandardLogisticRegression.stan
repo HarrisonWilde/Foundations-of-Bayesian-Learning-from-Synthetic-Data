@@ -28,17 +28,12 @@ parameters {
 
 model {
     
+    // Uninformative priors
+    coefs ~ normal(0, 100);
+    alpha ~ normal(0, 100);
+
     // The likelihood
     target += bernoulli_logit_glm_lpmf(y_real | X_real, alpha, coefs);
     target += w * bernoulli_logit_glm_lpmf(y_synth | X_synth, alpha, coefs);
-
-}
-
-generated quantities {
-
-    real log_likes_test;
-    vector[c] probabilities_test;
-    log_likes_test = bernoulli_logit_glm_lpmf(y_test | X_test, alpha, coefs);
-    probabilities_test = inv_logit(alpha + X_test * coefs);
 
 }

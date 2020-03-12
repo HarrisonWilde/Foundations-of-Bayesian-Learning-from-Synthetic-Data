@@ -9,7 +9,7 @@ import numpy as np
 import os
 from tqdm import tqdm
 tf.disable_v2_behavior()
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 # Function Start

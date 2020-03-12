@@ -1,4 +1,4 @@
-// KLD Logistic Regression
+// KLD Logistic Regression (No Synthetic)
 data {
     
     // Inputs for the sampler: data and prior hyperparameters
@@ -34,6 +34,19 @@ model {
 
     // The likelihood
     target += bernoulli_logit_glm_lpmf(y_real | X_real, alpha, coefs);
-    target += bernoulli_logit_glm_lpmf(y_synth | X_synth, alpha, coefs);
+
+}
+
+generated quantities {
+
+    real log_like_test;
+    vector[c] log_likes_test;
+    vector[c] probabilities_test;
+    
+    log_like_test = bernoulli_logit_glm_lpmf(y_test | X_test, alpha, coefs);
+    // for (i in 1:c) {
+    //     log_likes_test[i] = bernoulli_logit_lpmf(y_test[i] | alpha + X_test[i] * coefs);
+    // }
+    probabilities_test = inv_logit(alpha + X_test * coefs);
 
 }

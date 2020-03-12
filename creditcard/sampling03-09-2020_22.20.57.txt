@@ -1,0 +1,572 @@
+
+Gradient evaluation took 4.8e-05 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.48 seconds.
+Adjust your expectations accordingly!
+
+
+Iteration:    1 / 7000 [  0%]  (Warmup)
+Iteration:  700 / 7000 [ 10%]  (Warmup)
+Iteration: 1001 / 7000 [ 14%]  (Sampling)
+Iteration: 1700 / 7000 [ 24%]  (Sampling)
+Iteration: 2400 / 7000 [ 34%]  (Sampling)
+Iteration: 3100 / 7000 [ 44%]  (Sampling)
+Iteration: 3800 / 7000 [ 54%]  (Sampling)
+Iteration: 4500 / 7000 [ 64%]  (Sampling)
+Iteration: 5200 / 7000 [ 74%]  (Sampling)
+Iteration: 5900 / 7000 [ 84%]  (Sampling)
+Iteration: 6600 / 7000 [ 94%]  (Sampling)
+Iteration: 7000 / 7000 [100%]  (Sampling)
+
+ Elapsed Time: 0.199341 seconds (Warm-up)
+               0.53042 seconds (Sampling)
+               0.729761 seconds (Total)
+
+Time sampling took to finish: 1.4139409065246582
+
+Gradient evaluation took 2.4e-05 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.24 seconds.
+Adjust your expectations accordingly!
+
+
+Iteration:    1 / 7000 [  0%]  (Warmup)
+Iteration:  700 / 7000 [ 10%]  (Warmup)
+Iteration: 1001 / 7000 [ 14%]  (Sampling)
+Iteration: 1700 / 7000 [ 24%]  (Sampling)
+Iteration: 2400 / 7000 [ 34%]  (Sampling)
+Iteration: 3100 / 7000 [ 44%]  (Sampling)
+Iteration: 3800 / 7000 [ 54%]  (Sampling)
+Iteration: 4500 / 7000 [ 64%]  (Sampling)
+Iteration: 5200 / 7000 [ 74%]  (Sampling)
+Iteration: 5900 / 7000 [ 84%]  (Sampling)
+Iteration: 6600 / 7000 [ 94%]  (Sampling)
+Iteration: 7000 / 7000 [100%]  (Sampling)
+
+ Elapsed Time: 0.190555 seconds (Warm-up)
+               0.536798 seconds (Sampling)
+               0.727353 seconds (Total)
+
+Time sampling took to finish: 1.354707956314087
+
+Gradient evaluation took 2.4e-05 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.24 seconds.
+Adjust your expectations accordingly!
+
+
+Iteration:    1 / 7000 [  0%]  (Warmup)
+Iteration:  700 / 7000 [ 10%]  (Warmup)
+Iteration: 1001 / 7000 [ 14%]  (Sampling)
+Iteration: 1700 / 7000 [ 24%]  (Sampling)
+Iteration: 2400 / 7000 [ 34%]  (Sampling)
+Iteration: 3100 / 7000 [ 44%]  (Sampling)
+Iteration: 3800 / 7000 [ 54%]  (Sampling)
+Iteration: 4500 / 7000 [ 64%]  (Sampling)
+Iteration: 5200 / 7000 [ 74%]  (Sampling)
+Iteration: 5900 / 7000 [ 84%]  (Sampling)
+Iteration: 6600 / 7000 [ 94%]  (Sampling)
+Iteration: 7000 / 7000 [100%]  (Sampling)
+
+ Elapsed Time: 0.189376 seconds (Warm-up)
+               0.52897 seconds (Sampling)
+               0.718346 seconds (Total)
+
+Time sampling took to finish: 1.3574888706207275
+
+Gradient evaluation took 2.6e-05 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.26 seconds.
+Adjust your expectations accordingly!
+
+
+Iteration:    1 / 7000 [  0%]  (Warmup)
+Iteration:  700 / 7000 [ 10%]  (Warmup)
+Iteration: 1001 / 7000 [ 14%]  (Sampling)
+Iteration: 1700 / 7000 [ 24%]  (Sampling)
+Iteration: 2400 / 7000 [ 34%]  (Sampling)
+Iteration: 3100 / 7000 [ 44%]  (Sampling)
+Iteration: 3800 / 7000 [ 54%]  (Sampling)
+Iteration: 4500 / 7000 [ 64%]  (Sampling)
+Iteration: 5200 / 7000 [ 74%]  (Sampling)
+Iteration: 5900 / 7000 [ 84%]  (Sampling)
+Iteration: 6600 / 7000 [ 94%]  (Sampling)
+Iteration: 7000 / 7000 [100%]  (Sampling)
+
+ Elapsed Time: 0.198039 seconds (Warm-up)
+               0.551666 seconds (Sampling)
+               0.749705 seconds (Total)
+
+Time sampling took to finish: 1.378321886062622
+
+Gradient evaluation took 1.7e-05 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.17 seconds.
+Adjust your expectations accordingly!
+
+
+Iteration:    1 / 7000 [  0%]  (Warmup)
+Iteration:  700 / 7000 [ 10%]  (Warmup)
+Iteration: 1001 / 7000 [ 14%]  (Sampling)
+Iteration: 1700 / 7000 [ 24%]  (Sampling)
+Iteration: 2400 / 7000 [ 34%]  (Sampling)
+Iteration: 3100 / 7000 [ 44%]  (Sampling)
+Iteration: 3800 / 7000 [ 54%]  (Sampling)
+Iteration: 4500 / 7000 [ 64%]  (Sampling)
+Iteration: 5200 / 7000 [ 74%]  (Sampling)
+Iteration: 5900 / 7000 [ 84%]  (Sampling)
+Iteration: 6600 / 7000 [ 94%]  (Sampling)
+Iteration: 7000 / 7000 [100%]  (Sampling)
+
+ Elapsed Time: 0.187568 seconds (Warm-up)
+               0.569577 seconds (Sampling)
+               0.757145 seconds (Total)
+
+Time sampling took to finish: 1.3317310810089111
+
+Gradient evaluation took 2.4e-05 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.24 seconds.
+Adjust your expectations accordingly!
+
+
+Iteration:    1 / 7000 [  0%]  (Warmup)
+Iteration:  700 / 7000 [ 10%]  (Warmup)
+Iteration: 1001 / 7000 [ 14%]  (Sampling)
+Iteration: 1700 / 7000 [ 24%]  (Sampling)
+Iteration: 2400 / 7000 [ 34%]  (Sampling)
+Iteration: 3100 / 7000 [ 44%]  (Sampling)
+Iteration: 3800 / 7000 [ 54%]  (Sampling)
+Iteration: 4500 / 7000 [ 64%]  (Sampling)
+Iteration: 5200 / 7000 [ 74%]  (Sampling)
+Iteration: 5900 / 7000 [ 84%]  (Sampling)
+Iteration: 6600 / 7000 [ 94%]  (Sampling)
+Iteration: 7000 / 7000 [100%]  (Sampling)
+
+ Elapsed Time: 0.28966 seconds (Warm-up)
+               0.888518 seconds (Sampling)
+               1.17818 seconds (Total)
+
+Time sampling took to finish: 1.819300889968872
+
+Gradient evaluation took 2.3e-05 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.
+Adjust your expectations accordingly!
+
+
+Iteration:    1 / 7000 [  0%]  (Warmup)
+Iteration:  700 / 7000 [ 10%]  (Warmup)
+Iteration: 1001 / 7000 [ 14%]  (Sampling)
+Iteration: 1700 / 7000 [ 24%]  (Sampling)
+Iteration: 2400 / 7000 [ 34%]  (Sampling)
+Iteration: 3100 / 7000 [ 44%]  (Sampling)
+Iteration: 3800 / 7000 [ 54%]  (Sampling)
+Iteration: 4500 / 7000 [ 64%]  (Sampling)
+Iteration: 5200 / 7000 [ 74%]  (Sampling)
+Iteration: 5900 / 7000 [ 84%]  (Sampling)
+Iteration: 6600 / 7000 [ 94%]  (Sampling)
+Iteration: 7000 / 7000 [100%]  (Sampling)
+
+ Elapsed Time: 0.304355 seconds (Warm-up)
+               0.825895 seconds (Sampling)
+               1.13025 seconds (Total)
+
+Time sampling took to finish: 1.6843900680541992
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+
+Gradient evaluation took 3.3e-05 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.33 seconds.
+Adjust your expectations accordingly!
+
+
+Iteration:    1 / 7000 [  0%]  (Warmup)
+Iteration:  700 / 7000 [ 10%]  (Warmup)
+Iteration: 1001 / 7000 [ 14%]  (Sampling)
+Iteration: 1700 / 7000 [ 24%]  (Sampling)
+Iteration: 2400 / 7000 [ 34%]  (Sampling)
+Iteration: 3100 / 7000 [ 44%]  (Sampling)
+Iteration: 3800 / 7000 [ 54%]  (Sampling)
+Iteration: 4500 / 7000 [ 64%]  (Sampling)
+Iteration: 5200 / 7000 [ 74%]  (Sampling)
+Iteration: 5900 / 7000 [ 84%]  (Sampling)
+Iteration: 6600 / 7000 [ 94%]  (Sampling)
+Iteration: 7000 / 7000 [100%]  (Sampling)
+
+ Elapsed Time: 0.933845 seconds (Warm-up)
+               1.91317 seconds (Sampling)
+               2.84702 seconds (Total)
+
+Time sampling took to finish: 3.4594576358795166
+
+Gradient evaluation took 1.6e-05 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.16 seconds.
+Adjust your expectations accordingly!
+
+
+Iteration:    1 / 7000 [  0%]  (Warmup)
+Iteration:  700 / 7000 [ 10%]  (Warmup)
+Iteration: 1001 / 7000 [ 14%]  (Sampling)
+Iteration: 1700 / 7000 [ 24%]  (Sampling)
+Iteration: 2400 / 7000 [ 34%]  (Sampling)
+Iteration: 3100 / 7000 [ 44%]  (Sampling)
+Iteration: 3800 / 7000 [ 54%]  (Sampling)
+Iteration: 4500 / 7000 [ 64%]  (Sampling)
+Iteration: 5200 / 7000 [ 74%]  (Sampling)
+Iteration: 5900 / 7000 [ 84%]  (Sampling)
+Iteration: 6600 / 7000 [ 94%]  (Sampling)
+Iteration: 7000 / 7000 [100%]  (Sampling)
+
+ Elapsed Time: 0.189563 seconds (Warm-up)
+               0.541178 seconds (Sampling)
+               0.730741 seconds (Total)
+
+Time sampling took to finish: 1.3302769660949707
+
+Gradient evaluation took 7.7e-05 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.77 seconds.
+Adjust your expectations accordingly!
+
+
+Iteration:    1 / 7000 [  0%]  (Warmup)
+Iteration:  700 / 7000 [ 10%]  (Warmup)
+Iteration: 1001 / 7000 [ 14%]  (Sampling)
+Iteration: 1700 / 7000 [ 24%]  (Sampling)
+Iteration: 2400 / 7000 [ 34%]  (Sampling)
+Iteration: 3100 / 7000 [ 44%]  (Sampling)
+Iteration: 3800 / 7000 [ 54%]  (Sampling)
+Iteration: 4500 / 7000 [ 64%]  (Sampling)
+Iteration: 5200 / 7000 [ 74%]  (Sampling)
+Iteration: 5900 / 7000 [ 84%]  (Sampling)
+Iteration: 6600 / 7000 [ 94%]  (Sampling)
+Iteration: 7000 / 7000 [100%]  (Sampling)
+
+ Elapsed Time: 54.746 seconds (Warm-up)
+               416.644 seconds (Sampling)
+               471.39 seconds (Total)
+
+Time sampling took to finish: 474.1924741268158
+
+Gradient evaluation took 7.9e-05 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.79 seconds.
+Adjust your expectations accordingly!
+
+
+Iteration:    1 / 7000 [  0%]  (Warmup)
+Iteration:  700 / 7000 [ 10%]  (Warmup)
+Iteration: 1001 / 7000 [ 14%]  (Sampling)
+Iteration: 1700 / 7000 [ 24%]  (Sampling)
+Iteration: 2400 / 7000 [ 34%]  (Sampling)
+Iteration: 3100 / 7000 [ 44%]  (Sampling)
+Iteration: 3800 / 7000 [ 54%]  (Sampling)
+Iteration: 4500 / 7000 [ 64%]  (Sampling)
+Iteration: 5200 / 7000 [ 74%]  (Sampling)
+Iteration: 5900 / 7000 [ 84%]  (Sampling)
+Iteration: 6600 / 7000 [ 94%]  (Sampling)
+Iteration: 7000 / 7000 [100%]  (Sampling)
+
+ Elapsed Time: 64.2052 seconds (Warm-up)
+               391.283 seconds (Sampling)
+               455.488 seconds (Total)
+
+Time sampling took to finish: 457.5348379611969
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+Rejecting initial value:
+  Gradient evaluated at the initial value is not finite.
+  Stan can't start sampling from this initial value.
+
+Initialization between (-2, 2) failed after 100 attempts. 
+ Try specifying initial values, reducing ranges of constrained values, or reparameterizing the model.
+Initialization failed.
+Time sampling took to finish: 0.6889281272888184

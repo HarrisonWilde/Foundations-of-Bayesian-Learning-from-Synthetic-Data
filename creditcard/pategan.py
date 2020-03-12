@@ -79,10 +79,10 @@ def run(original_path, path, targets, sep, num_teachers, niter, epsilon, delta, 
              y_test_new.reshape(len(y_test_new), -1)]),
         columns=cols)
 
-    df_train.to_csv(path + '_train.csv', index=False)
-    df_test.to_csv(path + '_test.csv', index=False)
-    df_train_new.to_csv(f'{path}_eps{str(epsilon)}_train.csv', index=False)
-    df_test_new.to_csv(f'{path}_eps{str(epsilon)}_test.csv', index=False)
+    df_train.to_csv(f'{path}_eps{str(epsilon)}_real_train.csv', index=False)
+    df_test.to_csv(f'{path}_eps{str(epsilon)}_real_test.csv', index=False)
+    df_train_new.to_csv(f'{path}_eps{str(epsilon)}_synth_train.csv', index=False)
+    df_test_new.to_csv(f'{path}_eps{str(epsilon)}_synth_test.csv', index=False)
 
     if b is not None:
         b.set_description_str('PATE-GAN training and generation complete.')

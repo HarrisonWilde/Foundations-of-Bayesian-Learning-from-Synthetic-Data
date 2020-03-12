@@ -9,7 +9,7 @@ from functools import partial
 from tqdm.contrib.concurrent import process_map
 from setup import load_data, open_models, conditional_get_pairs
 from experiment import run_experiment
-from evaluation import evaluate_fits
+# from evaluation import evaluate_fits
 from plotting import plot_metric
 
 
@@ -25,8 +25,6 @@ def run(args, now, models, prior_configs, window, train, test, synth_train, synt
     for i in paths:
         if not os.path.exists(i):
             os.makedirs(i)
-    if os.path.exists('sampling.txt'):
-        os.remove('sampling.txt')
 
     c = tqdm(total=0, position=6, bar_format='{desc}')
     d = tqdm(total=0, position=8, bar_format='{desc}')
@@ -66,23 +64,25 @@ def run(args, now, models, prior_configs, window, train, test, synth_train, synt
                     beta=prior_config[1],
                     beta_w=prior_config[2])
 
-                fit = run_experiment(model, data, args.warmup, args.iters, args.chains, args.n_jobs, args.check_hmc_diag, seed)
+                fit = run_experiment(model, data, args.warmup, args.iters, args.chains, 0, args.check_hmc_diag, now, seed)
 
                 if fit is None:
                     continue
 
                 for chain in tqdm(range(args.chains), position=12, leave=False):
 
-                    log_loss, avg_roc_auc = evaluate_fits(fit, test[args.targets].values.flatten(), window, chain)
-                    out[chain].update({f'{name} Log Loss': log_loss, f'{name} ROC AUC': avg_roc_auc})
+                    log_loss, avg_roc_auc = evaluate_fits
+
+                #     log_loss_single, log_loss, avg_roc_auc = evaluate_fits(fit, test[args.targets].values.flatten(), window, chain)
+                #     out[chain].update({f'{name} Log Loss (Single)': log_loss_single, f'{name} Log Loss (Sep)': log_loss, f'{name} ROC AUC': avg_roc_auc})
 
                 outs.extend(out)
-                print(out)
                 df = pd.DataFrame(outs)
                 df.to_pickle(f'{output_dir}/conf{str(prior_config)}.pkl')
 
         if args.plot:
-            plot_metric(df.filter(regex='Log Loss|Number of'), 'Log Loss', prior_config, output_timestamp, plot_dir)
+            plot_metric(df.filter(regex='Log Loss (Single)|Number of'), 'Log Loss (Single)', prior_config, output_timestamp, plot_dir)
+            plot_metric(df.filter(regex='Log Loss (Sep)|Number of'), 'Log Loss (Sep)', prior_config, output_timestamp, plot_dir)
             plot_metric(df.filter(regex='ROC AUC|Number of'), 'ROC AUC', prior_config, output_timestamp, plot_dir)
 
 
@@ -123,6 +123,7 @@ if __name__ == '__main__':
 
     a = tqdm(total=0, position=0, bar_format='{desc}')
     b = tqdm(total=0, position=2, bar_format='{desc}')
+    c = tqdm(total=0, position=4, bar_format='{desc}')
 
     for eps in tqdm(args.epsilons, position=1, leave=False):
 
@@ -133,7 +134,6 @@ if __name__ == '__main__':
         for target in args.targets:
             features.remove(target)
 
-        tqdm(total=0, position=4, bar_format='{desc}').set_description_str(
-            f'Running {args.n_jobs * args.multiplier} iterations with {args.chains} chain(s) each on {args.n_jobs} cores')
+        c.set_description_str(f'Running {args.n_jobs * args.multiplier} iterations with {args.chains} chain(s) each on {args.n_jobs} cores')
         func = partial(run, args, now, models, prior_configs, window, train, test, synth_train, synth_test, features)
         process_map(func, range(args.n_jobs * args.multiplier), max_workers=args.n_jobs, leave=False, position=5)

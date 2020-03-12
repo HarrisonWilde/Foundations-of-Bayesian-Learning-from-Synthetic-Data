@@ -1,6 +1,7 @@
 # import arviz as az
 import os
 import sys
+import time
 from contextlib import contextmanager
 
 
@@ -68,11 +69,11 @@ def merged_stderr_stdout():
     return stdout_redirected(to=sys.stdout, stdout=sys.stderr)
 
 
-def run_experiment(model, data, warmup, iters, chains, n_jobs, check_hmc_diag, seed):
+def run_experiment(model, data, warmup, iters, chains, n_jobs, check_hmc_diag, now, seed):
     '''
     Uses Stan to perform MCMC sampling on the passed model, returns the resulting fit on passed data
     '''
-    with open('sampling.txt', 'a') as f, stdout_redirected(f):
+    with open(f'sampling{now}.txt', 'a') as f, stdout_redirected(f):
         with merged_stderr_stdout():
             try:
                 fit = model.sampling(data=data, warmup=warmup, iter=iters, chains=chains, n_jobs=n_jobs, check_hmc_diagnostics=check_hmc_diag, seed=seed)
