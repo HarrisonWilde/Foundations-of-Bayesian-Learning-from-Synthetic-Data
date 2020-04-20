@@ -1,0 +1,161 @@
+---
+title: Testing
+output: pdf_document
+---
+
+```{r, cache=TRUE}
+library("knitr")
+library("timeDate")
+library("scales")
+library("tidyverse")
+library("lubridate")
+library("stringr")
+library("rstan")
+library("splines")
+
+theme_set(theme_bw())
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+download.file(str_c("https://raw.githubusercontent.com/jauerbach/", "Seventy-Seven-Precincts/master/data/tickets.csv.zip"), str_c(getwd(),"/tickets.csv.zip"))
+tickets <- read_csv("tickets.csv.zip", col_types = cols(id = col_double())) 
+crashes <- read_csv(str_c("https://raw.githubusercontent.com/jauerbach/", "Seventy-Seven-Precincts/master/data/crashes.csv"))
+```
+
+```{r, cache=TRUE}
+tickets %>% 
+  head() %>% 
+  mutate(violation = substr(violation, 1, 48)) %>%
+  kable(caption="Example Observations of Dataset")
+tickets %>% 
+  select(-violation) %>%
+  summary() %>% 
+  kable(caption="Summary of Dataset")
+tickets %>% 
+  count(violation) %>% 
+  arrange(desc(n)) %>%
+  mutate(violation = substr(violation, 1, 48)) %>%
+  head(n = 10) %>%
+  kable(caption= "Most Common Traffic Tickets")
+```
+
+```{r, cache=TRUE}
+# calculate the number of tickets per day. 
+by_day <- tickets %>% 
+  mutate(month_year = format(date, "%m-%Y")) %>%
+  group_by(id, command, date, month_year) %>%
+  summarise(daily_tickets = n()) %>%
+  ungroup()
+# add zeros and period mean and max, assuming at least one ticket written in 
+## command during month for a day to be eligible for writing tickets
+by_day <- by_day %>%
+  group_by(command, month_year) %>%
+  nest_legacy() %>% 
+  mutate(elig_days = map(data, function(df) df %>% expand(id, date)),
+         data_aug = map2(elig_days, data, left_join, by = c("id","date"))) %>%
+  select(command, month_year, data_aug) %>%
+  unnest_legacy() %>% 
+  mutate(daily_tickets = ifelse(is.na(daily_tickets), 0, daily_tickets))
+# add mean tickets and max tickets for each command each review period. review 
+## periods are on the 7th, 14th, 21st and end of each month
+by_day <- by_day %>%
+  mutate(period = cut(parse_number(format(date, "%d")),
+                      breaks = c(1,7,14,21,31), labels = FALSE,
+                      right = TRUE, include.lowest = TRUE)) %>%
+  group_by(command, month_year, period) %>%
+  nest_legacy() %>% 
+  mutate(mean = map_dbl(data, function(df) df %>%
+                          group_by(id) %>%
+                          summarise(sum(daily_tickets)) %>% 
+                          pull %>%
+                          mean()),
+         median = map_dbl(data, function(df) df %>%
+                          group_by(id) %>%
+                          summarise(sum(daily_tickets)) %>% 
+                          pull %>%
+                          median()),
+         max = map_dbl(data, function(df) df %>%
+                         group_by(id) %>%
+                         summarise(sum(daily_tickets)) %>% 
+                         pull %>%
+                         max())) %>%
+  unnest_legacy()
+#add number of tickets per officer per period
+by_day <- by_day %>% 
+  left_join(by_day %>%
+              group_by(command, month_year, period, id) %>%
+              summarise(period_tickets = sum(daily_tickets)) %>%
+              ungroup(),
+            by = c("command", "month_year", "period", "id"))
+#add number of tickets, command max/mean in pervious period
+by_day <- by_day %>% 
+  left_join(by_day %>%
+              select(-daily_tickets, - date) %>%
+              unique() %>%
+              mutate(period = period + 1) %>%
+              rename(mean_prev = mean,
+                     median_prev = median,
+                     max_prev = max,
+                     tickets_prev = period_tickets),
+            by = c("command", "month_year", "period", "id")) %>%
+  mutate(mean_prev = ifelse(is.na(mean_prev), 0, mean_prev),
+         median_prev = ifelse(is.na(median_prev), 0, mean_prev),
+         max_prev = ifelse(is.na(max_prev), 0, max_prev),
+         tickets_prev = ifelse(is.na(tickets_prev), 0, tickets_prev))
+#add US Holidays
+by_day <- by_day %>% 
+  left_join(sapply(c("USNewYearsDay", "USMLKingsBirthday", "USWashingtonsBirthday", 
+                     "USMemorialDay", "USIndependenceDay", "USLaborDay",
+                     "USColumbusDay", "USElectionDay", "USVeteransDay",
+                     "USThanksgivingDay", "USChristmasDay"), 
+                   function(x) as.Date(holiday(2014:2015, x))) %>%
+              as_tibble() %>%
+              gather(key = "holidays", value = "date") %>%
+              mutate(date = as.Date(date, origin = "1970-01-01")),
+            by = "date") %>% 
+  mutate(holidays = ifelse(is.na(holidays), "USNone", holidays))
+```
+
+Modelling stuff
+
+```{r}
+model_data <- by_day %>%
+  mutate(id2 = as.numeric(as.factor(id)),
+         date2 = as.numeric(as.factor(date)),
+         months = months(date),
+         months2 = as.numeric(format(date, "%m")),
+         weekdays = weekdays(date),
+         weekdays2 = wday(date),
+         holidays2 = as.numeric(as.factor(holidays))) %>%
+  with(list(N = nrow(by_day),
+            O = length(unique(id2)),
+            W = length(unique(weekdays2)),
+            M = length(unique(months2)),
+            H = length(unique(holidays2)),
+            P = length(unique(period)),
+            officer = id2,
+            week = weekdays2,
+            month= as.numeric(months2),
+            holiday= as.numeric(holidays2),
+            period = as.numeric(period),
+            day = date2,
+            y = daily_tickets,
+            D = crashes %>% 
+                semi_join(by_day, 
+                          by = c("DATE" = "date")) %>% 
+                  select(n) %>% 
+                  pull() %>% 
+                  length() ,
+            z = crashes %>% 
+                semi_join(by_day, 
+                          by = c("DATE" = "date")) %>% 
+                  select(n) %>% 
+                  pull(),
+            X = ifelse(tickets_prev - median_prev > 10, 10,
+                       tickets_prev - median_prev)))
+
+fit1 <- sampling(stan_model(file = "model1.stan"), 
+                 data = model_data, 
+                 iter = 500, 
+                 control = list(max_treedepth = 15, adapt_delta = 0.9))
+fit1_summary <- summary(fit1)
+```

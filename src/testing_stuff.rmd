@@ -1,0 +1,63 @@
+```{r}
+library(dplyr)
+library(rio)
+library(pROC)
+```
+
+
+```{r}
+n <- 200000
+p <- 5
+beta <- runif(p, -1, 1)
+X <- matrix(rnorm(n * p, 0, 1), nrow=n, ncol=p)
+logit <- function(x) return(1 / (1 + exp(-x)))
+y <- rbinom(n, 1, logit(X %*% beta))
+data <- cbind(X, y)
+colnames(data) <- c("x1", "x2", "x3", "x4", "x5", "y")
+export(data, "data.csv")
+train_real <- import("data_y_split0.8_ganpate_eps1.0_real_train.csv")
+train_synth <- import("data_y_split0.8_ganpate_eps1.0_synth_train.csv")
+test <- import("data_y_split0.8_ganpate_eps1.0_real_test.csv")
+real_logit <- glm(y ~ ., data=train_real, family=binomial(link="logit"))
+synth_logit <- glm(y ~ ., data=train_synth, family=binomial(link="logit"), control=list(maxit=1000))
+
+real.prob = predict(real_logit, test, type="response")
+real.pred = rep(0, dim(test)[1])
+real.pred[real.prob > .5] = 1
+table(real.pred, test$y)
+auc(roc(test$y, real.pred))
+
+synth.prob = predict(synth_logit, test, type="response")
+synth.pred = rep(0, dim(test)[1])
+synth.pred[synth.prob > .5] = 1
+table(synth.pred, test$y)
+auc(roc(test$y, synth.pred))
+```
+
+
+```{r}
+real_train <- import("creditcard/data/splits/creditcard_Class_split0.6_ganpate_eps1.0_real_train.csv")
+synth_train <- import("creditcard/data/splits/creditcard_Class_split0.6_ganpate_eps1.0_synth_train.csv")
+real_test <- import("creditcard/data/splits/creditcard_Class_split0.6_ganpate_eps1.0_real_test.csv")
+
+# real_scaled <- real_train %>% mutate_at(-c(31), ~(scale(.) %>% as.vector))
+real_scaled <- real_train %>% mutate_at(-c(31), ~(. - min(.) %>% as.vector)) %>% mutate_at(-c(31), ~(. / max(.) %>% as.vector))
+# synth_scaled <- synth_train %>% mutate_at(-c(31), ~(scale(.) %>% as.vector))
+synth_scaled <- synth_train %>% mutate_at(-c(31), ~(. - min(.) %>% as.vector)) %>% mutate_at(-c(31), ~(. / max(.) %>% as.vector))
+# test_scaled <- test %>% mutate_at(-c(31), ~(scale(.) %>% as.vector))
+test_scaled <- test %>% mutate_at(-c(31), ~(. - min(.) %>% as.vector)) %>% mutate_at(-c(31), ~(. / max(.) %>% as.vector))
+
+real_logit <- glm(Class ~ ., data=as.data.frame(real_scaled), family=binomial(link="logit"), na.action=na.pass, control=list(maxit=100))
+
+synth_logit <- glm(Class ~ ., data=as.data.frame(synth_scaled), family=binomial(link="logit"), na.action=na.pass, control=list(maxit=100))
+
+real.prob = predict(real_logit, test, type="response")
+real.pred = rep(0, dim(test)[1])
+real.pred[real.prob > .5] = 1
+table(real.pred, test$Class)
+
+synth.prob = predict(synth_logit, test, type="response")
+synth.pred = rep(0, dim(test)[1])
+synth.pred[synth.prob > .5] = 1
+table(synth.pred, test$Class)
+```

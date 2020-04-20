@@ -1,0 +1,10 @@
+*.pkl
+*.png
+*.pyc
+*.mp4
+*.DS_Store
+*.html
+sampling.txt
+*.csv
+pategan_original/
+tgan_original/
