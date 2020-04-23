@@ -1,5 +1,5 @@
 import numpy as np
-from PATE_GAN import PATE_GAN
+from gan.PATE_GAN import PATE_GAN
 import argparse
 import pandas as pd
 
@@ -10,7 +10,7 @@ import pandas as pd
 # set_session(tf.Session(config=config))
 
 
-def split(df, ratio=0.7):
+def tt_split(df, ratio=0.7):
 
     idx = np.random.permutation(len(df))
     train_idx = idx[:int(ratio * len(df))]
@@ -23,18 +23,21 @@ def split(df, ratio=0.7):
 def init_arg():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--path", help="Path to input data.")
-    parser.add_argument("-tts", "--split", type=float, default=0.7)
-    parser.add_argument("--iter", type=int, default=10000)
-    parser.add_argument("--epsilon", type=float, default=1)
+    parser.add_argument("-p", "--path_to_data", default="../data/", help="Path to data folder.")
+    parser.add_argument("-i", "--dataset_name", default="creditcard", help="Name of dataset to load (csv file).")
+    parser.add_argument("-tts", "--split", type=float, default=0.5)
+    parser.add_argument("--iter", type=int, default=20000)
+    parser.add_argument("--epsilon", type=float, default=6.)
     parser.add_argument("--delta", type=int, default=5)
-    parser.add_argument("--teachers", type=int, default=5)
+    parser.add_argument("--teachers", type=int, default=100)
     parser.add_argument("--targets", nargs='+', help="Name of response var when using csv as input.")
     parser.add_argument("--separator", default=',', help="Separator for the input csv file.")
     return parser.parse_args()
 
 
-def run(original_path, path, targets, sep, num_teachers, niter, epsilon, delta, traintestsplit, b):
+def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, b):
+
+    out_name = name + '_' + ''.join(targets) + '_split' + str(split) + '_ganpate'
 
     if b is not None:
         b.set_description_str(f'Training PATE-GAN with {num_teachers} teachers, {niter} iterations, delta = {delta}...')
@@ -42,13 +45,13 @@ def run(original_path, path, targets, sep, num_teachers, niter, epsilon, delta, 
     assert path is not None
     assert targets is not None
 
-    df = pd.read_csv(original_path + '.csv')
+    df = pd.read_csv(f"{path}raw/{name}.csv")
     features = list(df.columns)
     for lbl in targets:
         assert lbl in features
         features.remove(lbl)
 
-    df_train, df_test = split(df, traintestsplit)
+    df_train, df_test = tt_split(df, split)
 
     x_train_new, y_train_new, x_test_new, y_test_new = PATE_GAN(
         df_train[features].values,
@@ -75,10 +78,10 @@ def run(original_path, path, targets, sep, num_teachers, niter, epsilon, delta, 
              y_test_new.reshape(len(y_test_new), -1)]),
         columns=cols)
 
-    df_train.to_csv(f'{path}_eps{str(epsilon)}_real_train.csv', index=False)
-    df_test.to_csv(f'{path}_eps{str(epsilon)}_real_test.csv', index=False)
-    df_train_new.to_csv(f'{path}_eps{str(epsilon)}_synth_train.csv', index=False)
-    df_test_new.to_csv(f'{path}_eps{str(epsilon)}_synth_test.csv', index=False)
+    df_train.to_csv(f'{path}splits/{out_name}_eps{str(epsilon)}_real_train.csv', index=False)
+    df_test.to_csv(f'{path}splits/{out_name}_eps{str(epsilon)}_real_test.csv', index=False)
+    df_train_new.to_csv(f'{path}splits/{out_name}_eps{str(epsilon)}_synth_train.csv', index=False)
+    df_test_new.to_csv(f'{path}splits/{out_name}_eps{str(epsilon)}_synth_test.csv', index=False)
 
     if b is not None:
         b.set_description_str('PATE-GAN training and generation complete.')
@@ -89,5 +92,5 @@ def run(original_path, path, targets, sep, num_teachers, niter, epsilon, delta, 
 if __name__ == '__main__':
 
     args = init_arg()
-    _, _, _, _, = run(args.path, args.path + '_' + ''.join(args.targets) + '_split' + str(args.split) + '_ganpate', args.targets,
+    _, _, _, _, = run(args.path_to_data, args.dataset_name, args.targets,
                       args.separator, args.teachers, args.iter, args.epsilon, args.delta, args.split, None)

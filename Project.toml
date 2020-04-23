@@ -1,6 +1,10 @@
 [deps]
+AdvancedHMC = "0bf59076-c3b1-5ca4-86bd-e02cd72cde3d"
+BenchmarkTools = "6e4b80f9-dd63-53aa-95a3-0cdb28fa8baf"
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 Calculus = "49dc2e85-a5d0-5ad3-a950-438e2897f1b9"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+ProfileView = "c46f51b8-102a-5cf2-8d2c-8597cb0e0da7"
 StatsFuns = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
 Turing = "fce5fe82-541a-59a6-adf8-730c64b5f9a0"
