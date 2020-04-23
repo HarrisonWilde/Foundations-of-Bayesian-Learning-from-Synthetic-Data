@@ -1,10 +1,45 @@
+function ℓπ_kld(σ, w, X_real, y_real, X_synth, y_synth)
+
+    function logpost(θ::Array{Float64,1})
+        D = size(θ)[1]
+        ℓprior = sum(logpdf(MvNormal(D, σ), θ))
+        ℓreal = sum(logpdf.(BinomialLogit.(1, X_real * θ), y_real))
+        ℓsynth = w * sum(logpdf.(BinomialLogit.(1, X_synth * θ), y_synth))
+        return (ℓprior + ℓreal + ℓsynth)
+    end
+
+    return logpost
+end
+
+
+function ∂ℓπ∂θ_kld(σ, w, X_real, y_real, X_synth, y_synth)
+    
+    function logpost_and_gradient(θ::Array{Float64,1})
+        D = size(θ)[1]
+        Σ = abs2(σ) * I + zeros(D, D)
+        z_real = X_real * θ
+        z_synth = X_synth * θ
+        ℓprior = sum(logpdf(MvNormal(D, σ), θ))
+        ℓreal = sum(logpdf.(BinomialLogit.(1, z_real), y_real))
+        ℓsynth = w * sum(logpdf.(BinomialLogit.(1, z_synth), y_synth))
+        ∂ℓprior∂θ = -inv(Σ) * θ
+        ∂ℓreal∂θ = vec(transpose(y_real .* StatsFuns.logistic.(-z_real)) * X_real - transpose((1.0 .- y_real) .* StatsFuns.logistic.(z_real)) * X_real)
+        ∂ℓsynth∂θ = vec(w .* transpose(y_synth .* StatsFuns.logistic.(-z_synth)) * X_synth - transpose((1.0 .- y_synth) .* StatsFuns.logistic.(z_synth)) * X_synth)
+        return (ℓprior + ℓreal + ℓsynth), (∂ℓprior∂θ + ∂ℓreal∂θ + ∂ℓsynth∂θ)
+    end
+
+    return logpost_and_gradient
+end
+
+
 function ℓπ_beta(σ, β, βw, X_real, y_real, X_synth, y_synth)
 
     function logpost(θ::Array{Float64,1})
         D = size(θ)[1]
+        z_real = X_real * θ
         z_synth = X_synth * θ
         ℓprior = sum(logpdf(MvNormal(D, σ), θ))
-        ℓreal = sum(logpdf.(BinomialLogit.(1, X_real * θ), y_real))
+        ℓreal = sum(logpdf.(BinomialLogit.(1, z_real), y_real))
         ℓsynth = βw * sum(
             (1 / β) * (
                 y_synth .* StatsFuns.logistic.(z_synth) + (1 .- y_synth) .* (1 .- StatsFuns.logistic.(z_synth))
@@ -13,20 +48,6 @@ function ℓπ_beta(σ, β, βw, X_real, y_real, X_synth, y_synth)
                 .+ (1 .- StatsFuns.logistic.(z_synth)) .^ (β + 1)
             )
         )
-        return (ℓprior + ℓreal + ℓsynth)
-    end
-
-    return logpost
-end
-
-
-function ℓπ_kld(σ, w, X_real, y_real, X_synth, y_synth)
-
-    function logpost(θ::Array{Float64,1})
-        D = size(θ)[1]
-        ℓprior = sum(logpdf(MvNormal(D, σ), θ))
-        ℓreal = sum(logpdf.(BinomialLogit.(1, X_real * θ), y_real))
-        ℓsynth = w * sum(logpdf.(BinomialLogit.(1, X_synth * θ), y_synth))
         return (ℓprior + ℓreal + ℓsynth)
     end
 
@@ -61,26 +82,6 @@ function ∂ℓπ∂θ_beta(σ, β, βw, X_real, y_real, X_synth, y_synth)
             ),
             dims=1
         ))
-        return (ℓprior + ℓreal + ℓsynth), (∂ℓprior∂θ + ∂ℓreal∂θ + ∂ℓsynth∂θ)
-    end
-
-    return logpost_and_gradient
-end
-
-
-function ∂ℓπ∂θ_kld(σ, w, X_real, y_real, X_synth, y_synth)
-    
-    function logpost_and_gradient(θ::Array{Float64,1})
-        D = size(θ)[1]
-        Σ = abs2(σ) * I + zeros(D, D)
-        z_real = X_real * θ
-        z_synth = X_synth * θ
-        ℓprior = sum(logpdf(MvNormal(D, σ), θ))
-        ℓreal = sum(logpdf.(BinomialLogit.(1, z_real), y_real))
-        ℓsynth = w * sum(logpdf.(BinomialLogit.(1, z_synth), y_synth))
-        ∂ℓprior∂θ = -inv(Σ) * θ
-        ∂ℓreal∂θ = vec(transpose(y_real .* StatsFuns.logistic.(-z_real)) * X_real - transpose((1.0 .- y_real) .* StatsFuns.logistic.(z_real)) * X_real)
-        ∂ℓsynth∂θ = vec(w .* transpose(y_synth .* StatsFuns.logistic.(-z_synth)) * X_synth - transpose((1.0 .- y_synth) .* StatsFuns.logistic.(z_synth)) * X_synth)
         return (ℓprior + ℓreal + ℓsynth), (∂ℓprior∂θ + ∂ℓreal∂θ + ∂ℓsynth∂θ)
     end
 
@@ -131,13 +132,13 @@ function ℓπ_beta_opt(σ, β, βw, X_real, y_real, X_synth, y_synth)
 
     function logpost(θ::Array{Float64,1})
         D = size(θ)[1]
+        z_real = X_real * θ
         z_synth = X_synth * θ
         ℓprior = sum(logpdf(MvNormal(D, σ), θ))
         ℓreal = sum(@. logpdf(BinomialLogit(1, z_real), y_real))
         ℓsynth = βw * sum(@. (1 / β) * (
                 y_real * StatsFuns.logistic(z_synth) + (1 - y_real) * (1 - StatsFuns.logistic(z_synth))
-            ) ^ β
-        - (1 / (β + 1)) * (
+            ) ^ β - (1 / (β + 1)) * (
                 StatsFuns.logistic(z_synth) ^ (β + 1)
                 + (1 - StatsFuns.logistic(z_synth)) ^ (β + 1)
             )
@@ -158,10 +159,9 @@ function ∂ℓπ∂θ_beta_opt(σ, β, βw, X_real, y_real, X_synth, y_synth)
         z_synth = X_synth * θ
         ℓprior = sum(logpdf(MvNormal(D, σ), θ))
         ℓreal = sum(@. logpdf(BinomialLogit(1, z_real), y_real))
-        ℓsynth = βw * sum(@.
-            (1 / β) * (
+        ℓsynth = βw * sum(@. (1 / β) * (
                 y_real * StatsFuns.logistic(z_synth) + (1 - y_real) * (1 - StatsFuns.logistic(z_synth))
-            ) ^ β  (1 / (β + 1)) * (
+            ) ^ β - (1 / (β + 1)) * (
                 StatsFuns.logistic(z_synth) ^ (β + 1)
                 + (1 - StatsFuns.logistic(z_synth)) ^ (β + 1)
             )

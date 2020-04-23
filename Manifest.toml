@@ -128,6 +128,11 @@ git-tree-sha1 = "f641eb0a4f00c343bbc32346e1217b86f3ce9dad"
 uuid = "49dc2e85-a5d0-5ad3-a950-438e2897f1b9"
 version = "0.5.1"
 
+[[Cassette]]
+git-tree-sha1 = "ff6f5109371926beb67ec3101be17d2c211e497d"
+uuid = "7057c7e9-c182-5462-911a-8362d720325c"
+version = "0.3.3"
+
 [[CategoricalArrays]]
 deps = ["Compat", "DataAPI", "Future", "JSON", "Missings", "Printf", "Reexport", "Statistics", "Unicode"]
 git-tree-sha1 = "23d7324164c89638c18f6d7f90d972fa9c4fa9fb"
@@ -823,6 +828,12 @@ version = "0.1.1"
 [[Test]]
 deps = ["Distributed", "InteractiveUtils", "Logging", "Random"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[[Traceur]]
+deps = ["Cassette", "InteractiveUtils", "Logging", "MacroTools", "Test"]
+git-tree-sha1 = "c007db8fbec24668a7cdf4a878202abb648d568f"
+uuid = "37b6cedf-1f77-55f8-9503-c64b63398394"
+version = "0.3.0"
 
 [[Tracker]]
 deps = ["Adapt", "DiffRules", "ForwardDiff", "LinearAlgebra", "MacroTools", "NNlib", "NaNMath", "Printf", "Random", "Requires", "SpecialFunctions", "Statistics", "Test"]
