@@ -4,6 +4,7 @@ using LinearAlgebra
 using StatsFuns
 using Zygote
 using BenchmarkTools
+using Optim
 cd("/Users/vollmer/gits/Synthetic-Data-Experiments-with-Bayesian-Inference")
 pwd()
 include("./src/creditcard/utils.jl")
@@ -25,11 +26,19 @@ z_synth = X_synth * θ
 
 # To test gradients are right vvvv
 
+grad= v-> Zygote.gradient(θ->logpost(θ),v)
+grad(θ)
+hess=v-> Zygote.hessian((θ)->logpost(θ),v)
+hess(θ)
 logpost=ℓπ_kld(σ, w, X_real, y_real, X_synth, y_synth)
+
+res = Optim.optimize(logpost, v-> Zygote.gradient(θ->logpost(θ),v), v-> Zygote.hessian(θ->logpost(θ),v), θ, method=NewtonTrustRegion())
 
 ∂ℓπ∂θ_kld
 Zygote.gradient(θ-> sum(θ),θ...)
-@benchmark Zygote.gradient(θ->logpost(θ),θ)
+
+
+Zygote.gradient(θ->logpost(θ),v)
 Zygote.gradient(θ -> sum(y_real .* (1 ./ (1 .+ exp.(-X_real * θ))) + (1 .- y_real) .* (1 .- (1 ./ (1 .+ exp.(-X_real * θ))))), θ...)
 
 
