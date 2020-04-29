@@ -65,3 +65,16 @@ A univariate bernoulli logit distribution.
 function pdf_bernoulli_logit(z::Float64, y::Int64)
 	y * logistic(z) + (1 - y) * (1 - logistic(z))
 end
+
+"""
+	Function to calculate v' * A quickly and efficiently
+"""
+function tt(v, A)
+    r = similar(A)
+    @inbounds for j = 1:size(A,2)
+        @simd for i = 1:size(A,1)
+            r[i,j] = v[j] * A[i,j] # fixed a typo here!
+        end
+    end
+    r
+end

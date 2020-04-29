@@ -98,10 +98,13 @@ FUNCTIONS BELOW SHOULD BE IDENTICAL BUT UTILISE THE @. MACRO FOR A SLIGHT PERFOR
 function ℓπ_kld_opt(σ, w, X_real, y_real, X_synth, y_synth)
 
     function logpost(θ::Array{Float64,1})
-        D = size(θ)[1]
-        ℓprior = sum(logpdf(MvNormal(D, σ), θ))
-        ℓreal = sum(@. logpdf(BinomialLogit(1, X_real * θ), y_real))
-        ℓsynth = w * sum(@. logpdf(BinomialLogit(1, X_synth * θ), y_synth))
+        z_real = X_real * θ
+        z_synth = X_synth * θ
+
+        ℓprior = logpdf_centred_mvnormal(σ, θ)
+        ℓreal = sum(logpdf_bernoulli_logit.(z_real, y_real))
+        ℓsynth = w * sum(logpdf_bernoulli_logit.(z_synth, y_synth))
+
         return (ℓprior + ℓreal + ℓsynth)
     end
 
@@ -114,12 +117,15 @@ function ∂ℓπ∂θ_kld_opt(σ, w, X_real, y_real, X_synth, y_synth)
     function logpost_and_gradient(θ::Array{Float64,1})
         z_real = X_real * θ
         z_synth = X_synth * θ
+
         ℓprior = logpdf_centred_mvnormal(σ, θ)
-        ℓreal = sum(@. logpdf(BinomialLogit(1, z_real), y_real))
-        ℓsynth = w * sum(@. logpdf(BinomialLogit(1, z_synth), y_synth))
-        ∂ℓprior∂θ = -inv(Σ) * θ
-        ∂ℓreal∂θ = @. $vec($*($transpose(y_real * logistic(-z_real)), X_real) - $*($transpose((1.0 - y_real) * logistic(z_real)), X_real))
-        ∂ℓsynth∂θ = @. $vec(w * ($*($transpose(y_synth * logistic(-z_synth)), X_synth) - $*($transpose((1.0 .- y_synth) .* logistic.(z_synth)), X_synth)))
+        ℓreal = sum(logpdf_bernoulli_logit.(X_real * θ, y_real))
+        ℓsynth = w * sum(logpdf_bernoulli_logit.(z_synth, y_synth))
+
+        ∂ℓprior∂θ = -θ / abs2(σ)
+        ∂ℓreal∂θ = @. $*($transpose(X_real), y_real * logistic(-z_real)) - $*($transpose(X_real), (1.0 - y_real) * logistic(z_real))
+        ∂ℓsynth∂θ = w * (@. $*($transpose(y_synth * logistic(-z_synth)), X_synth) - $*($transpose((1.0 .- y_synth) .* logistic.(z_synth)), X_synth)))
+
         return (ℓprior + ℓreal + ℓsynth), (∂ℓprior∂θ + ∂ℓreal∂θ + ∂ℓsynth∂θ)
     end
 
@@ -132,15 +138,19 @@ function ℓπ_beta_opt(σ, β, βw, X_real, y_real, X_synth, y_synth)
     function logpost(θ::Array{Float64,1})
         z_real = X_real * θ
         z_synth = X_synth * θ
+
         ℓprior = logpdf_centred_mvnormal(σ, θ)
         ℓreal = sum(logpdf_bernoulli_logit.(z_real, y_real))
+
+        logistic_z = logistic.(z_synth)
         ℓsynth = βw * sum(@. (1 / β) * (
                 pdf_bernoulli_logit(z_synth, y_synth)
             ) ^ β - (1 / (β + 1)) * (
-                logistic(z_synth) ^ (β + 1)
-                + (1 - logistic(z_synth)) ^ (β + 1)
+                logistic_z ^ (β + 1)
+                + (1 - logistic_z) ^ (β + 1)
             )
         )
+
         return (ℓprior + ℓreal + ℓsynth)
     end
 
@@ -153,27 +163,31 @@ function ∂ℓπ∂θ_beta_opt(σ, β, βw, X_real, y_real, X_synth, y_synth)
     function logpost_and_gradient(θ::Array{Float64,1})
         z_real = X_real * θ
         z_synth = X_synth * θ
-        pdf_bl = pdf_bernoulli_logit(z_synth, y_synth)
+
         ℓprior = logpdf_centred_mvnormal(σ, θ)
         ℓreal = sum(logpdf_bernoulli_logit.(z_real, y_real))
+
+        pdf_bl = pdf_bernoulli_logit.(z_synth, y_synth)
+        logistic_z = logistic.(z_synth)
         ℓsynth = βw * sum(@. (1 / β) * (
                 pdf_bl
             ) ^ β - (1 / (β + 1)) * (
-                logistic(z_synth) ^ (β + 1)
-                + (1 - logistic(z_synth)) ^ (β + 1)
+                logistic_z ^ (β + 1)
+                + (1 - logistic_z) ^ (β + 1)
             )
         )
+
         ∂ℓprior∂θ = -θ / abs2(σ)
-        ∂ℓreal∂θ = @. $vec($*($transpose(y_real * logistic(-z_real)), X_real) - $*($transpose((1.0 - y_real) * logistic(z_real)), X_real))
-        ∂logistic_z_X = @. ∂logistic(z_synth) * X_synth
-        ∂ℓsynth∂θ = @. $vec(βw * $sum(
-            (
-                pdf_bl ^ (β - 1)
-                * (∂logistic_z_X * y_synth - ∂logistic_z_X * (1 - y_synth))
-                - (logistic(z_synth) ^ β * ∂logistic_z_X - (1 - logistic(z_synth)) ^ β * ∂logistic_z_X)
-            ),
+        ∂ℓreal∂θ = @. $*($transpose(X_real), y_real * logistic(-z_real)) - $*($transpose(X_real), (1 - y_real) * logistic_z)
+
+        ∂logistic_zX = @. ∂logistic(z_synth) * X_synth
+        ∂ℓsynth∂θ = βw * sum((@. pdf_bl ^ (β - 1) * (
+                ∂logistic_zX * y_synth - ∂logistic_zX * (1 - y_synth)
+            ) - (
+                logistic_z ^ β * ∂logistic_zX - (1 - logistic_z) ^ β * ∂logistic_zX
+            )),
             dims=1
-        ))
+        )
         return (ℓprior + ℓreal + ℓsynth), (∂ℓprior∂θ + ∂ℓreal∂θ + ∂ℓsynth∂θ)
     end
 
