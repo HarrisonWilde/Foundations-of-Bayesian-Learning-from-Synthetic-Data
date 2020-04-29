@@ -1,15 +1,12 @@
 using ForwardDiff
 using LinearAlgebra
-using StatsFuns
 using CSV
 using DataFrames
 using AdvancedHMC
 using Distributions
 using Turing
-include("src/creditcard/utils.jl")
-include("src/creditcard/densities.jl")
-# Redefine this, broken in Turing.jl currently, fix pending release
-Distributions.pdf(d::BinomialLogit{<:Real}, k::Int) = exp(logpdf(d, k))
+includet("utils.jl")
+includet("densities.jl")
 
 labels = [Symbol("Class"),]
 
@@ -38,8 +35,8 @@ num_chains = 2
 # synth_αs = [0.05, 0.1, 0.25, 0.5]
 # αs = get_conditional_pairs(real_αs, synth_αs)
 n_samples, n_warmup = 5000, 1000
-real_α = 0.5
-synth_α = 0.5
+real_α = 0.2
+synth_α = 0.2
 # for (real_α, synth_α) in αs
 
 # Take slices
@@ -78,8 +75,8 @@ adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.7, integra
 
 # Run the sampler
 samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n_warmup; progress=true)
-write("samples_and_stats/weighted_chain_real" * string(real_α) * "_synth" * string(synth_α), samples)
-write("samples_and_stats/weighted_stats_real" * string(real_α) * "_synth" * string(synth_α), stats)
+write("src/creditcard/samples_and_stats/weighted_chain_real" * string(real_α) * "_synth" * string(synth_α), samples)
+write("src/creditcard/samples_and_stats/weighted_stats_real" * string(real_α) * "_synth" * string(synth_α), stats)
 
 # Define a Hamiltonian system
 metric = DiagEuclideanMetric(size(X_real)[2])
