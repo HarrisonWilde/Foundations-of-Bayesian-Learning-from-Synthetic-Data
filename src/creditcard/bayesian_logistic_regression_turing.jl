@@ -33,10 +33,6 @@ Random.seed!(0)
 #
 # CSV.write("data/raw/islr.csv", data)
 
-
-
-
-
 real_train = CSV.read("data/splits/islr_DefaultNum_split0.05_ganpate_eps6.0_real_train.csv")
 real_test = CSV.read("data/splits/islr_DefaultNum_split0.05_ganpate_eps6.0_real_test.csv")
 synth_train = CSV.read("data/splits/islr_DefaultNum_split0.05_ganpate_eps6.0_synth_train.csv")

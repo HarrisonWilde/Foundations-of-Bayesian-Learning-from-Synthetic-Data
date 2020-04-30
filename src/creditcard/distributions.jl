@@ -88,13 +88,6 @@ function ∂ℓπ∂θ_beta(σ, β, βw, X_real, y_real, X_synth, y_synth)
         ∂ℓreal∂θ = *(X_real_T, @. y_real * logistic(-z_real)) - *(X_real_T, @. (1.0 - y_real) * logistic(z_real))
 
         ∂logistic_zX = @. ∂logistic(z_synth) * X_synth
-        # ∂ℓsynth∂θ_old = βw * sum((@. pdf_synth ^ (β - 1.0) * (
-        #         ∂logistic_zX * y_synth - ∂logistic_zX * (1.0 - y_synth)
-        #     ) - (
-        #         logistic_z ^ β * ∂logistic_zX - (1.0 - logistic_z) ^ β * ∂logistic_zX
-        #     )),
-        #     dims=1
-        # )
         ∂ℓpdf_synth∂θ = @. y_synth * logistic(-z_synth) * X_synth - (1.0 - y_synth) * logistic_z * X_synth
         ∂ℓsynth∂θ = βw * sum((@. pdf_synth ^ β * (
                 ∂ℓpdf_synth∂θ
