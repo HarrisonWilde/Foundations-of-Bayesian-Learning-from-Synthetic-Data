@@ -1,9 +1,8 @@
 using Turing
 using ForwardDiff
 using LinearAlgebra
-using StatsFuns
-include("src/creditcard/utils.jl")
-include("src/creditcard/densities.jl")
+includet("utils.jl")
+includet("densities.jl")
 
 σ = 100
 θ = [0.1, 0.3, 0.4, 0.2]
@@ -75,16 +74,16 @@ print(∂k)
 ForwardDiff.gradient(θ -> sum(
         (1 / β) .* pdf.(BinomialLogit.(1, X_synth * θ), y_synth) .^ β
         - (1 / (β + 1)) .* (
-            StatsFuns.logistic.(X_synth * θ) .^ (β + 1)
-            .+ (1 .- StatsFuns.logistic.(X_synth * θ)) .^ (β + 1)
+            logistic.(X_synth * θ) .^ (β + 1)
+            .+ (1 .- logistic.(X_synth * θ)) .^ (β + 1)
         )
     ), θ)
 
 z_synth = X_synth * θ
 sum((
     pdf.(BinomialLogit.(1, z_synth), y_synth) .^ (β - 1)
-    .* (∂logistic.(z_synth) .* X_synth .* y_synth - ∂logistic.(z_synth) .* X_synth .* (1 .- y_synth))
-    .- (StatsFuns.logistic.(z_synth) .^ β .* ∂logistic.(z_synth) .* X_synth .- (1 .- StatsFuns.logistic.(z_synth)) .^ β .* ∂logistic.(z_synth) .* X_synth)
+    .* (∂logistic.(z_synth) .* X_synth .* y_synth - ∂logistic.(-z_synth) .* X_synth .* (1 .- y_synth))
+    .- (logistic.(z_synth) .^ β .* ∂logistic.(z_synth) .* X_synth .- (1 .- logistic.(z_synth)) .^ β .* ∂logistic.(z_synth) .* X_synth)
 ), dims=1)
 
 

@@ -28,7 +28,6 @@ function logistic(x::Float32)
 	return one(x) / (one(x) + exp(-x))
 end
 logistic(x) = logistic(float(x))
-ℓog = logistic
 
 """
 Derivative of the logistic function
@@ -54,7 +53,6 @@ A mulativariate normal distribution.
 """
 function logpdf_centred_mvnormal(σ::Float64, θ::Array{Float64,1})
 	return -(length(θ) * (log2π + log(abs2(σ))) + sum(@. abs2(θ / σ))) / 2
-	# return -(length(θ) * (Float64(log2π) + log(σ)))/2 - sum(abs2, a.chol.L \ x)/2
 end
 
 """

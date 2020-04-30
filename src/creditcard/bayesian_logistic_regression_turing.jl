@@ -8,37 +8,39 @@ using LinearAlgebra
 # Set a seed for reproducibility.
 Random.seed!(0)
 
-# Import the "Default" dataset.
-data = RDatasets.dataset("ISLR", "Default")
+# # Import the "Default" dataset.
+# data = RDatasets.dataset("ISLR", "Default")
+#
+# # Convert "Default" and "Student" to numeric values.
+# data[!,:DefaultNum] = [r.Default == "Yes" ? 1.0 : 0.0 for r in eachrow(data)]
+# data[!, :StudentNum] = [r.Student == "Yes" ? 1.0 : 0.0 for r in eachrow(data)]
+#
+# # Delete the old columns which say "Yes" and "No".
+# select!(data, Not([:Default, :Student]))
+#
+# # Function to split samples.
+# function split_data(df, at = 0.70)
+#     (r, _) = size(df)
+#     index = Int(round(r * at))
+#     train = df[1:index, :]
+#     test  = df[(index+1):end, :]
+#     return train, test
+# end
+#
+# # Rescale our columns.
+# data.Balance = (data.Balance .- mean(data.Balance)) ./ std(data.Balance)
+# data.Income = (data.Income .- mean(data.Income)) ./ std(data.Income)
+#
+# CSV.write("data/raw/islr.csv", data)
 
-# Convert "Default" and "Student" to numeric values.
-data[!,:DefaultNum] = [r.Default == "Yes" ? 1.0 : 0.0 for r in eachrow(data)]
-data[!, :StudentNum] = [r.Student == "Yes" ? 1.0 : 0.0 for r in eachrow(data)]
 
-# Delete the old columns which say "Yes" and "No".
-select!(data, Not([:Default, :Student]))
 
-# Function to split samples.
-function split_data(df, at = 0.70)
-    (r, _) = size(df)
-    index = Int(round(r * at))
-    train = df[1:index, :]
-    test  = df[(index+1):end, :]
-    return train, test
-end
 
-# Rescale our columns.
-data.Balance = (data.Balance .- mean(data.Balance)) ./ std(data.Balance)
-data.Income = (data.Income .- mean(data.Income)) ./ std(data.Income)
-
-CSV.write("data/raw/islr.csv", data)
 
 real_train = CSV.read("data/splits/islr_DefaultNum_split0.05_ganpate_eps6.0_real_train.csv")
 real_test = CSV.read("data/splits/islr_DefaultNum_split0.05_ganpate_eps6.0_real_test.csv")
 synth_train = CSV.read("data/splits/islr_DefaultNum_split0.05_ganpate_eps6.0_synth_train.csv")
 synth_test = CSV.read("data/splits/islr_DefaultNum_split0.05_ganpate_eps6.0_synth_test.csv")
-
-
 
 # Split our dataset 5/95 into training/test sets.
 # train, test = split_data(data, 0.05);
