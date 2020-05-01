@@ -15,6 +15,8 @@ includet("distrib_utils.jl")
 includet("distributions.jl")
 
 seed!(0)
+@load LogisticClassifier pkg="MLJLinearModels"
+
 
 # Load in data generated and split into train test by PATE-GAN
 
@@ -47,6 +49,7 @@ w = 0.5
 β = 0.5
 βw = 1.15
 σ = 50.0
+λ = 1.0
 num_chains = 2
 # real_αs = [0.1, 0.25, 0.5, 1.0]
 # synth_αs = [0.05, 0.1, 0.25, 0.5]
@@ -82,8 +85,9 @@ y_synth = Int.(Matrix(synth_train[1:floor(Int32, len_synth * synth_α), labels])
 
 # Define mass matrix and initial guess at θ
 metric = DiagEuclideanMetric(size(X_real)[2])
-initial_θ = zeros(size(X_real)[2])
-logreg = @load LogisticRegression pkg="MLJLinearModels"
+# initial_θ = zeros(size(X_real)[2])
+lr = LogisticRegression(λ; fit_intercept = false)
+initial_θ = MLJLinearModels.fit(lr, X_real, vec(y_real), solver=LBFGS())
 
 
 hamiltonian_β, proposal_β, adaptor_β = setup_run(ℓπ_β, ∂ℓπ∂θ_β, metric, initial_θ)
