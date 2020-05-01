@@ -9,6 +9,17 @@ function get_conditional_pairs(l1, l2; max_sum=1)
     return ((a1, a2) for a1 in l1 for a2 in l2 if a1 + a2 <= max_sum)
 end
 
+"""
+Returns pairs of elements from two separate lists, provided their sum is < max_sum (default 1 for proportions)
+"""
+function get_valid_synth_αs(real_α, synth_αs; max_sum=1)
+    if max_sum - real_α in synth_αs
+        return [synth_α for synth_α in synth_αs if synth_α + real_α <= max_sum]
+    else
+        return vcat([synth_α for synth_α in synth_αs if synth_α + real_α <= max_sum], [max_sum - real_α])
+    end
+end
+
 
 function setup_run(ℓπ, ∂ℓπ∂θ, metric, initial_θ; manual=true, target_acceptance_rate=0.75)
 
