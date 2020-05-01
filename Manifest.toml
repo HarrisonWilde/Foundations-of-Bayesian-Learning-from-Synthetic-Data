@@ -847,6 +847,12 @@ git-tree-sha1 = "720629cc8cbd12c146ca01b661fd1a6cf66e2ff4"
 uuid = "856f044c-d86e-5d09-b602-aeab76dc8ba7"
 version = "2019.0.117+2"
 
+[[MLBase]]
+deps = ["IterTools", "Random", "Reexport", "StatsBase", "Test"]
+git-tree-sha1 = "f63a8d37429568b8c4384d76c4a96fc2897d6ddf"
+uuid = "f0e99cf1-93fa-52ec-9ecc-5026115318e0"
+version = "0.8.0"
+
 [[MLJ]]
 deps = ["CategoricalArrays", "ComputationalResources", "Distributed", "Distributions", "LinearAlgebra", "MLJBase", "MLJModels", "MLJScientificTypes", "MLJTuning", "Pkg", "ProgressMeter", "Random", "Statistics", "StatsBase", "Tables"]
 git-tree-sha1 = "1e611c42e6d7edf9fe14fd72a9a882d10f1dcd81"

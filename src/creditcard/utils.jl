@@ -1,5 +1,6 @@
 using SpecialFunctions
 using StatsFuns: log1pexp, log2π
+using MLJBase: auc
 
 """
 Returns pairs of elements from two separate lists, provided their sum is < max_sum (default 1 for proportions)
@@ -32,4 +33,10 @@ end
 
 function evaluate()
     print("Nothing")
+end
+
+
+function roc_auc(ys, ps)
+    c = categorical([0, 1])
+    auc(UnivariateFinite([0, 1], [1.0 .- ps, ps]), categorical(ys))
 end

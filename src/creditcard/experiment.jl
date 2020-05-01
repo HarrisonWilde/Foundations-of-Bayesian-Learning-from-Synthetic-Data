@@ -9,13 +9,12 @@ using Zygote
 using StatsPlots
 using Random: seed!
 using MCMCChains
-using MLJ
+using MLJLinearModels
 includet("utils.jl")
 includet("distrib_utils.jl")
 includet("distributions.jl")
 
 seed!(0)
-@load LogisticClassifier pkg="MLJLinearModels"
 
 
 # Load in data generated and split into train test by PATE-GAN
@@ -43,7 +42,7 @@ len_synth = size(synth_train)[1]
 len_test = size(real_test)[1]
 
 X_test = Matrix(real_test[:, Not(labels)])
-y_test = Int.(Matrix(real_test[:, labels]))
+y_test = Int.(real_test[:, labels[1]])
 
 w = 0.5
 β = 0.5
@@ -61,9 +60,9 @@ synth_α = 0.5
 
 # Take matrix slices according to αs
 X_real = Matrix(real_train[1:floor(Int32, len_real * real_α), Not(labels)])
-y_real = Int.(Matrix(real_train[1:floor(Int32, len_real * real_α), labels]))
+y_real = Int.(real_train[1:floor(Int32, len_real * real_α), labels[1]])
 X_synth = Matrix(synth_train[1:floor(Int32, len_synth * synth_α), Not(labels)])
-y_synth = Int.(Matrix(synth_train[1:floor(Int32, len_synth * synth_α), labels]))
+y_synth = Int.(synth_train[1:floor(Int32, len_synth * synth_α), labels[1]])
 
 # Define log posts and gradient functions of θ, opt calculates the same thing but should be faster (uses @. macro grouped broadcasting) but keeping both for now to run comparisons
 ℓπ_weighted, ∂ℓπ∂θ_weighted = (
@@ -87,8 +86,7 @@ y_synth = Int.(Matrix(synth_train[1:floor(Int32, len_synth * synth_α), labels])
 metric = DiagEuclideanMetric(size(X_real)[2])
 # initial_θ = zeros(size(X_real)[2])
 lr = LogisticRegression(λ; fit_intercept = false)
-initial_θ = MLJLinearModels.fit(lr, X_real, vec(y_real), solver=LBFGS())
-
+initial_θ = MLJLinearModels.fit(lr, X_real, y_real, solver=LBFGS())
 
 hamiltonian_β, proposal_β, adaptor_β = setup_run(ℓπ_β, ∂ℓπ∂θ_β, metric, initial_θ)
 
@@ -100,7 +98,10 @@ samples_β, stats_β = sample(
 chain_β = Chains(samples_β)
 
 # ŷ0 = exp.(log.(sum(map(θ -> exp.(logpdf_bernoulli_logit.(X_test * θ, y_test)), samples_β))) .- log(size(samples_β)[1]))
-ŷ = mean(pmap(θ -> pdf_bernoulli_logit.(X_test * θ, y_test), samples_β))
+ŷ = mean(map(θ -> pdf_bernoulli_logit.(X_test * θ, y_test), samples_β))
+ps = mean(map(θ -> logistic.(X_test * θ), samples_β))
+roc_auc(y_test, ps)
+
 
 hamiltonian_weighted, proposal_weighted, adaptor_weighted = setup_run(
     ℓπ_weighted,
@@ -115,7 +116,6 @@ samples_weighted, stats_weighted = sample(
     drop_warmup=true, progress=true
 )
 chain_weighted = Chains(samples_weighted)
-θ̂_weighted = mean(samples_weighted)
 
 hamiltonian_naive, proposal_naive, adaptor_naive = setup_run(
     ℓπ_naive,
@@ -130,7 +130,6 @@ samples_naive, stats_naive = sample(
     drop_warmup=true, progress=true
 )
 chain_naive = Chains(samples_naive)
-θ̂_naive = mean(samples_naive)
 
 hamiltonian_no_synth, proposal_no_synth, adaptor_no_synth = setup_run(
     ℓπ_no_synth,
@@ -145,7 +144,6 @@ samples_no_synth, stats_no_synth = sample(
     drop_warmup=true, progress=true
 )
 chain_no_synth = Chains(samples_no_synth)
-θ̂_no_synth = mean(samples_no_synth)
 
 
 # function evaluate(X_test::Matrix, y_test::Array, chain, threshold)

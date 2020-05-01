@@ -85,7 +85,7 @@ function ∂ℓπ∂θ_beta(σ, β, βw, X_real, y_real, X_synth, y_synth)
         )
 
         ∂ℓprior∂θ = -θ / abs2(σ)
-        ∂ℓreal∂θ = vec(*(X_real_T, @. y_real * logistic(-z_real)) - *(X_real_T, @. (1.0 - y_real) * logistic(z_real)))
+        ∂ℓreal∂θ = *(X_real_T, @. y_real * logistic(-z_real)) - *(X_real_T, @. (1.0 - y_real) * logistic(z_real))
 
         ∂logistic_zX = @. ∂logistic(z_synth) * X_synth
         ∂ℓpdf_synth∂θ = @. y_synth * logistic(-z_synth) * X_synth - (1.0 - y_synth) * logistic_z * X_synth
