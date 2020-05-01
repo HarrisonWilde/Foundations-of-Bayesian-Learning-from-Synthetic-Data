@@ -15,6 +15,7 @@ includet("utils.jl")
 includet("distrib_utils.jl")
 includet("distributions.jl")
 includet("plotting.jl")
+theme(:vibrant)
 
 t = Dates.format(now(), "HH_MM_SS__dd_mm_yyyy")
 results_name = "results___$(t)"
@@ -61,6 +62,7 @@ n_samples, n_warmup = 100000, 10000
 show_progress = false
 # real_α = 0.0
 # synth_α = 0.0
+
 for (real_α, synth_α) in αs
 
     # Take matrix slices according to αs

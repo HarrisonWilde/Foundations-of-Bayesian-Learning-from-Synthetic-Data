@@ -32,7 +32,7 @@ function plot_α(df, α, t)
         ylabel = "ROC AUC",
         legendtitle = "Divergence",
     )
-    png(p, "$(t)_alpha$(α)")
+    png(p, "src/creditcard/plots/$(t)_alpha$(α)")
 
 end
 
@@ -80,9 +80,9 @@ function plot_divergences(df, t)
     )
     p_no_synth = @df filter(row -> row[:synth_α] == 0.0, df) plot!(:real_α, [:no_synth], label = "varying")
 
-    png(p_β, "$(t)_beta")
-    png(p_weighted, "$(t)_weighted")
-    png(p_naive, "$(t)_naive")
-    png(p_no_synth, "$(t)_no_synth")
+    png(p_β, "src/creditcard/plots/$(t)_beta")
+    png(p_weighted, "src/creditcard/plots/$(t)_weighted")
+    png(p_naive, "src/creditcard/plots/$(t)_naive")
+    png(p_no_synth, "src/creditcard/plots/$(t)_no_synth")
 
 end
