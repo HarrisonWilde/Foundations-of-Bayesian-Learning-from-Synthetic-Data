@@ -7,11 +7,16 @@ using Distributions
 using Turing
 using Zygote
 using StatsPlots
+using Random: seed!
+using MCMCChains
+using MLJLinearModels
 includet("utils.jl")
 includet("distrib_utils.jl")
 includet("distributions.jl")
+theme(:juno)
 
-Random.seed!(0)
+seed!(0)
+
 
 # Load in data generated and split into train test by PATE-GAN
 
@@ -37,56 +42,110 @@ len_real = size(real_train)[1]
 len_synth = size(synth_train)[1]
 len_test = size(real_test)[1]
 
+X_test = Matrix(real_test[:, Not(labels)])
+y_test = Int.(real_test[:, labels[1]])
+
 w = 0.5
 β = 0.5
 βw = 1.15
 σ = 50.0
+λ = 1.0
 num_chains = 2
 # real_αs = [0.1, 0.25, 0.5, 1.0]
 # synth_αs = [0.05, 0.1, 0.25, 0.5]
 # αs = get_conditional_pairs(real_αs, synth_αs)
-n_samples, n_warmup = 100000, 5000
-real_α = 0.5
+n_samples, n_warmup = 100000, 10000
+real_α = 0.1
 synth_α = 0.5
 # for (real_α, synth_α) in αs
 
 # Take matrix slices according to αs
 X_real = Matrix(real_train[1:floor(Int32, len_real * real_α), Not(labels)])
-y_real = Int.(Matrix(real_train[1:floor(Int32, len_real * real_α), labels]))
+y_real = Int.(real_train[1:floor(Int32, len_real * real_α), labels[1]])
 X_synth = Matrix(synth_train[1:floor(Int32, len_synth * synth_α), Not(labels)])
-y_synth = Int.(Matrix(synth_train[1:floor(Int32, len_synth * synth_α), labels]))
+y_synth = Int.(synth_train[1:floor(Int32, len_synth * synth_α), labels[1]])
 
 # Define log posts and gradient functions of θ, opt calculates the same thing but should be faster (uses @. macro grouped broadcasting) but keeping both for now to run comparisons
-ℓπ_weighted, ∂ℓπ∂θ_weighted = ℓπ_kld(σ, w, X_real, y_real, X_synth, y_synth), ∂ℓπ∂θ_kld(σ, w, X_real, y_real, X_synth, y_synth)
-ℓπ_β, ∂ℓπ∂θ_β = ℓπ_beta(σ, β, βw, X_real, y_real, X_synth, y_synth), ∂ℓπ∂θ_beta(σ, β, βw, X_real, y_real, X_synth, y_synth)
-ℓπ_naive, ∂ℓπ∂θ_naive = ℓπ_kld(σ, 1, X_real, y_real, X_synth, y_synth), ∂ℓπ∂θ_kld(σ, 1, X_real, y_real, X_synth, y_synth)
-ℓπ_no_synth, ∂ℓπ∂θ_no_synth = ℓπ_kld(σ, 0, X_real, y_real, X_synth, y_synth), ∂ℓπ∂θ_kld(σ, 0, X_real, y_real, X_synth, y_synth)
+ℓπ_weighted, ∂ℓπ∂θ_weighted = (
+    ℓπ_kld(σ, w, X_real, y_real, X_synth, y_synth),
+    ∂ℓπ∂θ_kld(σ, w, X_real, y_real, X_synth, y_synth)
+)
+ℓπ_β, ∂ℓπ∂θ_β = (
+    ℓπ_beta(σ, β, βw, X_real, y_real, X_synth, y_synth),
+    ∂ℓπ∂θ_beta(σ, β, βw, X_real, y_real, X_synth, y_synth)
+)
+ℓπ_naive, ∂ℓπ∂θ_naive = (
+    ℓπ_kld(σ, 1, X_real, y_real, X_synth, y_synth),
+    ∂ℓπ∂θ_kld(σ, 1, X_real, y_real, X_synth, y_synth)
+)
+ℓπ_no_synth, ∂ℓπ∂θ_no_synth = (
+    ℓπ_kld(σ, 0, X_real, y_real, X_synth, y_synth),
+    ∂ℓπ∂θ_kld(σ, 0, X_real, y_real, X_synth, y_synth)
+)
 
 # Define mass matrix and initial guess at θ
 metric = DiagEuclideanMetric(size(X_real)[2])
-initial_θ = zeros(size(X_real)[2])
+# initial_θ = zeros(size(X_real)[2])
+lr = LogisticRegression(λ; fit_intercept = false)
+initial_θ = MLJLinearModels.fit(lr, X_real, y_real, solver=LBFGS())
+auc_mlj = evalu(X_test, y_test, [initial_θ]; plot_roc=true)
 
-hamiltonian = Hamiltonian(
-    metric,
-    ℓπ_weighted,
-    ∂ℓπ∂θ_weighted,
-    # Zygote,
-)
 
-# Define a leapfrog solver, with initial step size chosen heuristically
-initial_ϵ = find_good_stepsize(hamiltonian, initial_θ)
-integrator = Leapfrog(initial_ϵ)
-
-# Define an HMC sampler, with the following components
-#   - multinomial sampling scheme,
-#   - generalised No-U-Turn criteria, and
-#   - windowed adaption for step-size and diagonal mass matrix
-proposal = AdvancedHMC.NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
-adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(0.7, integrator))
+hamiltonian_β, proposal_β, adaptor_β = setup_run(ℓπ_β, ∂ℓπ∂θ_β, metric, initial_θ)
 
 # Run the sampler
-samples, stats = sample(hamiltonian, proposal, initial_θ, n_samples, adaptor, n_warmup; drop_warmup=true, progress=true)
-pred = mean(samples)
+samples_β, stats_β = sample(
+    hamiltonian_β, proposal_β, initial_θ, n_samples, adaptor_β, n_warmup;
+    drop_warmup=true, progress=true
+)
+chain_β = Chains(samples_β)
+@time auc_β = evalu(X_test, y_test, samples_β)
+
+hamiltonian_weighted, proposal_weighted, adaptor_weighted = setup_run(
+    ℓπ_weighted,
+    ∂ℓπ∂θ_weighted,
+    metric,
+    initial_θ
+)
+
+# Run the sampler
+samples_weighted, stats_weighted = sample(
+    hamiltonian_weighted, proposal_weighted, initial_θ, n_samples, adaptor_weighted, n_warmup;
+    drop_warmup=true, progress=true
+)
+chain_weighted = Chains(samples_weighted)
+auc_weighted = evalu(X_test, y_test, samples_weighted)
+
+hamiltonian_naive, proposal_naive, adaptor_naive = setup_run(
+    ℓπ_naive,
+    ∂ℓπ∂θ_naive,
+    metric,
+    initial_θ
+)
+
+# Run the sampler
+samples_naive, stats_naive = sample(
+    hamiltonian_naive, proposal_naive, initial_θ, n_samples, adaptor_naive, n_warmup;
+    drop_warmup=true, progress=true
+)
+chain_naive = Chains(samples_naive)
+auc_naive = evalu(X_test, y_test, samples_naive)
+
+hamiltonian_no_synth, proposal_no_synth, adaptor_no_synth = setup_run(
+    ℓπ_no_synth,
+    ∂ℓπ∂θ_no_synth,
+    metric,
+    initial_θ
+)
+
+# Run the sampler
+samples_no_synth, stats_no_synth = sample(
+    hamiltonian_no_synth, proposal_no_synth, initial_θ, n_samples, adaptor_no_synth, n_warmup;
+    drop_warmup=true, progress=true
+)
+chain_no_synth = Chains(samples_no_synth)
+auc_no_synth = evalu(X_test, y_test, samples_no_synth)
+
 
 # function evaluate(X_test::Matrix, y_test::Array, chain, threshold)
 #     # Pull the means from each parameter's sampled values in the chain.
@@ -124,8 +183,7 @@ pred = mean(samples)
 # end
 #
 #
-# X_test = Matrix(real_test[:, Not(labels)])
-# y_test = Array{Float64}(real_test[:, labels[1]])
+
 # real_α = 0.25
 # synth_α = 0.25
 # # for (real_α, synth_α) in αs

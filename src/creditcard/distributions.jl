@@ -89,14 +89,14 @@ function ∂ℓπ∂θ_beta(σ, β, βw, X_real, y_real, X_synth, y_synth)
 
         ∂logistic_zX = @. ∂logistic(z_synth) * X_synth
         ∂ℓpdf_synth∂θ = @. y_synth * logistic(-z_synth) * X_synth - (1.0 - y_synth) * logistic_z * X_synth
-        ∂ℓsynth∂θ = βw * sum((@. pdf_synth ^ β * (
+        ∂ℓsynth∂θ = vec(βw * sum((@. pdf_synth ^ β * (
                 ∂ℓpdf_synth∂θ
             ) - (
                 logistic_z ^ β * ∂logistic_zX - (1.0 - logistic_z) ^ β * ∂logistic_zX
             )),
             dims=1
-        )
-        return (ℓprior + ℓreal + ℓsynth), vec(∂ℓprior∂θ + ∂ℓreal∂θ + ∂ℓsynth∂θ)
+        ))
+        return (ℓprior + ℓreal + ℓsynth), (∂ℓprior∂θ + ∂ℓreal∂θ + ∂ℓsynth∂θ)
     end
 
     return logpost_and_gradient

@@ -29,7 +29,7 @@ function ∂logistic(z::Float64)
 end
 
 """
-    Log PDF of the BernoulliLogit()
+    Log PDF of the logit-parameterised bernoulli distribution
 
 A univariate bernoulli logit distribution.
 """
@@ -47,7 +47,7 @@ function logpdf_centred_mvnormal(σ::Float64, θ::Array{Float64,1})
 end
 
 """
-    PDF of the BernoulliLogit(), z = x * θ
+    PDF of the logit-parameterised bernoulli distribution; z = x * θ
 
 A univariate bernoulli logit distribution.
 """
