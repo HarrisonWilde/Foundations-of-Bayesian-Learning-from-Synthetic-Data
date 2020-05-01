@@ -47,7 +47,14 @@ function roc_auc(ys, ps)
 end
 
 
-function plot_roc_curve(ys, ps)
-    tprs, fprs, _ = roc_curve([UnivariateFinite(categorical([0, 1]), [1.0 - p, p]) for p in ps], categorical(ys))
-    display(plot(tprs, fprs))
+function result_storage()
+    return DataFrame(
+        real_α = Float64[],
+        synth_α = Float64[],
+        mlj = Float64[],
+        β = Float64[],
+        weighted = Float64[],
+        naive = Float64[],
+        no_synth = Float64[],
+    )
 end
