@@ -13,11 +13,11 @@ using MLJ
 using MLJLinearModels
 using Dates
 using ProgressMeter
-includet("utils.jl")
-includet("distrib_utils.jl")
-includet("distributions.jl")
-includet("plotting.jl")
-theme(:vibrant)
+include("src/creditcard/utils.jl")
+include("src/creditcard/distrib_utils.jl")
+include("src/creditcard/distributions.jl")
+include("src/creditcard/plotting.jl")
+# theme(:vibrant)
 
 t = Dates.format(now(), "HH_MM_SS__dd_mm_yyyy")
 results_name = "results___$(t)"
@@ -58,12 +58,12 @@ w = 0.5
 λ = 1.0
 num_chains = 2
 real_αs = [0.1, 0.2, 0.3, 0.4, 0.5, 0.75, 1.0]
-synth_αs = [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 0.75]
+synth_αs = [0.0, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 0.75]
 αs = get_conditional_pairs(real_αs, synth_αs)
 n_samples, n_warmup = 100000, 10000
 show_progress = false
-# real_α = 0.0
-# synth_α = 0.0
+# real_α = 0.1
+# synth_α = 0.1
 @showprogress 1 "Real αs: " for real_α in real_αs
 
     valid_synth_αs = get_valid_synth_αs(real_α, synth_αs)
@@ -157,12 +157,16 @@ show_progress = false
     end
 
     sort!(results)
-    plot_α(results, real_α, t)
+    # plot_α(results, real_α, t)
     CSV.write("src/creditcard/outputs/$(results_name).csv", results)
 
 end
 
-plot_divergences(results, real_αs, t)
+# plot_divergences(results, t)
+
+# t = "01_16_05__02_05_2020"
+# results = CSV.read("src/creditcard/outputs/results___$(t).csv")
+# plot_all(results, real_αs, t)
 
 
 # function evaluate(X_test::Matrix, y_test::Array, chain, threshold)

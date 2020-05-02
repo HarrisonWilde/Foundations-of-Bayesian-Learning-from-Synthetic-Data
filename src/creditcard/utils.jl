@@ -45,7 +45,7 @@ end
 function evalu(X_test, y_test, samples; plot_roc=false)
     # ŷ0 = exp.(log.(sum(map(θ -> exp.(logpdf_bernoulli_logit.(X_test * θ, y_test)), samples_β))) .- log(size(samples_β)[1]))
     # ŷ = mean(map(θ -> pdf_bernoulli_logit.(X_test * θ, y_test), samples))
-    ps = mean(map(θ -> logistic.(X_test * θ), samples))
+    ps = mean(map(θ -> logistic.(X_test * θ), samples[1:50:end]))
     if plot_roc
         plot_roc_curve(y_test, ps)
     end
