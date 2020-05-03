@@ -13,10 +13,10 @@ using MLJ
 using MLJLinearModels
 using Dates
 using ProgressMeter
-includet("utils.jl")
-includet("distrib_utils.jl")
-includet("distributions.jl")
-includet("plotting.jl")
+include("src/creditcard/utils.jl")
+include("src/creditcard/distrib_utils.jl")
+include("src/creditcard/distributions.jl")
+include("src/creditcard/plotting.jl")
 # theme(:vibrant)
 
 t = Dates.format(now(), "HH_MM_SS__dd_mm_yyyy")
@@ -57,10 +57,10 @@ w = 0.5
 σ = 50.0
 λ = 1.0
 num_chains = 2
-real_αs = [0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175, 0.2, 0.3, 0.4, 0.5, 0.75]
-synth_αs = [0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.075, 0.1, 0.2, 0.3, 0.4, 0.5, 0.75]
+real_αs = [0.1, 0.2, 0.3, 0.4, 0.5, 0.75, 1.0]
+synth_αs = [0.0, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 0.75]
 αs = get_conditional_pairs(real_αs, synth_αs)
-n_samples, n_warmup = 100000, 20000
+n_samples, n_warmup = 100000, 10000
 show_progress = false
 # real_α = 0.1
 # synth_α = 0.1
@@ -99,7 +99,7 @@ show_progress = false
         # initial_θ = zeros(size(X_real)[2])
         lr = LogisticRegression(λ; fit_intercept = false)
         initial_θ = MLJLinearModels.fit(lr, X_real, y_real, solver=LBFGS())
-        auc_mlj, ll_mlj, bf_mlj = evalu(X_test, y_test, [initial_θ])
+        auc_mlj = evalu(X_test, y_test, [initial_θ])
 
         # BETA DIVERGENCE
         hamiltonian_β, proposal_β, adaptor_β = setup_run(ℓπ_β, ∂ℓπ∂θ_β, metric, initial_θ)
@@ -108,7 +108,7 @@ show_progress = false
             drop_warmup=true, progress=show_progress, verbose=show_progress
         )
         # chain_β = Chains(samples_β)
-        auc_β, ll_β, bf_β = evalu(X_test, y_test, samples_β)
+        auc_β = evalu(X_test, y_test, samples_β)
 
         # KLD WEIGHTED
         hamiltonian_weighted, proposal_weighted, adaptor_weighted = setup_run(
@@ -122,7 +122,7 @@ show_progress = false
             drop_warmup=true, progress=show_progress, verbose=show_progress
         )
         # chain_weighted = Chains(samples_weighted)
-        auc_weighted, ll_weighted, bf_weighted = evalu(X_test, y_test, samples_weighted)
+        auc_weighted = evalu(X_test, y_test, samples_weighted)
 
         # KLD NAIVE
         hamiltonian_naive, proposal_naive, adaptor_naive = setup_run(
@@ -136,7 +136,7 @@ show_progress = false
             drop_warmup=true, progress=show_progress, verbose=show_progress
         )
         # chain_naive = Chains(samples_naive)
-        auc_naive, ll_naive, bf_naive = evalu(X_test, y_test, samples_naive)
+        auc_naive = evalu(X_test, y_test, samples_naive)
 
         # KLD NO SYNTHETIC
         hamiltonian_no_synth, proposal_no_synth, adaptor_no_synth = setup_run(
@@ -150,11 +150,9 @@ show_progress = false
             drop_warmup=true, progress=show_progress, verbose=show_progress
         )
         # chain_no_synth = Chains(samples_no_synth)
-        auc_no_synth, ll_no_synth, bf_no_synth = evalu(X_test, y_test, samples_no_synth)
+        auc_no_synth = evalu(X_test, y_test, samples_no_synth)
 
-        bf_matrix = create_bayes_factor_matrix([bf_mlj, bf_β, bf_weighted, bf_naive, bf_no_synth])
-        CSV.write("src/creditcard/outputs/bayes_factors___$(real_α)_$(synth_α)___$(t).csv", bf_matrix)
-        push!(results, (real_α, synth_α, auc_mlj, auc_β, auc_weighted, auc_naive, auc_no_synth, ll_mlj, ll_β, ll_weighted, ll_naive, ll_no_synth))
+        push!(results, (real_α, synth_α, auc_mlj, auc_β, auc_weighted, auc_naive, auc_no_synth))
         next!(p)
     end
 
@@ -166,12 +164,45 @@ end
 
 # plot_divergences(results, t)
 
-t = "20_47_52__02_05_2020"
-results = CSV.read("src/creditcard/outputs/results___$(t).csv")
-plot_all(results, real_αs, ["beta" "weighted" "naive" "no_synth"], ["auc", "ll"], t)
+# t = "01_16_05__02_05_2020"
+# results = CSV.read("src/creditcard/outputs/results___$(t).csv")
+# plot_all(results, real_αs, t)
 
 
-
+# function evaluate(X_test::Matrix, y_test::Array, chain, threshold)
+#     # Pull the means from each parameter's sampled values in the chain.
+#
+#     # num_iters, _ = size(Array(chn))
+#
+#     # log_likes = Vector{Array{Float64}}(undef, num_iters)
+#
+#     # @showprogress for i in 1:num_iters
+#     #     log_likes[i] = logpdf.(BinomialLogit.(1, X_test * Array(chn)[i, :]), y_test)
+#     # end
+#
+#     # log_loss = -mean(logsumexp.(log_likes) .- log(length(Array(chn)[:, 1])))
+#
+#     mean_coefs = [mean(chain[Symbol("coef$i")].value) for i in 1:31]
+#
+#     # Retrieve the number of rows.
+#     n, _ = size(X_test)
+#
+#     # Generate a vector to store our predictions.
+#     preds = Vector{Float64}(undef, n)
+#     probs = Vector{Float64}(undef, n)
+#
+#     # Calculate the logistic function for each element in the test set.
+#     for i in 1:n
+#         prob = logistic(dot(X_test[i, :], mean_coefs))
+#         probs[i] = prob
+#         if prob >= threshold
+#             preds[i] = 1
+#         else
+#             preds[i] = 0
+#         end
+#     end
+#     return(probs, preds)
+# end
 #
 #
 

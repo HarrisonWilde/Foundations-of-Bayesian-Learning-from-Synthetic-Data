@@ -43,11 +43,13 @@ end
 
 
 function evalu(X_test, y_test, samples; plot_roc=false)
-    ps = mean(map(θ -> logistic.(X_test * θ), samples[1:25:end]))
+    # ŷ0 = exp.(log.(sum(map(θ -> exp.(logpdf_bernoulli_logit.(X_test * θ, y_test)), samples_β))) .- log(size(samples_β)[1]))
+    # ŷ = mean(map(θ -> pdf_bernoulli_logit.(X_test * θ, y_test), samples))
+    ps = mean(map(θ -> logistic.(X_test * θ), samples[1:50:end]))
     if plot_roc
         plot_roc_curve(y_test, ps)
     end
-    return roc_auc(y_test, ps), log_loss(X_test, y_test, samples), avg_pdf(X_test, y_test, samples)
+    return roc_auc(y_test, ps)
 end
 
 
@@ -56,36 +58,14 @@ function roc_auc(ys, ps)
 end
 
 
-function log_loss(X, y, samples)
-    return -mean(map(θ -> sum(logpdf_bernoulli_logit.(X_test * θ, y_test)), samples[1:25:end]))
-end
-
-
-function avg_pdf(X, y, samples)
-    return mean(map(θ -> sum(pdf_bernoulli_logit.(X_test * θ, y_test)), samples[1:25:end]))
-end
-
-
-function create_bayes_factor_matrix(bayes_factors)
-    matrix = DataFrame([bf ./ bayes_factors for bf in bayes_factors])
-    rename!(matrix, [:mlj, :beta, :weighted, :naive, :no_synth])
-    return matrix
-end
-
-
 function result_storage()
     return DataFrame(
         real_α = Float64[],
         synth_α = Float64[],
-        mlj_auc = Float64[],
-        beta_auc = Float64[],
-        weighted_auc = Float64[],
-        naive_auc = Float64[],
-        no_synth_auc = Float64[],
-        mlj_ll = Float64[],
-        beta_ll = Float64[],
-        weighted_ll = Float64[],
-        naive_ll = Float64[],
-        no_synth_ll = Float64[],
+        mlj = Float64[],
+        β = Float64[],
+        weighted = Float64[],
+        naive = Float64[],
+        no_synth = Float64[],
     )
 end
