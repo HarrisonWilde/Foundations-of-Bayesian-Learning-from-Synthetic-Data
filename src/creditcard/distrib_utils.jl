@@ -8,17 +8,17 @@ const LOGISTIC_32 = log(Float32(1)/eps(Float32) - Float32(1))
 Return the logistic function computed in a numerically stable way:
 ``logistic(x) = 1/(1+exp(-x))``
 """
-function logistic(x::Float64)
+function _logistic(x::Float64)
 	x > LOGISTIC_64  && return one(x)
 	x < -LOGISTIC_64 && return zero(x)
 	return one(x) / (one(x) + exp(-x))
 end
-function logistic(x::Float32)
+function _logistic(x::Float32)
 	x > LOGISTIC_32  && return one(x)
 	x < -LOGISTIC_32 && return zero(x)
 	return one(x) / (one(x) + exp(-x))
 end
-logistic(x) = logistic(float(x))
+_logistic(x) = _logistic(float(x))
 
 """
 Derivative of the logistic function

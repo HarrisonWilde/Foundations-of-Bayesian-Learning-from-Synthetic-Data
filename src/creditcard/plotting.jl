@@ -5,29 +5,34 @@ function plot_roc_curve(ys, ps)
 end
 
 
-function plot_all(df, real_αs, divergences, metrics, t)
+function plot_all(df, real_αs, synth_αs, divergences, metrics, t)
 
-    plot_all_αs(df, real_αs, divergences, metrics, t)
+    plot_all_αs(df, real_αs, synth_αs, divergences, metrics, t)
     plot_all_divergences(df, divergences, metrics, t)
 
 end
 
 
-function plot_all_αs(df, real_αs, divergences, metrics, t)
+function plot_all_αs(df, real_αs, synth_αs, divergences, metrics, t)
 
     for metric in metrics
         for α in real_αs
-            plot_α(df, α, divergences, metric, t)
+            plot_real_α(df, α, divergences, metric, t)
+        end
+        for α in synth_αs
+            plot_synth_α(df, α, divergences, metric, t)
         end
     end
 
 end
 
 
-function plot_α(df, α, divergences, metric, t)
+function plot_real_α(df, α, divergences, metric, t)
 
     mkpath("src/creditcard/plots/$(t)/")
-    p = @df filter(row -> row[:real_α] == α, df) plot(
+    fdf = filter(row -> row[:real_α] == α, df)
+    print(fdf)
+    p = @df fdf plot(
         :synth_α,
         [cols(Symbol("$(div)_$(metric)") for div in divergences)],
         title = "$(metric) divergence comparison, real alpha = $(α)",
@@ -38,6 +43,24 @@ function plot_α(df, α, divergences, metric, t)
     )
     p = plot!(size=(1000, 700), legend=:outertopright)
     png(p, "src/creditcard/plots/$(t)/real_alpha_$(α)__$(metric)")
+
+end
+
+
+function plot_synth_α(df, α, divergences, metric, t)
+
+    mkpath("src/creditcard/plots/$(t)/")
+    p = @df filter(row -> row[:synth_α] == α, df) plot(
+        :real_α,
+        [cols(Symbol("$(div)_$(metric)") for div in divergences)],
+        title = "$(metric) divergence comparison, synth alpha = $(α)",
+        label = [div for div in divergences],
+        xlabel = "Real Alpha",
+        ylabel = metric,
+        legendtitle = "Divergence",
+    )
+    p = plot!(size=(1000, 700), legend=:outertopright)
+    png(p, "src/creditcard/plots/$(t)/synth_alpha_$(α)__$(metric)")
 
 end
 

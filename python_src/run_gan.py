@@ -29,7 +29,7 @@ def init_arg():
     parser.add_argument("--iter", type=int, default=20000)
     parser.add_argument("--epsilon", type=float, default=6.)
     parser.add_argument("--delta", type=int, default=5)
-    parser.add_argument("--teachers", type=int, default=100)
+    parser.add_argument("--teachers", type=int, default=50)
     parser.add_argument("--targets", nargs='+', help="Name of response var when using csv as input.")
     parser.add_argument("--separator", default=',', help="Separator for the input csv file.")
     return parser.parse_args()
@@ -45,7 +45,21 @@ def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, b)
     assert path is not None
     assert targets is not None
 
-    df = pd.read_csv(f"{path}raw/{name}.csv")
+    # Dataset specific pre-processing
+    if name == "kag_cervical_cancer":
+        df = pd.read_csv(f"{path}raw/{name}.csv", na_values='?')
+    else:
+        df = pd.read_csv(f"{path}raw/{name}.csv")
+
+    if name == "uci_seizures":
+        df.y[df.y.isin([2, 3, 4, 5])] = 0
+        df.y[df.y.isin([1])] = 1
+        df = df.drop(columns=["Unnamed: 0"], axis=1)
+    if name == "kag_cervical_cancer":
+        df = df.fillna(df.mean())
+    if name == "kag_creditcard":
+        df = df.drop(columns=["Time"], axis=1)
+
     features = list(df.columns)
     for lbl in targets:
         assert lbl in features
