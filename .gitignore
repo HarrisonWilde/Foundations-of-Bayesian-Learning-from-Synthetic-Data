@@ -8,3 +8,8 @@ sampling.txt
 *.csv
 pategan_original/
 tgan_original/
+*.data
+*.info
+*.names
+*.test
+*.data.Z

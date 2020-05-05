@@ -5,84 +5,91 @@ function plot_roc_curve(ys, ps)
 end
 
 
-function plot_all(df, real_αs, t)
+function plot_all(df, real_αs, synth_αs, divergences, metrics, t)
 
-    plot_all_αs(df, real_αs, t)
-    plot_divergences(df, t)
+    plot_all_αs(df, real_αs, synth_αs, divergences, metrics, t)
+    plot_all_divergences(df, divergences, metrics, t)
 
 end
 
 
-function plot_all_αs(df, real_αs, t)
+function plot_all_αs(df, real_αs, synth_αs, divergences, metrics, t)
 
-    for α in real_αs
-        plot_α(df, α, t)
+    for metric in metrics
+        for α in real_αs
+            plot_real_α(df, α, divergences, metric, t)
+        end
+        for α in synth_αs
+            plot_synth_α(df, α, divergences, metric, t)
+        end
     end
 
 end
 
 
-function plot_α(df, α, t)
+function plot_real_α(df, α, divergences, metric, t)
 
-    p = @df filter(row -> row[:real_α] == α, df) plot(
+    mkpath("src/creditcard/plots/$(t)/")
+    fdf = filter(row -> row[:real_α] == α, df)
+    print(fdf)
+    p = @df fdf plot(
         :synth_α,
-        [:β :weighted :naive :no_synth],
-        title = "Real Alpha = $(α)",
+        cols(Symbol("$(div)_$(metric)") for div in divergences),
+        title = "$(metric) divergence comparison, real alpha = $(α)",
+        label = [div for div in divergences],
         xlabel = "Synthetic Alpha",
-        ylabel = "ROC AUC",
+        ylabel = metric,
         legendtitle = "Divergence",
     )
-    png(p, "src/creditcard/plots/$(t)_alpha$(α)")
+    p = plot!(size=(1000, 700), legend=:outertopright)
+    png(p, "src/creditcard/plots/$(t)/real_alpha_$(α)__$(metric)")
 
 end
 
 
-function plot_divergences(df, t)
+function plot_synth_α(df, α, divergences, metric, t)
 
-    p_β = @df df plot(
-        :real_α + :synth_α,
-        [:β],
-        title = "Beta-Divergence",
-        group = :real_α,
-        legendtitle = "Real Alpha",
-        xlabel = "Real + Synthetic Alpha",
-        ylabel = "ROC AUC",
+    mkpath("src/creditcard/plots/$(t)/")
+    p = @df filter(row -> row[:synth_α] == α, df) plot(
+        :real_α,
+        [cols(Symbol("$(div)_$(metric)") for div in divergences)],
+        title = "$(metric) divergence comparison, synth alpha = $(α)",
+        label = [div for div in divergences],
+        xlabel = "Real Alpha",
+        ylabel = metric,
+        legendtitle = "Divergence",
     )
-    p_β = @df filter(row -> row[:synth_α] == 0.0, df) plot!(:real_α, [:β], label = "varying")
-    p_weighted = @df df plot(
-        :real_α + :synth_α,
-        [:weighted],
-        title = "KLD Weighted",
-        group = :real_α,
-        legendtitle = "Real Alpha",
-        xlabel = "Real + Synthetic Alpha",
-        ylabel = "ROC AUC"
-    )
-    p_weighted = @df filter(row -> row[:synth_α] == 0.0, df) plot!(:real_α, [:weighted], label = "varying")
-    p_naive = @df df plot(
-        :real_α + :synth_α,
-        [:naive],
-        title = "KLD Naive",
-        group = :real_α,
-        legendtitle = "Real Alpha",
-        xlabel = "Real + Synthetic Alpha",
-        ylabel = "ROC AUC"
-    )
-    p_naive = @df filter(row -> row[:synth_α] == 0.0, df) plot!(:real_α, [:naive], label = "varying")
-    p_no_synth = @df df plot(
-        :real_α + :synth_α,
-        [:no_synth],
-        title = "KLD No Synthetic",
-        group = :real_α,
-        legendtitle = "Real Alpha",
-        xlabel = "Real + Synthetic Alpha",
-        ylabel = "ROC AUC"
-    )
-    p_no_synth = @df filter(row -> row[:synth_α] == 0.0, df) plot!(:real_α, [:no_synth], label = "varying")
+    p = plot!(size=(1000, 700), legend=:outertopright)
+    png(p, "src/creditcard/plots/$(t)/synth_alpha_$(α)__$(metric)")
 
-    png(p_β, "src/creditcard/plots/$(t)_beta")
-    png(p_weighted, "src/creditcard/plots/$(t)_weighted")
-    png(p_naive, "src/creditcard/plots/$(t)_naive")
-    png(p_no_synth, "src/creditcard/plots/$(t)_no_synth")
+end
+
+
+function plot_all_divergences(df, divergences, metrics, t)
+
+    for metric in metrics
+        for divergence in divergences
+            plot_divergences(df, divergence, metric, t)
+        end
+    end
+
+end
+
+
+function plot_divergences(df, divergence, metric, t)
+
+    mkpath("src/creditcard/plots/$(t)/")
+    p = @df df plot(
+        :real_α + :synth_α,
+        [cols(Symbol("$(divergence)_$(metric)"))],
+        title = divergence,
+        group = :real_α,
+        legendtitle = "Real Alpha",
+        xlabel = "Real + Synthetic Alpha",
+        ylabel = metric,
+    )
+    p = @df filter(row -> row[:synth_α] == 0.0, df) plot!(:real_α, [cols(Symbol("$(divergence)_$(metric)"))], label = "varying")
+    p = plot!(size=(1000, 700), legend=:outertopright)
+    png(p, "src/creditcard/plots/$(t)/$(divergence)__$(metric)")
 
 end

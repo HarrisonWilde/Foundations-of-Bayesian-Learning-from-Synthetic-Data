@@ -1,3 +1,4 @@
+using Distributed
 using ForwardDiff
 using LinearAlgebra
 using CSV
@@ -9,13 +10,53 @@ using Zygote
 using StatsPlots
 using Random: seed!
 using MCMCChains
+using MLJ
+using Optim
 using MLJLinearModels
 using Dates
-includet("utils.jl")
-includet("distrib_utils.jl")
-includet("distributions.jl")
-includet("plotting.jl")
-theme(:vibrant)
+using ProgressMeter
+using SharedArrays
+using SpecialFunctions
+using StatsFuns: log1pexp, log2π, logistic
+using MLJBase: auc
+include("utils.jl")
+include("distrib_utils.jl")
+include("distributions.jl")
+include("plotting.jl")
+
+print(nworkers())
+print(workers())
+# addprocs(6)
+
+@everywhere begin
+    using Pkg; Pkg.activate(".")
+    using Distributed
+    using ForwardDiff
+    using LinearAlgebra
+    using CSV
+    using DataFrames
+    using AdvancedHMC
+    using Distributions
+    using Turing
+    using Optim
+    using Zygote
+    using StatsPlots
+    using Random: seed!
+    using MCMCChains
+    using MLJ
+    using MLJLinearModels
+    using Dates
+    using ProgressMeter
+    using SharedArrays
+    using SpecialFunctions
+    using StatsFuns: log1pexp, log2π, logistic
+    using MLJBase: auc
+    include("src/creditcard/utils.jl")
+    include("src/creditcard/distrib_utils.jl")
+    include("src/creditcard/distributions.jl")
+    include("src/creditcard/plotting.jl")
+end
+# theme(:vibrant)
 
 t = Dates.format(now(), "HH_MM_SS__dd_mm_yyyy")
 results_name = "results___$(t)"
@@ -47,148 +88,150 @@ len_test = size(real_test)[1]
 X_test = Matrix(real_test[:, Not(labels)])
 y_test = Int.(real_test[:, labels[1]])
 
-results = result_storage()
-
 w = 0.5
 β = 0.5
 βw = 1.15
 σ = 50.0
 λ = 1.0
-num_chains = 2
-real_αs = [0.1, 0.2, 0.3, 0.4, 0.5, 0.75, 1.0]
-synth_αs = [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 0.75]
+# num_chains = 2
+real_αs = [0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175, 0.2, 0.3, 0.4, 0.5, 0.75]
+synth_αs = [0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.075, 0.1, 0.2, 0.3, 0.4, 0.5, 0.75]
 αs = get_conditional_pairs(real_αs, synth_αs)
-n_samples, n_warmup = 100000, 10000
-show_progress = false
-# real_α = 0.0
-# synth_α = 0.0
+num_αs = size(αs)[1]
+results = SharedArray{Float64, 2}((num_αs, 12))
+bayes_factors = SharedArray{Float64, 3}((5, 5, num_αs))
 
-for (real_α, synth_α) in αs
+n_samples, n_warmup = 100000, 20000
+show_progress = true
+p = Progress(num_αs)
+channel = RemoteChannel(()->Channel{Bool}(num_αs), 1)
+print("Starting...")
 
-    # Take matrix slices according to αs
-    X_real = Matrix(real_train[1:floor(Int32, len_real * real_α), Not(labels)])
-    y_real = Int.(real_train[1:floor(Int32, len_real * real_α), labels[1]])
-    X_synth = Matrix(synth_train[1:floor(Int32, len_synth * synth_α), Not(labels)])
-    y_synth = Int.(synth_train[1:floor(Int32, len_synth * synth_α), labels[1]])
+# real_α = 0.1
+# synth_α = 0.1
+@sync begin
+    # this task prints the progress bar
+    @async while take!(channel)
+        next!(p)
+    end
 
-    # Define log posteriors and gradients of them
-    ℓπ_weighted, ∂ℓπ∂θ_weighted = (
-        ℓπ_kld(σ, w, X_real, y_real, X_synth, y_synth),
-        ∂ℓπ∂θ_kld(σ, w, X_real, y_real, X_synth, y_synth)
-    )
-    ℓπ_β, ∂ℓπ∂θ_β = (
-        ℓπ_beta(σ, β, βw, X_real, y_real, X_synth, y_synth),
-        ∂ℓπ∂θ_beta(σ, β, βw, X_real, y_real, X_synth, y_synth)
-    )
-    ℓπ_naive, ∂ℓπ∂θ_naive = (
-        ℓπ_kld(σ, 1, X_real, y_real, X_synth, y_synth),
-        ∂ℓπ∂θ_kld(σ, 1, X_real, y_real, X_synth, y_synth)
-    )
-    ℓπ_no_synth, ∂ℓπ∂θ_no_synth = (
-        ℓπ_kld(σ, 0, X_real, y_real, X_synth, y_synth),
-        ∂ℓπ∂θ_kld(σ, 0, X_real, y_real, X_synth, y_synth)
-    )
+    @async begin
+        # @showprogress 1 for i in 1:num_αs
+        @distributed for i in 1:num_αs
 
-    # Define mass matrix and initial guess at θ
-    metric = DiagEuclideanMetric(size(X_real)[2])
-    # initial_θ = zeros(size(X_real)[2])
-    lr = LogisticRegression(λ; fit_intercept = false)
-    initial_θ = MLJLinearModels.fit(lr, X_real, y_real, solver=LBFGS())
-    auc_mlj = evalu(X_test, y_test, [initial_θ])
+            real_α, synth_α = αs[i]
+            # Take matrix slices according to αs
+            X_real = Matrix(real_train[1:floor(Int32, len_real * real_α), Not(labels)])
+            y_real = Int.(real_train[1:floor(Int32, len_real * real_α), labels[1]])
+            X_synth = Matrix(synth_train[1:floor(Int32, len_synth * synth_α), Not(labels)])
+            y_synth = Int.(synth_train[1:floor(Int32, len_synth * synth_α), labels[1]])
 
-    # BETA DIVERGENCE
-    hamiltonian_β, proposal_β, adaptor_β = setup_run(ℓπ_β, ∂ℓπ∂θ_β, metric, initial_θ)
-    samples_β, stats_β = sample(
-        hamiltonian_β, proposal_β, initial_θ, n_samples, adaptor_β, n_warmup;
-        drop_warmup=true, progress=show_progress
-    )
-    # chain_β = Chains(samples_β)
-    auc_β = evalu(X_test, y_test, samples_β)
+            # Define mass matrix and initial guess at θ
+            metric = DiagEuclideanMetric(size(X_real)[2])
+            # initial_θ = zeros(size(X_real)[2])
+            lr1 = LogisticRegression(λ; fit_intercept = false)
+            initial_θ = MLJLinearModels.fit(lr1, X_real, y_real, solver=MLJLinearModels.LBFGS())
+            auc_mlj, ll_mlj, bf_mlj = evalu(X_test, y_test, [initial_θ])
 
-    # KLD WEIGHTED
-    hamiltonian_weighted, proposal_weighted, adaptor_weighted = setup_run(
-        ℓπ_weighted,
-        ∂ℓπ∂θ_weighted,
-        metric,
-        initial_θ
-    )
-    samples_weighted, stats_weighted = sample(
-        hamiltonian_weighted, proposal_weighted, initial_θ, n_samples, adaptor_weighted, n_warmup;
-        drop_warmup=true, progress=show_progress
-    )
-    # chain_weighted = Chains(samples_weighted)
-    auc_weighted = evalu(X_test, y_test, samples_weighted)
+            lr2 = LogisticRegression(λ; fit_intercept = false)
+            θ_0 = MLJLinearModels.fit(lr2, X_synth, y_synth, solver=MLJLinearModels.LBFGS())
+            βw = weight_calib(X_synth, y_synth, β, θ_0)
 
-    # KLD NAIVE
-    hamiltonian_naive, proposal_naive, adaptor_naive = setup_run(
-        ℓπ_naive,
-        ∂ℓπ∂θ_naive,
-        metric,
-        initial_θ
-    )
-    samples_naive, stats_naive = sample(
-        hamiltonian_naive, proposal_naive, initial_θ, n_samples, adaptor_naive, n_warmup;
-        drop_warmup=true, progress=show_progress
-    )
-    # chain_naive = Chains(samples_naive)
-    auc_naive = evalu(X_test, y_test, samples_naive)
+            # Define log posteriors and gradients of them
+            ℓπ_β, ∂ℓπ∂θ_β = (
+                ℓπ_beta(σ, β, βw, X_real, y_real, X_synth, y_synth),
+                ∂ℓπ∂θ_beta(σ, β, βw, X_real, y_real, X_synth, y_synth)
+            )
+            ℓπ_weighted, ∂ℓπ∂θ_weighted = (
+                ℓπ_kld(σ, w, X_real, y_real, X_synth, y_synth),
+                ∂ℓπ∂θ_kld(σ, w, X_real, y_real, X_synth, y_synth)
+            )
+            ℓπ_naive, ∂ℓπ∂θ_naive = (
+                ℓπ_kld(σ, 1, X_real, y_real, X_synth, y_synth),
+                ∂ℓπ∂θ_kld(σ, 1, X_real, y_real, X_synth, y_synth)
+            )
+            ℓπ_no_synth, ∂ℓπ∂θ_no_synth = (
+                ℓπ_kld(σ, 0, X_real, y_real, X_synth, y_synth),
+                ∂ℓπ∂θ_kld(σ, 0, X_real, y_real, X_synth, y_synth)
+            )
 
-    # KLD NO SYNTHETIC
-    hamiltonian_no_synth, proposal_no_synth, adaptor_no_synth = setup_run(
-        ℓπ_no_synth,
-        ∂ℓπ∂θ_no_synth,
-        metric,
-        initial_θ
-    )
-    samples_no_synth, stats_no_synth = sample(
-        hamiltonian_no_synth, proposal_no_synth, initial_θ, n_samples, adaptor_no_synth, n_warmup;
-        drop_warmup=true, progress=show_progress
-    )
-    # chain_no_synth = Chains(samples_no_synth)
-    auc_no_synth = evalu(X_test, y_test, samples_no_synth)
+            # BETA DIVERGENCE
+            hamiltonian_β, proposal_β, adaptor_β = setup_run(ℓπ_β, ∂ℓπ∂θ_β, metric, initial_θ)
+            samples_β, stats_β = sample(
+                hamiltonian_β, proposal_β, initial_θ, n_samples, adaptor_β, n_warmup;
+                drop_warmup=true, progress=show_progress, verbose=show_progress
+            )
+            # chain_β = Chains(samples_β)
+            auc_β, ll_β, bf_β = evalu(X_test, y_test, samples_β)
 
-    push!(results, (real_α, synth_α, auc_mlj, auc_β, auc_weighted, auc_naive, auc_no_synth))
-    CSV.write("src/creditcard/outputs/$(results_name).csv", results)
+            # KLD WEIGHTED
+            hamiltonian_weighted, proposal_weighted, adaptor_weighted = setup_run(
+                ℓπ_weighted,
+                ∂ℓπ∂θ_weighted,
+                metric,
+                initial_θ
+            )
+            samples_weighted, stats_weighted = sample(
+                hamiltonian_weighted, proposal_weighted, initial_θ, n_samples, adaptor_weighted, n_warmup;
+                drop_warmup=true, progress=show_progress, verbose=show_progress
+            )
+            # chain_weighted = Chains(samples_weighted)
+            auc_weighted, ll_weighted, bf_weighted = evalu(X_test, y_test, samples_weighted)
 
+            # KLD NAIVE
+            hamiltonian_naive, proposal_naive, adaptor_naive = setup_run(
+                ℓπ_naive,
+                ∂ℓπ∂θ_naive,
+                metric,
+                initial_θ
+            )
+            samples_naive, stats_naive = sample(
+                hamiltonian_naive, proposal_naive, initial_θ, n_samples, adaptor_naive, n_warmup;
+                drop_warmup=true, progress=show_progress, verbose=show_progress
+            )
+            # chain_naive = Chains(samples_naive)
+            auc_naive, ll_naive, bf_naive = evalu(X_test, y_test, samples_naive)
+
+            # KLD NO SYNTHETIC
+            hamiltonian_no_synth, proposal_no_synth, adaptor_no_synth = setup_run(
+                ℓπ_no_synth,
+                ∂ℓπ∂θ_no_synth,
+                metric,
+                initial_θ
+            )
+            samples_no_synth, stats_no_synth = sample(
+                hamiltonian_no_synth, proposal_no_synth, initial_θ, n_samples, adaptor_no_synth, n_warmup;
+                drop_warmup=true, progress=show_progress, verbose=show_progress
+            )
+            # chain_no_synth = Chains(samples_no_synth)
+            auc_no_synth, ll_no_synth, bf_no_synth = evalu(X_test, y_test, samples_no_synth)
+
+            bf_matrix = create_bayes_factor_matrix([bf_mlj, bf_β, bf_weighted, bf_naive, bf_no_synth])
+            bayes_factors[:, :, i] = bf_matrix
+            results[i, :] = [real_α, synth_α, auc_mlj, auc_β, auc_weighted, auc_naive, auc_no_synth, ll_mlj, ll_β, ll_weighted, ll_naive, ll_no_synth]
+            put!(channel, true)
+            
+        end
+        put!(channel, false)
+    end
 end
 
-plot_all(results, real_αs, t)
+
+results_df = create_results_df(results)
+CSV.write("src/creditcard/outputs/results___$(t).csv", results_df)
+# save("src/creditcard/outputs/bayes_factors___$(t).jld", "data", bayes_factors)
 
 
-# function evaluate(X_test::Matrix, y_test::Array, chain, threshold)
-#     # Pull the means from each parameter's sampled values in the chain.
-#
-#     # num_iters, _ = size(Array(chn))
-#
-#     # log_likes = Vector{Array{Float64}}(undef, num_iters)
-#
-#     # @showprogress for i in 1:num_iters
-#     #     log_likes[i] = logpdf.(BinomialLogit.(1, X_test * Array(chn)[i, :]), y_test)
-#     # end
-#
-#     # log_loss = -mean(logsumexp.(log_likes) .- log(length(Array(chn)[:, 1])))
-#
-#     mean_coefs = [mean(chain[Symbol("coef$i")].value) for i in 1:31]
-#
-#     # Retrieve the number of rows.
-#     n, _ = size(X_test)
-#
-#     # Generate a vector to store our predictions.
-#     preds = Vector{Float64}(undef, n)
-#     probs = Vector{Float64}(undef, n)
-#
-#     # Calculate the logistic function for each element in the test set.
-#     for i in 1:n
-#         prob = logistic(dot(X_test[i, :], mean_coefs))
-#         probs[i] = prob
-#         if prob >= threshold
-#             preds[i] = 1
-#         else
-#             preds[i] = 0
-#         end
-#     end
-#     return(probs, preds)
-# end
+t = "17_48_15__04_05_2020"
+results = CSV.read("src/creditcard/outputs/results___$(t).csv", copycols=true)
+# bayes_factors = load("src/creditcard/outputs/bayes_factors___$(t).jld")["data"]
+sort!(results, (:real_α, :synth_α))
+real_αs = unique(results[!, :real_α])
+synth_αs = unique(results[!, :synth_α])
+plot_all(results, real_αs, synth_αs, ["beta" "weighted" "naive" "no_synth"], ["auc", "ll"], t)
+
+
+
 #
 #
 
