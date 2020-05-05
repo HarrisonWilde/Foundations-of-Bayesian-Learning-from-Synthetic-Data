@@ -1,5 +1,5 @@
 import numpy as np
-from gan.PATE_GAN import PATE_GAN
+from python_src.gan.PATE_GAN import PATE_GAN
 import argparse
 import pandas as pd
 
@@ -23,7 +23,7 @@ def tt_split(df, ratio=0.7):
 def init_arg():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-p", "--path_to_data", default="../data/", help="Path to data folder.")
+    parser.add_argument("-p", "--path_to_data", default="data/", help="Path to data folder.")
     parser.add_argument("-i", "--dataset_name", default="creditcard", help="Name of dataset to load (csv file).")
     parser.add_argument("-tts", "--split", type=float, default=0.5)
     parser.add_argument("--iter", type=int, default=20000)
