@@ -210,6 +210,7 @@ print("Starting...")
             bayes_factors[:, :, i] = bf_matrix
             results[i, :] = [real_α, synth_α, auc_mlj, auc_β, auc_weighted, auc_naive, auc_no_synth, ll_mlj, ll_β, ll_weighted, ll_naive, ll_no_synth]
             put!(channel, true)
+            
         end
         put!(channel, false)
     end

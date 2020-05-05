@@ -55,9 +55,9 @@ def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, b)
         df.y[df.y.isin([2, 3, 4, 5])] = 0
         df.y[df.y.isin([1])] = 1
         df = df.drop(columns=["Unnamed: 0"], axis=1)
-    if name == "kag_cervical_cancer":
+    elif name == "kag_cervical_cancer":
         df = df.fillna(df.mean())
-    if name == "kag_creditcard":
+    elif name == "kag_creditcard":
         df = df.drop(columns=["Time"], axis=1)
 
     features = list(df.columns)
