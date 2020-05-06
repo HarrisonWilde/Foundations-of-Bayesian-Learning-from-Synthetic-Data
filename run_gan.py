@@ -26,6 +26,7 @@ def init_arg():
     parser.add_argument("-p", "--path_to_data", default="data/", help="Path to data folder.")
     parser.add_argument("-i", "--dataset_name", default="creditcard", help="Name of dataset to load (csv file).")
     parser.add_argument("-tts", "--split", type=float, default=0.5)
+    parser.add_argument("--no_split", "-ns", action="store_true", help="Disable test train split mode")
     parser.add_argument("--iter", type=int, default=20000)
     parser.add_argument("--epsilon", type=float, default=6.)
     parser.add_argument("--delta", type=int, default=5)
@@ -35,9 +36,7 @@ def init_arg():
     return parser.parse_args()
 
 
-def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, b):
-
-    out_name = name + '_' + ''.join(targets) + '_split' + str(split) + '_ganpate'
+def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, no_split, b):
 
     if b is not None:
         b.set_description_str(f'Training PATE-GAN with {num_teachers} teachers, {niter} iterations, delta = {delta}...')
@@ -52,8 +51,8 @@ def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, b)
         df = pd.read_csv(f"{path}raw/{name}.csv")
 
     if name == "uci_seizures":
-        df.y[df.y.isin([2, 3, 4, 5])] = 0
-        df.y[df.y.isin([1])] = 1
+        df.loc[df.y.isin([2, 3, 4, 5]), "y"] = 0
+        df.loc[df.y.isin([1]), "y"] = 1
         df = df.drop(columns=["Unnamed: 0"], axis=1)
     elif name == "kag_cervical_cancer":
         df = df.fillna(df.mean())
@@ -65,46 +64,83 @@ def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, b)
         assert lbl in features
         features.remove(lbl)
 
-    df_train, df_test = tt_split(df, split)
+    if no_split:
+        out_name = f"{name}_{''.join(targets)}_eps{str(epsilon)}"
 
-    x_train_new, y_train_new, x_test_new, y_test_new = PATE_GAN(
-        df_train[features].values,
-        df_train[targets].values,
-        df_test[features].values,
-        df_test[targets].values,
-        epsilon,
-        delta,
-        niter,
-        num_teachers)
+        x_new, y_new = PATE_GAN(
+            df[features].values,
+            df[targets].values,
+            None,
+            None,
+            epsilon,
+            delta,
+            niter,
+            num_teachers,
+            no_split)
 
-    cols = features
-    cols.extend(targets)
+        cols = features
+        cols.extend(targets)
 
-    df_train_new = pd.DataFrame(
-        np.hstack(
-            [x_train_new,
-             y_train_new.reshape(len(y_train_new), -1)]),
-        columns=cols)
+        df_new = pd.DataFrame(
+            np.hstack(
+                [x_new,
+                 y_new.reshape(len(y_new), -1)]),
+            columns=cols)
 
-    df_test_new = pd.DataFrame(
-        np.hstack(
-            [x_test_new,
-             y_test_new.reshape(len(y_test_new), -1)]),
-        columns=cols)
+        df.to_csv(f'{path}splits/{out_name}_real.csv', index=False)
+        df_new.to_csv(f'{path}splits/{out_name}_synth.csv', index=False)
 
-    df_train.to_csv(f'{path}splits/{out_name}_eps{str(epsilon)}_real_train.csv', index=False)
-    df_test.to_csv(f'{path}splits/{out_name}_eps{str(epsilon)}_real_test.csv', index=False)
-    df_train_new.to_csv(f'{path}splits/{out_name}_eps{str(epsilon)}_synth_train.csv', index=False)
-    df_test_new.to_csv(f'{path}splits/{out_name}_eps{str(epsilon)}_synth_test.csv', index=False)
+        if b is not None:
+            b.set_description_str('PATE-GAN training and generation complete.')
 
-    if b is not None:
-        b.set_description_str('PATE-GAN training and generation complete.')
+        return df, df_new
 
-    return df_train, df_test, df_train_new, df_test_new
+    else:
+        out_name = f"{name}_{''.join(targets)}_split{str(split)}_eps{str(epsilon)}"
+
+        df_train, df_test = tt_split(df, split)
+
+        x_train_new, y_train_new, x_test_new, y_test_new = PATE_GAN(
+            df_train[features].values,
+            df_train[targets].values,
+            df_test[features].values,
+            df_test[targets].values,
+            epsilon,
+            delta,
+            niter,
+            num_teachers,
+            no_split)
+
+        cols = features
+        cols.extend(targets)
+
+        df_train_new = pd.DataFrame(
+            np.hstack(
+                [x_train_new,
+                 y_train_new.reshape(len(y_train_new), -1)]),
+            columns=cols)
+
+        df_test_new = pd.DataFrame(
+            np.hstack(
+                [x_test_new,
+                 y_test_new.reshape(len(y_test_new), -1)]),
+            columns=cols)
+
+        df_train.to_csv(f'{path}splits/{out_name}_real_train.csv', index=False)
+        df_test.to_csv(f'{path}splits/{out_name}_real_test.csv', index=False)
+        df_train_new.to_csv(f'{path}splits/{out_name}_synth_train.csv', index=False)
+        df_test_new.to_csv(f'{path}splits/{out_name}_synth_test.csv', index=False)
+
+        if b is not None:
+            b.set_description_str('PATE-GAN training and generation complete.')
+
+        return df_train, df_test, df_train_new, df_test_new
 
 
 if __name__ == '__main__':
 
     args = init_arg()
-    _, _, _, _, = run(args.path_to_data, args.dataset_name, args.targets,
-                      args.separator, args.teachers, args.iter, args.epsilon, args.delta, args.split, None)
+    run(
+        args.path_to_data, args.dataset_name, args.targets, args.separator,
+        args.teachers, args.iter, args.epsilon, args.delta, args.split, args.no_split, None
+    )

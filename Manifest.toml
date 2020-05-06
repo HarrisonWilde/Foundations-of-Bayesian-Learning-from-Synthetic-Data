@@ -47,6 +47,12 @@ git-tree-sha1 = "59c256cf71c3982484ae4486ee86a3d7da891dea"
 uuid = "dce04be8-c92d-5529-be00-80e4d2c0e197"
 version = "2.0.0"
 
+[[ArgParse]]
+deps = ["Logging", "TextWrap"]
+git-tree-sha1 = "a8fc2e149cd6db276c76faebe197ccd3a92fb9ff"
+uuid = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+version = "1.1.0"
+
 [[Arpack]]
 deps = ["Arpack_jll", "Libdl", "LinearAlgebra"]
 git-tree-sha1 = "2ff92b71ba1747c5fdd541f8fc87736d82f40ec9"
@@ -578,10 +584,18 @@ uuid = "27996c0f-39cd-5cc1-a27a-05f136f946b6"
 version = "1.0.3"
 
 [[HDF5]]
-deps = ["BinaryProvider", "Blosc", "CMakeWrapper", "Libdl", "Mmap"]
-git-tree-sha1 = "d3ea5532668bf9bdd5e8d5f16571e0b520cbbb9f"
+deps = ["Blosc", "HDF5_jll", "Libdl", "Mmap", "Random"]
+git-tree-sha1 = "7048678fa1970aaf867f3e99b90f3e85a9847124"
+repo-rev = "master"
+repo-url = "https://github.com/JuliaIO/HDF5.jl.git"
 uuid = "f67ccb44-e63f-5c2f-98bd-6dc0ccc4ba2f"
-version = "0.12.5"
+version = "0.13.2"
+
+[[HDF5_jll]]
+deps = ["Libdl", "Pkg", "Zlib_jll"]
+git-tree-sha1 = "85bd2e586a10ae0eab856125bf5245e0d36384a7"
+uuid = "0234f1f7-429e-5d53-9886-15a909be8d59"
+version = "1.10.5+5"
 
 [[HTTP]]
 deps = ["Base64", "Dates", "IniFile", "MbedTLS", "Sockets"]
@@ -1013,9 +1027,9 @@ version = "1.3.4+0"
 
 [[OpenBLAS_jll]]
 deps = ["CompilerSupportLibraries_jll", "Libdl", "Pkg"]
-git-tree-sha1 = "1ee72dd6d45c320295d64b17f9c108e3e3c83e0f"
+git-tree-sha1 = "1887096f6897306a4662f7c5af936da7d5d1a062"
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.9+3"
+version = "0.3.9+4"
 
 [[OpenSSL_jll]]
 deps = ["Libdl", "Pkg"]
@@ -1063,6 +1077,12 @@ deps = ["Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "FriBidi_jll", "Glib_jll
 git-tree-sha1 = "cd19789f20bde5d45e96a7e937db9a6a024412e6"
 uuid = "36c8627f-9965-5494-a995-c6b170f724f3"
 version = "1.42.4+8"
+
+[[ParallelProcessingTools]]
+deps = ["Distributed"]
+git-tree-sha1 = "80c40053ed64fb240b8878a140459c4dc7f40fd7"
+uuid = "8e8a01fc-6193-5ca1-a2f1-20776dae4199"
+version = "0.4.1"
 
 [[Parameters]]
 deps = ["OrderedCollections"]
@@ -1372,6 +1392,11 @@ version = "0.1.1"
 [[Test]]
 deps = ["Distributed", "InteractiveUtils", "Logging", "Random"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[[TextWrap]]
+git-tree-sha1 = "9250ef9b01b66667380cf3275b3f7488d0e25faf"
+uuid = "b718987f-49a8-5099-9789-dcd902bef87d"
+version = "1.0.1"
 
 [[TimeZones]]
 deps = ["Dates", "EzXML", "Mocking", "Printf", "RecipesBase", "Serialization", "Unicode"]
