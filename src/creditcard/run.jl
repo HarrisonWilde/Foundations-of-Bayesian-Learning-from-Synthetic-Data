@@ -104,8 +104,10 @@ function main()
     show_progress = false
 
     if distributed
+        
         println("Distributing work...")
         p = Progress(total_steps)
+
         progress_pmap(1:total_steps, progress=p) do i
 
             fold = ((i - 1) % folds)
