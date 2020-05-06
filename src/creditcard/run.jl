@@ -110,7 +110,7 @@ function main()
 
             fold = ((i - 1) % folds)
             real_α, synth_α = αs[Int(ceil(i / folds))
-            X_real, y_real, X_synth, y_synth, X_test, y_test = fold_α(
+            X_real, y_real, X_synth, y_synth, X_valid, y_valid = fold_α(
                 real_data, synth_data, real_α, synth_α,
                 fold, folds, labels
             )
@@ -149,7 +149,7 @@ function main()
                 hamiltonian_β, proposal_β, initial_θ, n_samples, adaptor_β, n_warmup;
                 drop_warmup=true, progress=show_progress, verbose=show_progress
             )
-            auc_β, ll_β, bf_β = evalu(X_test, y_test, samples_β)
+            auc_β, ll_β, bf_β = evalu(X_valid, y_valid, samples_β)
 
             # KLD WEIGHTED
             hamiltonian_weighted, proposal_weighted, adaptor_weighted = setup_run(
@@ -163,7 +163,7 @@ function main()
                 hamiltonian_weighted, proposal_weighted, initial_θ, n_samples, adaptor_weighted, n_warmup;
                 drop_warmup=true, progress=show_progress, verbose=show_progress
             )
-            auc_weighted, ll_weighted, bf_weighted = evalu(X_test, y_test, samples_weighted)
+            auc_weighted, ll_weighted, bf_weighted = evalu(X_valid, y_valid, samples_weighted)
 
             # KLD NAIVE
             hamiltonian_naive, proposal_naive, adaptor_naive = setup_run(
@@ -177,7 +177,7 @@ function main()
                 hamiltonian_naive, proposal_naive, initial_θ, n_samples, adaptor_naive, n_warmup;
                 drop_warmup=true, progress=show_progress, verbose=show_progress
             )
-            auc_naive, ll_naive, bf_naive = evalu(X_test, y_test, samples_naive)
+            auc_naive, ll_naive, bf_naive = evalu(X_valid, y_valid, samples_naive)
 
             # KLD NO SYNTHETIC
             hamiltonian_no_synth, proposal_no_synth, adaptor_no_synth = setup_run(
@@ -191,7 +191,7 @@ function main()
                 hamiltonian_no_synth, proposal_no_synth, initial_θ, n_samples, adaptor_no_synth, n_warmup;
                 drop_warmup=true, progress=show_progress, verbose=show_progress
             )
-            auc_no_synth, ll_no_synth, bf_no_synth = evalu(X_test, y_test, samples_no_synth)
+            auc_no_synth, ll_no_synth, bf_no_synth = evalu(X_valid, y_valid, samples_no_synth)
 
             bf_matrix = create_bayes_factor_matrix([bf_β, bf_weighted, bf_naive, bf_no_synth])
             results[i, :] = [real_α, synth_α, auc_β, auc_weighted, auc_naive, auc_no_synth, ll_β, ll_weighted, ll_naive, ll_no_synth]
@@ -203,7 +203,7 @@ function main()
 
             fold = ((i - 1) % folds)
             real_α, synth_α = αs[Int(ceil(i / folds))
-            X_real, y_real, X_synth, y_synth, X_test, y_test = fold_α(
+            X_real, y_real, X_synth, y_synth, X_valid, y_valid = fold_α(
                 real_data, synth_data, real_α, synth_α,
                 fold, folds, labels
             )
@@ -242,7 +242,7 @@ function main()
                 hamiltonian_β, proposal_β, initial_θ, n_samples, adaptor_β, n_warmup;
                 drop_warmup=true, progress=show_progress, verbose=show_progress
             )
-            auc_β, ll_β, bf_β = evalu(X_test, y_test, samples_β)
+            auc_β, ll_β, bf_β = evalu(X_valid, y_valid, samples_β)
 
             # KLD WEIGHTED
             hamiltonian_weighted, proposal_weighted, adaptor_weighted = setup_run(
@@ -256,7 +256,7 @@ function main()
                 hamiltonian_weighted, proposal_weighted, initial_θ, n_samples, adaptor_weighted, n_warmup;
                 drop_warmup=true, progress=show_progress, verbose=show_progress
             )
-            auc_weighted, ll_weighted, bf_weighted = evalu(X_test, y_test, samples_weighted)
+            auc_weighted, ll_weighted, bf_weighted = evalu(X_valid, y_valid, samples_weighted)
 
             # KLD NAIVE
             hamiltonian_naive, proposal_naive, adaptor_naive = setup_run(
@@ -270,7 +270,7 @@ function main()
                 hamiltonian_naive, proposal_naive, initial_θ, n_samples, adaptor_naive, n_warmup;
                 drop_warmup=true, progress=show_progress, verbose=show_progress
             )
-            auc_naive, ll_naive, bf_naive = evalu(X_test, y_test, samples_naive)
+            auc_naive, ll_naive, bf_naive = evalu(X_valid, y_valid, samples_naive)
 
             # KLD NO SYNTHETIC
             hamiltonian_no_synth, proposal_no_synth, adaptor_no_synth = setup_run(
@@ -284,7 +284,7 @@ function main()
                 hamiltonian_no_synth, proposal_no_synth, initial_θ, n_samples, adaptor_no_synth, n_warmup;
                 drop_warmup=true, progress=show_progress, verbose=show_progress
             )
-            auc_no_synth, ll_no_synth, bf_no_synth = evalu(X_test, y_test, samples_no_synth)
+            auc_no_synth, ll_no_synth, bf_no_synth = evalu(X_valid, y_valid, samples_no_synth)
 
             bf_matrix = create_bayes_factor_matrix([bf_β, bf_weighted, bf_naive, bf_no_synth])
             results[i, :] = [real_α, synth_α, auc_β, auc_weighted, auc_naive, auc_no_synth, ll_β, ll_weighted, ll_naive, ll_no_synth]
