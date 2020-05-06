@@ -3,7 +3,7 @@ Return the logistic function computed in a numerically stable way:
 ``logistic(x) = 1/(1+exp(-x))``
 """
 function LOGISTIC(T)
-    log(one(T) / eps(T) - one(T))
+    log(one(T) / Base.eps(T) - one(T))
 end
 function logistic(x::T) where {T}
     LOGISTIC_T = LOGISTIC(T)

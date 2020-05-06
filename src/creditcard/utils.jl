@@ -32,11 +32,11 @@ function parse_cl()
 end
 
 
-function load_data(name, label, eps; shuffle_rows=true)
+function load_data(name, label, ε; shuffle_rows=true)
 
     labels = [Symbol(label),]
-    real_data = CSV.read("data/splits/$(name)_$(label)_eps$(eps)_real.csv")
-    synth_data = CSV.read("data/splits/$(name)_$(label)_eps$(eps)_synth.csv")
+    real_data = CSV.read("data/splits/$(name)_$(label)_eps$(ε)_real.csv")
+    synth_data = CSV.read("data/splits/$(name)_$(label)_eps$(ε)_synth.csv")
 
     # Append 1s column to each to allow for intercept term in logistic regression
     real_data = hcat(DataFrame(intercept = ones(size(real_data)[1])), real_data)

@@ -20,7 +20,6 @@ using SharedArrays
 using SpecialFunctions
 using StatsFuns: log1pexp, log2π
 using MLJBase: auc
-using SpecialFunctions
 include("utils.jl")
 include("experiment.jl")
 include("distributions.jl")
@@ -50,13 +49,11 @@ include("evaluation.jl")
     using SpecialFunctions
     using StatsFuns: log1pexp, log2π
     using MLJBase: auc
-    using SpecialFunctions
     include("src/creditcard/utils.jl")
     include("src/creditcard/experiment.jl")
     include("src/creditcard/distributions.jl")
     include("src/creditcard/weight_calibration.jl")
     include("src/creditcard/evaluation.jl")
-    include("src/creditcard/plotting.jl")
 end
 
 """
@@ -78,17 +75,17 @@ For me the issue was that the login node and the worker nodes have a separate fi
 
 function main()
     args = parse_cl()
-    name, label, eps = args["dataset"], args["label"], args["eps"]
+    name, label, ε = args["dataset"], args["label"], args["epsilon"]
     folds, split = args["folds"], args["split"]
     use_ad, distributed = args["use_ad"], args["distributed"]
-    # name, label, eps, folds, split, distributed, use_ad = "uci_spambase", "label", "6.0", 5, 1.0, true, false
+    # name, label, ε, folds, split, distributed, use_ad = "uci_spambase", "label", "6.0", 5, 1.0, true, false
     t = Dates.format(now(), "HH_MM_SS__dd_mm_yyyy")
     println("Loading data...")
-    labels, real_data, synth_data = load_data(name, label, eps)
+    labels, real_data, synth_data = load_data(name, label, ε)
     println("Setting up experiment...")
     θ_dim = size(real_data)[2] - 1
     w = 0.5
-    βw = 0.5
+    β = 0.5
     βw = 1.15
     σ = 50.0
     λ = 0.0
@@ -100,26 +97,25 @@ function main()
     results = SharedArray{Float64, 2}((total_steps, 10))
     bayes_factors = SharedArray{Float64, 3}((4, 4, total_steps))
 
-    n_samples, n_warmup = 100000, 20000
-    show_progress = false
+    n_samples, n_warmup = 100000, 10000
+    show_progress = true
 
     if distributed
-        
+
         println("Distributing work...")
         p = Progress(total_steps)
 
         progress_pmap(1:total_steps, progress=p) do i
 
             fold = ((i - 1) % folds)
-            real_α, synth_α = αs[Int(ceil(i / folds))
+            real_α, synth_α = αs[Int(ceil(i / folds))]
             X_real, y_real, X_synth, y_synth, X_valid, y_valid = fold_α(
                 real_data, synth_data, real_α, synth_α,
                 fold, folds, labels
-            )
-            metric, initial_θ, βw_calib = init_run(
+            ) # 910.578 μs (22.82% GC)  memory estimate:  2.72 MiB  allocs estimate:  1568
+            metric, initial_θ = init_run(
                 θ_dim, λ, X_real, y_real, X_synth, y_synth, β
-            )
-            print(βw_calib)
+            ) # 225.605 μs (4.17% GC)  memory estimate:  126.03 KiB  allocs estimate:  281
 
             # Define log posteriors and gradients of them
             ℓπ_β, ∂ℓπ∂θ_β = (
@@ -141,12 +137,12 @@ function main()
 
             # BETA DIVERGENCE
             hamiltonian_β, proposal_β, adaptor_β = setup_run(
-                ℓπ_β,
-                ∂ℓπ∂θ_β,
+                ℓπ_β,      # 61.805 μs (10.47% GC)  memory estimate:  32.80 KiB  allocs estimate:  7
+                ∂ℓπ∂θ_β,   # 1.274 ms (2.00% GC)  memory estimate:  564.16 KiB  allocs estimate:  38
                 metric,
                 initial_θ,
                 use_ad=use_ad
-            )
+            ) # 78.517 ms (2.52% GC) memory estimate:  60.07 MiB  allocs estimate:  5518
             samples_β, stats_β = sample(
                 hamiltonian_β, proposal_β, initial_θ, n_samples, adaptor_β, n_warmup;
                 drop_warmup=true, progress=show_progress, verbose=show_progress
@@ -155,8 +151,8 @@ function main()
 
             # KLD WEIGHTED
             hamiltonian_weighted, proposal_weighted, adaptor_weighted = setup_run(
-                ℓπ_weighted,
-                ∂ℓπ∂θ_weighted,
+                ℓπ_weighted,     # 36.188 μs (8.75% GC)  memory estimate:  29.80 KiB  allocs estimate:  6
+                ∂ℓπ∂θ_weighted,  # 82.259 μs (9.74% GC)  memory estimate:  64.38 KiB  allocs estimate:  20
                 metric,
                 initial_θ,
                 use_ad=use_ad
@@ -204,7 +200,7 @@ function main()
         @showprogress for i in 1:total_steps
 
             fold = ((i - 1) % folds)
-            real_α, synth_α = αs[Int(ceil(i / folds))
+            real_α, synth_α = αs[Int(ceil(i / folds))]
             X_real, y_real, X_synth, y_synth, X_valid, y_valid = fold_α(
                 real_data, synth_data, real_α, synth_α,
                 fold, folds, labels

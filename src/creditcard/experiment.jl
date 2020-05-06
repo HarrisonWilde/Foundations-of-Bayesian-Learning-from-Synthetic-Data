@@ -52,9 +52,9 @@ function init_run(θ_dim, λ, X_real, y_real, X_synth, y_synth, β; use_zero_ini
         # auc_mlj, ll_mlj, bf_mlj = evalu(X_test, y_test, [initial_θ])
         lr2 = LogisticRegression(λ; fit_intercept = false)
         θ_0 = MLJLinearModels.fit(lr2, X_synth, y_synth, solver=MLJLinearModels.LBFGS())
-        βw_calib = weight_calib(X_synth, y_synth, β, θ_0)
+        # βw_calib = weight_calib(X_synth, y_synth, β, θ_0)
     end
-    return metric, initial_θ, βw_calib
+    return metric, initial_θ
 end
 
 function setup_run(ℓπ, ∂ℓπ∂θ, metric, initial_θ; use_ad=true, target_acceptance_rate=0.75)
@@ -72,6 +72,7 @@ function setup_run(ℓπ, ∂ℓπ∂θ, metric, initial_θ; use_ad=true, target
 
     # Define an HMC sampler, with multinomial sampling scheme, generalised No-U-Turn criteria, and windowed adaption for step-size and diagonal mass matrix
     proposal = AdvancedHMC.NUTS{MultinomialTS, GeneralisedNoUTurn}(integrator)
+    # proposal = AdvancedHMC.StaticTrajectory(integrator, 100)
     adaptor = StanHMCAdaptor(MassMatrixAdaptor(metric), StepSizeAdaptor(target_acceptance_rate, integrator))
 
     return hamiltonian, proposal, adaptor

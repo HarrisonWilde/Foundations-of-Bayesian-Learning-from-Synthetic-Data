@@ -1,8 +1,8 @@
 using CSV
 using DataFrames
 using Plots
-using PlotThemes
-include("plotting")
+using StatsPlots
+include("src/creditcard/plotting.jl")
 theme(:vibrant)
 
 
