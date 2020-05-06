@@ -16,7 +16,7 @@ function beta_loss(X, y, β, θ)
 end
 
 
-function ∂beta_loss∂θ(∂loss∂θ, X, y, β, θ)
+function ∂beta_loss∂θ(X, y, β, θ)
     if length(size(X)) == 1
         z = dot(X, θ)
     else
@@ -25,13 +25,14 @@ function ∂beta_loss∂θ(∂loss∂θ, X, y, β, θ)
     pdf = pdf_bernoulli_logit.(z, y)
     ∂logistic_zX = @. ∂logistic(z_synth) * X
     ∂ℓpdf∂θ = @. y_synth * logistic(-z) * X - (1.0 - y) * logistic_z * X
-    ∂loss∂θ .= -vec(βw * sum((@. pdf ^ β * (
+    ∂loss∂θ = -vec(βw * sum((@. pdf ^ β * (
             ∂ℓpdf∂θ
         ) - (
             logistic_z ^ β * ∂logistic_zX - (1.0 - logistic_z) ^ β * ∂logistic_zX
         )),
         dims=1
     ))
+    return ∂loss∂θ
 end
 
 
@@ -42,8 +43,8 @@ function weight_calib(X, y, β, θ_0)
     f(θ) = beta_loss(X, y, β, θ)
     # g!(θ) = ∂beta_loss∂θ(∂loss∂θ, X, y, β, θ)
     # WHY DOES THIS NOT WORK vvvvv just returns whatever I pass it on the line below uncommented too
-    # θ̂ = Optim.minimizer(optimize(f, θ_0, Optim.LBFGS(); autodiff=:forward))
-    θ̂ = Optim.minimizer(optimize(f, θ_0; autodiff=:forward))
+    θ̂ = Optim.minimizer(optimize(f, θ_0, Optim.LBFGS(); autodiff=:forward))
+    # θ̂ = Optim.minimizer(optimize(f, θ_0; autodiff=:forward))
 
     grad_data = Array{Float64, 2}(undef, (n, p))
     Hess_data = Array{Float64, 3}(undef, (p, p, n))
