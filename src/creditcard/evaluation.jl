@@ -37,7 +37,7 @@ function marginal_likelihood_estimate(X, y, samples)
     N = size(samples)[1]
     avg = 0
     for θ in samples
-        avg += sum(pdf_bernoulli_logit.(X * θ, y) ^ -1) / N
+        avg += sum(pdf_bernoulli_logit.(X * θ, y) .^ -1) / N
     end
     return avg ^ -1
     # mean(map(θ -> sum(pdf_bernoulli_logit.(X_test * θ, y_test)), samples))

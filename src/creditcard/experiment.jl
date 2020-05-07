@@ -5,19 +5,19 @@ function fold_α(real_data, synth_data, real_α, synth_α, fold, folds, labels)
     synth_chunk = len_synth / folds
 
     if fold == 0
-        real_ix = [collect(floor(Int, 1 + (real_chunk)):floor(Int, len_real * real_α))]
-        synth_ix = [collect(floor(Int, 1 + (synth_chunk)):floor(Int, len_synth * synth_α))]
+        real_ix = collect(floor(Int, 1 + real_chunk):floor(Int, real_chunk * (1 + (folds - 1) * real_α)))
+        synth_ix = collect(floor(Int, 1 + synth_chunk):floor(Int, real_chunk * (1 + (folds - 1) * synth_α)))
     elseif fold == folds - 1
-        real_ix = [collect(1:floor(Int, (fold) * real_chunk * real_α))]
-        synth_ix = [collect(1:floor(Int, (fold) * synth_chunk * synth_α))]
+        real_ix = collect(1:floor(Int, (fold) * real_chunk * real_α))
+        synth_ix = collect(1:floor(Int, (fold) * synth_chunk * synth_α))
     else
         real_ix = vcat(
             collect(floor(Int, 1 + ((fold + 1) * real_chunk)):len_real),
-            collect(1:floor(Int, (fold) * real_chunk))
+            collect(1:floor(Int, fold * real_chunk))
         )[1:floor(Int, real_chunk * (folds - 1) * real_α)]
         synth_ix = vcat(
             collect(floor(Int, 1 + ((fold + 1) * synth_chunk)):len_synth),
-            collect(1:floor(Int, (fold) * synth_chunk))
+            collect(1:floor(Int, fold * synth_chunk))
         )[1:floor(Int, synth_chunk * (folds - 1) * synth_α)]
     end
 

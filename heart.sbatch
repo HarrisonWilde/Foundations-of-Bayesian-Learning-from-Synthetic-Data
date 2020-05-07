@@ -7,18 +7,18 @@
 #SBATCH -e slurm.%N.%j.err # STDERR
 
 # Create the machine file for Julia
-JULIA_MACHINEFILE=machinefile-${SLURM_JOB_ID}
-srun bash -c hostname > $JULIA_MACHINEFILE
-sed -i 's/^[[:alnum:]]*/&-ib/g' $JULIA_MACHINEFILE
+# JULIA_MACHINEFILE=machinefile-${SLURM_JOB_ID}
+# srun bash -c hostname > $JULIA_MACHINEFILE
+# sed -i 's/^[[:alnum:]]*/&-ib/g' $JULIA_MACHINEFILE
+
+export JULIA_PROJECT=/home/dcs/csrxgb/julia_stuff/Project.toml
 
 module purge
 module load Julia/1.4.1-linux-x86_64
 
-julia \
-    --project=@. \
-    --machine-file ${JULIA_MACHINEFILE} \
+julia src/creditcard/run.jl \
     --dataset uci_heart \
     --label target \
     --epsilon 6.0 \
-    --distributed \
-    src/creditcard/experiment.jl
+    --folds 5 \
+    --distributed

@@ -42,9 +42,7 @@ function weight_calib(X, y, β, θ_0)
     n, p = size(X)
     f(θ) = beta_loss(X, y, β, θ)
     # g!(θ) = ∂beta_loss∂θ(∂loss∂θ, X, y, β, θ)
-    # WHY DOES THIS NOT WORK vvvvv just returns whatever I pass it on the line below uncommented too
     θ̂ = Optim.minimizer(optimize(f, θ_0, Optim.LBFGS(); autodiff=:forward))
-    # θ̂ = Optim.minimizer(optimize(f, θ_0; autodiff=:forward))
 
     grad_data = Array{Float64, 2}(undef, (n, p))
     Hess_data = Array{Float64, 3}(undef, (p, p, n))

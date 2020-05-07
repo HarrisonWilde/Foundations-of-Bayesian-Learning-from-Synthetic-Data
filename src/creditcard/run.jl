@@ -1,5 +1,12 @@
-using ArgParse
+using ClusterManagers
 using Distributed
+addprocs_slurm(parse(Int, ENV["SLURM_NTASKS"]))
+println("We are all connected and ready.")
+for i in workers()
+	host, pid = fetch(@spawnat i (gethostname(), getpid()))
+	println(host, pid)
+end
+using ArgParse
 using ForwardDiff
 using LinearAlgebra
 using CSV
@@ -8,7 +15,6 @@ using AdvancedHMC
 using Distributions
 using Turing
 using Zygote
-using Random: seed!
 using MCMCChains
 using JLD
 using MLJ
@@ -18,6 +24,7 @@ using Dates
 using ProgressMeter
 using SharedArrays
 using SpecialFunctions
+using Random: seed!
 using StatsFuns: log1pexp, log2π
 using MLJBase: auc
 include("utils.jl")
@@ -27,8 +34,8 @@ include("weight_calibration.jl")
 include("evaluation.jl")
 
 @everywhere begin
-    using ArgParse
     using Distributed
+    using ArgParse
     using ForwardDiff
     using LinearAlgebra
     using CSV
@@ -73,12 +80,14 @@ Christoph Hedtrich:house_with_garden:  13 hours ago
 For me the issue was that the login node and the worker nodes have a separate file system and I had to manually move the depot path to the worker file system, otherwise nothing worked...
 """
 
+
+
 function main()
     args = parse_cl()
     name, label, ε = args["dataset"], args["label"], args["epsilon"]
     folds, split = args["folds"], args["split"]
     use_ad, distributed = args["use_ad"], args["distributed"]
-    # name, label, ε, folds, split, distributed, use_ad = "uci_spambase", "label", "6.0", 5, 1.0, true, false
+    # name, label, ε, folds, split, distributed, use_ad = "uci_heart", "target", "6.0", 5, 1.0, true, false
     t = Dates.format(now(), "HH_MM_SS__dd_mm_yyyy")
     println("Loading data...")
     labels, real_data, synth_data = load_data(name, label, ε)
@@ -194,6 +203,7 @@ function main()
             bf_matrix = create_bayes_factor_matrix([bf_β, bf_weighted, bf_naive, bf_no_synth])
             results[i, :] = [real_α, synth_α, auc_β, auc_weighted, auc_naive, auc_no_synth, ll_β, ll_weighted, ll_naive, ll_no_synth]
             bayes_factors[:, :, i] = bf_matrix
+		    CSV.write("src/creditcard/outputs/results___$(t).csv", create_results_df(results))
         end
     else
         println("Beginning experiment...")
@@ -205,10 +215,9 @@ function main()
                 real_data, synth_data, real_α, synth_α,
                 fold, folds, labels
             )
-            metric, initial_θ, βw_calib = init_run(
+            metric, initial_θ = init_run(
                 θ_dim, λ, X_real, y_real, X_synth, y_synth, β
             )
-            print(βw_calib)
 
             # Define log posteriors and gradients of them
             ℓπ_β, ∂ℓπ∂θ_β = (
@@ -287,6 +296,7 @@ function main()
             bf_matrix = create_bayes_factor_matrix([bf_β, bf_weighted, bf_naive, bf_no_synth])
             results[i, :] = [real_α, synth_α, auc_β, auc_weighted, auc_naive, auc_no_synth, ll_β, ll_weighted, ll_naive, ll_no_synth]
             bayes_factors[:, :, i] = bf_matrix
+			CSV.write("src/creditcard/outputs/results___$(t).csv", create_results_df(results))
         end
     end
 
@@ -298,3 +308,7 @@ function main()
 end
 
 main()
+
+for i in workers()
+	rmprocs(i)
+end

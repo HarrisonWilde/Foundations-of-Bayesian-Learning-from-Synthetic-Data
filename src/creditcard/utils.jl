@@ -21,7 +21,7 @@ function parse_cl()
             help = "specify the ratio of the data to be used for training, the rest will be held back for testing"
             arg_type = Float64
             default = 1.0
-        "--use_ad", "-ad"
+        "--use_ad", "-a"
             help = "include to use Zygote rather than manually defined derivatives"
             action = :store_true
         "--distributed", "-c"
