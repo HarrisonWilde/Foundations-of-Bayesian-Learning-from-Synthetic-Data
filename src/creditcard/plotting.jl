@@ -34,7 +34,7 @@ function plot_real_α(df, α, divergences, metric, t)
     print(fdf)
     p = @df fdf plot(
         :synth_α,
-        cols(Symbol("$(div)_$(metric)") for div in divergences),
+        [cols(Symbol("$(div)_$(metric)") for div in divergences)],
         title = "$(metric) divergence comparison, real alpha = $(α)",
         label = [div for div in divergences],
         xlabel = "Synthetic Alpha",

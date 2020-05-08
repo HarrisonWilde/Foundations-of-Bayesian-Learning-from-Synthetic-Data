@@ -2,15 +2,16 @@
     using Pkg; Pkg.activate(".")
     using LinearAlgebra
     using ForwardDiff
+    using ProgressMeter
 end
 
 function f(M::Int, N::Int)
-    e = @distributed (+) for n = 1:N
+    outs = progress_pmap(1:N, progress=Progress(N)) do n
         A = rand(M, M)
         A = ForwardDiff.gradient(x ->  0.5x[1] + rand(), [4])[1] * (A + A')
-        sort(real(eigvals(A)))
+        return sort(real(eigvals(A))), ["Hi$(n+1)", "Hi$(n)"]
     end
-    return e / N
+    return outs
 end
 
 # compile

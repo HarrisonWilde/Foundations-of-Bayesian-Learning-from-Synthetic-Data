@@ -13,7 +13,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
 # Function Start
-def PATE_GAN(X_train, Y_train, X_test, Y_test, epsilon, delta, niter, num_teachers):
+def PATE_GAN(X_train, Y_train, X_test, Y_test, epsilon, delta, niter, num_teachers, no_split):
 
     # Parameters
     # Batch size
@@ -193,27 +193,23 @@ def PATE_GAN(X_train, Y_train, X_test, Y_test, epsilon, delta, niter, num_teache
         p.set_description(str(G_loss_curr))
 
     # Output Generation
-
     New_X_train = sess.run([G_sample], feed_dict={Z: sample_Z(len(X_train[:, 0]), z_dim), Y: np.reshape(Y_train, [len(Y_train), 1])})
-
     New_X_train = New_X_train[0]
 
     # Renormalization
-
     New_X_train = New_X_train * (Max_Val + 1e-8)
-
     New_X_train = New_X_train + Min_Val
 
-    # Testing
+    if no_split:
+        return New_X_train, Y_train
+        
+    else:
+        # Testing
+        New_X_test = sess.run([G_sample], feed_dict={Z: sample_Z(len(X_test[:, 0]), z_dim), Y: np.reshape(Y_test, [len(Y_test), 1])})
+        New_X_test = New_X_test[0]
 
-    New_X_test = sess.run([G_sample], feed_dict={Z: sample_Z(len(X_test[:, 0]), z_dim), Y: np.reshape(Y_test, [len(Y_test), 1])})
+        # Renormalization
+        New_X_test = New_X_test * (Max_Val + 1e-8)
+        New_X_test = New_X_test + Min_Val
 
-    New_X_test = New_X_test[0]
-
-    # Renormalization
-
-    New_X_test = New_X_test * (Max_Val + 1e-8)
-
-    New_X_test = New_X_test + Min_Val
-
-    return New_X_train, Y_train, New_X_test, Y_test
+        return New_X_train, Y_train, New_X_test, Y_test

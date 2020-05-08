@@ -14,4 +14,4 @@ sed -i 's/^[[:alnum:]]*/&-ib/g' $JULIA_MACHINEFILE
 module purge
 module load Julia/1.4.1-linux-x86_64
 
-julia --project=@. --machine-file ${JULIA_MACHINEFILE} src/creditcard/cluster_test.jl 2000 2000
+julia --project=@. --machine-file ${JULIA_MACHINEFILE} src/creditcard/cluster_test.jl 100 100
