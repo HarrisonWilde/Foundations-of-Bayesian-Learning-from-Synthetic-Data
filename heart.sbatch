@@ -5,6 +5,8 @@
 #SBATCH --time=24:00:00
 #SBATCH -o slurm.%N.%j.out # STDOUT
 #SBATCH -e slurm.%N.%j.err # STDERR
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=h.wilde@warwick.ac.uk
 
 # Create the machine file for Julia
 # JULIA_MACHINEFILE=machinefile-${SLURM_JOB_ID}

@@ -3,8 +3,8 @@ using Distributed
 addprocs_slurm(parse(Int, ENV["SLURM_NTASKS"]))
 println("We are all connected and ready.")
 for i in workers()
-	host, pid = fetch(@spawnat i (gethostname(), getpid()))
-	println(host, pid)
+    host, pid = fetch(@spawnat i (gethostname(), getpid()))
+    println(host, pid)
 end
 using ArgParse
 using ForwardDiff
@@ -63,24 +63,6 @@ include("evaluation.jl")
     include("src/creditcard/evaluation.jl")
 end
 
-"""
-Christoph Hedtrich:house_with_garden:  13 hours ago
-Hi, doesn't it work if you drop the machine file, but do the following in Julia:
-using ClusterManagers
-addprocs_slurm(parse(Int, ENV["SLURM_NTASKS"]))
-
-Christoph Hedtrich:house_with_garden:  13 hours ago
-also I had issues until I have set the JULIA_DEPOT_PATH
-
-Christoph Hedtrich:house_with_garden:  13 hours ago
-my .bashrc has a line (replace ... with your depot path):
-export JULIA_DEPOT_PATH="---"
-
-Christoph Hedtrich:house_with_garden:  13 hours ago
-For me the issue was that the login node and the worker nodes have a separate file system and I had to manually move the depot path to the worker file system, otherwise nothing worked...
-"""
-
-
 
 function main()
     args = parse_cl()
@@ -103,18 +85,21 @@ function main()
     αs = get_conditional_pairs(real_αs, synth_αs)
     num_αs = size(αs)[1]
     total_steps = num_αs * folds
-    results = SharedArray{Float64, 2}((total_steps, 10))
-    bayes_factors = SharedArray{Float64, 3}((4, 4, total_steps))
+    # results = SharedArray{Float64, 2}("results", (total_steps, 10))
+    # bayes_factors = SharedArray{Float64, 3}("bayes_factors", (4, 4, total_steps))
 
-    n_samples, n_warmup = 100000, 10000
+    n_samples, n_warmup = 15000, 5000
     show_progress = true
 
     if distributed
 
         println("Distributing work...")
         p = Progress(total_steps)
+        io = open("/home/dcs/csrxgb/julia_stuff/$(t)_out.csv", "w")
+        write(io, "real_α,synth_α,mlj_auc,beta_auc,weighted_auc,naive_auc,no_synth_auc,mlj_ll,beta_ll,weighted_ll,naive_ll,no_synth_ll\n")
+        close(io)
 
-        progress_pmap(1:total_steps, progress=p) do i
+        outs = progress_pmap(1:total_steps, progress=p) do i
 
             fold = ((i - 1) % folds)
             real_α, synth_α = αs[Int(ceil(i / folds))]
@@ -201,9 +186,15 @@ function main()
             auc_no_synth, ll_no_synth, bf_no_synth = evalu(X_valid, y_valid, samples_no_synth)
 
             bf_matrix = create_bayes_factor_matrix([bf_β, bf_weighted, bf_naive, bf_no_synth])
-            results[i, :] = [real_α, synth_α, auc_β, auc_weighted, auc_naive, auc_no_synth, ll_β, ll_weighted, ll_naive, ll_no_synth]
-            bayes_factors[:, :, i] = bf_matrix
-		    CSV.write("src/creditcard/outputs/results___$(t).csv", create_results_df(results))
+            # results[i, :] =
+            # bayes_factors[:, :, i] = bf_matrix
+            open("/home/dcs/csrxgb/julia_stuff/$(t)_out.csv", "a") do io
+                write(io, "$(real_α),$(synth_α),$(auc_β),$(auc_weighted),$(auc_naive),$(auc_no_synth),$(ll_β),$(ll_weighted),$(ll_naive),$(ll_no_synth)\n")
+            end
+            return (
+                [real_α, synth_α, auc_β, auc_weighted, auc_naive, auc_no_synth, ll_β, ll_weighted, ll_naive, ll_no_synth],
+                bf_matrix
+            )
         end
     else
         println("Beginning experiment...")
@@ -296,19 +287,20 @@ function main()
             bf_matrix = create_bayes_factor_matrix([bf_β, bf_weighted, bf_naive, bf_no_synth])
             results[i, :] = [real_α, synth_α, auc_β, auc_weighted, auc_naive, auc_no_synth, ll_β, ll_weighted, ll_naive, ll_no_synth]
             bayes_factors[:, :, i] = bf_matrix
-			CSV.write("src/creditcard/outputs/results___$(t).csv", create_results_df(results))
+            CSV.write("src/creditcard/outputs/results___$(t).csv", create_results_df(results))
         end
     end
 
     # Record the results in csv and JLD objects
-    results_df = create_results_df(results)
-    CSV.write("src/creditcard/outputs/results___$(t).csv", results_df)
-    save("src/creditcard/outputs/bayes_factors___$(t).jld", "data", bayes_factors)
+    save("src/creditcard/outputs/all_out___$(t).jld", "data", outs)
+    # results_df = create_results_df(results)
+    # CSV.write("src/creditcard/outputs/results___$(t).csv", results_df)
+    # save("src/creditcard/outputs/bayes_factors___$(t).jld", "data", bayes_factors)
     println("Done")
 end
 
 main()
 
 for i in workers()
-	rmprocs(i)
+    rmprocs(i)
 end
