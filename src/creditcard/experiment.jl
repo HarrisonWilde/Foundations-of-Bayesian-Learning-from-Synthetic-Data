@@ -50,12 +50,13 @@ function init_run(θ_dim, λ, X_real, y_real, X_synth, y_synth, β; use_zero_ini
         lr1 = LogisticRegression(λ, 0.; fit_intercept = false)
         initial_θ = MLJLinearModels.fit(lr1, X_real, (2 .* y_real) .- 1; solver=MLJLinearModels.LBFGS())
         # auc_mlj, ll_mlj, bf_mlj = evalu(X_test, y_test, [initial_θ])
-        lr2 = LogisticRegression(λ, 0.; fit_intercept = false)
+        lr2 = LogisticRegression(λ; fit_intercept = false)
         θ_0 = MLJLinearModels.fit(lr2, X_synth, (2 .* y_synth) .- 1; solver=MLJLinearModels.LBFGS())
         # βw_calib = weight_calib(X_synth, y_synth, β, θ_0)
     end
     return metric, initial_θ
 end
+
 
 function setup_run(ℓπ, ∂ℓπ∂θ, metric, initial_θ; use_ad=true, target_acceptance_rate=0.75)
 

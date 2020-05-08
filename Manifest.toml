@@ -503,6 +503,11 @@ git-tree-sha1 = "2f56bee16bd0151de7b6a1eeea2ced190a2ad8d4"
 uuid = "559328eb-81f9-559d-9380-de523a88c83c"
 version = "1.0.5+3"
 
+[[FunctionWrappers]]
+git-tree-sha1 = "e4813d187be8c7b993cb7f85cbf2b7bfbaadc694"
+uuid = "069b7b12-0de2-55c6-9aab-29f3d0a68a2e"
+version = "1.1.1"
+
 [[Future]]
 deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
@@ -955,6 +960,12 @@ git-tree-sha1 = "31921ad09307dd9ad693da3213a218152fadb8f2"
 uuid = "f28f55f0-a522-5efc-85c2-fe41dfb9b2d9"
 version = "1.1.0"
 
+[[Memoization]]
+deps = ["MacroTools"]
+git-tree-sha1 = "eece658cd9a0ea5a50e9a2996a71fd9fb51b3710"
+uuid = "6fafb56a-5788-4b4e-91ca-c0cea6611c73"
+version = "0.1.3"
+
 [[Missings]]
 deps = ["DataAPI"]
 git-tree-sha1 = "de0a5ce9e5289f27df672ffabef4d1e5861247d5"
@@ -1253,6 +1264,12 @@ git-tree-sha1 = "d37400976e98018ee840e0ca4f9d20baa231dc6b"
 uuid = "ae029012-a4dd-5104-9daa-d747884805df"
 version = "1.0.1"
 
+[[ReverseDiff]]
+deps = ["DiffResults", "DiffRules", "ForwardDiff", "FunctionWrappers", "LinearAlgebra", "MacroTools", "NaNMath", "Random", "SpecialFunctions", "StaticArrays", "Statistics"]
+git-tree-sha1 = "1d4a01bc6fe181e4fef376affb3f90bad584b0f4"
+uuid = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
+version = "1.2.0"
+
 [[Rmath]]
 deps = ["Random", "Rmath_jll"]
 git-tree-sha1 = "86c5647b565873641538d8f812c04e4c9dbeb370"
@@ -1501,30 +1518,6 @@ git-tree-sha1 = "c287bbc08773474ab1d12849eb46b961a325e149"
 uuid = "aed1982a-8fda-507f-9586-7b0439959a61"
 version = "1.1.33+2"
 
-[[Xorg_compositeproto_jll]]
-deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "264e520f4c754e87e2609519cb994fe4c0999acd"
-uuid = "0af4abc2-9bda-511f-85a5-daebf69421ba"
-version = "0.4.0+0"
-
-[[Xorg_damageproto_jll]]
-deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "eadb7238c6bf4abf8ba6644a132bcfbe9d051e2a"
-uuid = "17eb5352-d50b-5fdc-b767-c749cd790e65"
-version = "1.2.1+0"
-
-[[Xorg_fixesproto_jll]]
-deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "101dcd548d6021b8d3cdaeb66c65c0d85faf1bcb"
-uuid = "cf2f014d-5496-555f-b295-889ac9dfddaa"
-version = "5.0.0+0"
-
-[[Xorg_inputproto_jll]]
-deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "6f05096d08266571e6214fd2525f3e78b2c63060"
-uuid = "84d6cd60-beca-5f49-93c5-789031781a2d"
-version = "2.3.2+1"
-
 [[Xorg_libX11_jll]]
 deps = ["Libdl", "Pkg", "Xorg_libxcb_jll", "Xorg_xtrans_jll"]
 git-tree-sha1 = "bbfb646a5a86dc636041c8ee945799b69d37fdba"
@@ -1621,48 +1614,6 @@ git-tree-sha1 = "aa352c02f58b930b654aee7cce4900e358369174"
 uuid = "cc61e674-0454-545c-8b26-ed2c68acab7a"
 version = "1.1.0+2"
 
-[[Xorg_randrproto_jll]]
-deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "5c2f995614980bedaed7de97995f9a5e0f857bef"
-uuid = "0e394dc1-71ae-5c65-abe5-8749687e42d3"
-version = "1.5.0+0"
-
-[[Xorg_recordproto_jll]]
-deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "0192d9bc3f2bfdd90191e055c412c3fd3faf4b1d"
-uuid = "a7b44dc7-5846-51fe-a1cd-6b242f0ec0a2"
-version = "1.14.2+0"
-
-[[Xorg_renderproto_jll]]
-deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "ce13e67a75e2e6338500f22af11003823bf189b5"
-uuid = "21e99dc2-7dba-5609-a726-b181bd3bbb6c"
-version = "0.11.1+1"
-
-[[Xorg_util_macros_jll]]
-deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "50c9763d05bdc0795a19877bae9274ada3e499d1"
-uuid = "7c09cfe3-afe2-5798-bcc9-d6b7fecfdca5"
-version = "1.19.2+1"
-
-[[Xorg_xcb_proto_jll]]
-deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "c0817a62c2a53dd97469f1934e32461cedaf400d"
-uuid = "c2e9c405-c068-5e7b-9b35-084fd074cae4"
-version = "1.13.0+1"
-
-[[Xorg_xextproto_jll]]
-deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "49ac1f9b3f5b775141690a64b40f401527996a76"
-uuid = "d13bc2ba-d276-5c6f-8a1c-29ed04aab5d0"
-version = "7.3.0+1"
-
-[[Xorg_xineramaproto_jll]]
-deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "9f331b569a18a4fbf66ee8f60cb4018c73faabb4"
-uuid = "6a3da44c-33b1-5374-838f-bf0fbf92c29b"
-version = "1.2.1+0"
-
 [[Xorg_xkbcomp_jll]]
 deps = ["Libdl", "Pkg", "Xorg_libxkbfile_jll"]
 git-tree-sha1 = "c197888ea15879ecd257ba142a3078248540fbda"
@@ -1674,12 +1625,6 @@ deps = ["Libdl", "Pkg", "Xorg_xkbcomp_jll"]
 git-tree-sha1 = "416f9257ada9365f53766394af77134bf594e1a2"
 uuid = "33bec58e-1273-512f-9401-5d533626f822"
 version = "2.27.0+1"
-
-[[Xorg_xproto_jll]]
-deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "1528b6cef487b060c47bb5894824f30143489023"
-uuid = "46797783-dccc-5433-be59-056c4bde8513"
-version = "7.0.31+1"
 
 [[Xorg_xtrans_jll]]
 deps = ["Libdl", "Pkg"]

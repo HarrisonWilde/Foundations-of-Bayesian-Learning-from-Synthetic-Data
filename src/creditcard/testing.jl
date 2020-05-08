@@ -52,17 +52,13 @@ i = 628
 
 fold = ((i - 1) % folds)
 real_α, synth_α = αs[Int(ceil(i / folds))]
-X_real, y_real, X_synth, y_synth, X_valid, y_valid = fold_α(
-    real_data, synth_data, real_α, synth_α,
-    fold, folds, labels
-)
-metric, initial_θ = init_run(
-    θ_dim, λ, X_real, y_real, X_synth, y_synth, β
-)
-lr2 = LogisticRegression(λ, 0.; fit_intercept = false)
-θ_0 = MLJLinearModels.fit(lr2, X_synth, y_synth; solver=MLJLinearModels.LBFGS())
-X, y = X_synth, y_synth
+temp = Matrix(CSV.read("real.csv"))
+y = temp[:, 15]
+X = temp[:, 1:14]
 
+lr2 = LogisticRegression(λ, 0.; fit_intercept = false)
+θ_0 = MLJLinearModels.fit(lr2, X, (2 .* y) .- 1; solver=MLJLinearModels.LBFGS())
+weight_calib(X,y,β,θ_0)
 
 
 function beta_loss(X, y, β, θ)
@@ -100,8 +96,6 @@ end
 
 # Need to define the loss on an uncontrained paramater space
 function weight_calib(X, y, β, θ_0)
-    # θ_0 = [4.41720489, 0.41632245, -23.38931654, 11.71856821, -0.42375295, -0.06698908, -4.55647240, 3.97981790, 0.57330941, 3.02025206, -10.33997373, 7.97994416, -10.13166633, -13.37909493]
-    θ_0 = [5.325730848, 0.025682393, -3.542510715, 1.460540432, -0.048783089, -0.004425257, 0.041810460, 0.899856071, 0.042562678, -0.185233851, -1.252361784, 1.029490076, -1.064326000, -1.583962267 ]
     n, p = size(X)
     f(θ_0) = beta_loss(X, y, β, θ_0)
     # g!(θ) = ∂beta_loss∂θ(∂loss∂θ, X, y, β, θ)
@@ -115,7 +109,7 @@ function weight_calib(X, y, β, θ_0)
     for i in 1:n
         grad_data[i, :] = ForwardDiff.gradient(θ -> beta_loss(X[i, :]', y[i], β, θ), θ̂)
         mean_grad_sq_data += (grad_data[i, :] .* transpose(grad_data[i, :]))
-        Hess_data[:, :, i] = ForwardDiff.hessian(θ -> beta_loss(X[i, :]', y[i], β, θ), θ̂)
+        Hess_data[:, :, i] = ForwardDiff.hessian(θ -> beta_loss(X[i, :]', y[i], β, θ), big.(θ̂))
         mean_Hess_data += Hess_data[:, :, i]
     end
 

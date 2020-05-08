@@ -11,9 +11,9 @@ function Distributions.logpdf(d::WeightedBernoulliLogit{<:Real}, k::Int)
     return d.w * logpdf_bernoulli_logit(d.logitp, k)
 end
 
-function Distributions.pdf(d::WeightedBernoulliLogit{<:Real}, k::Int)
-    return pdf_bernoulli_logit(d.logitp, k)
-end
+# function Distributions.pdf(d::WeightedBernoulliLogit{<:Real}, k::Int)
+#     return pdf_bernoulli_logit(d.logitp, k)
+# end
 
 
 """
@@ -47,6 +47,10 @@ end
 	y_synth .~ BetaDBernoulliLogit.(X_synth * θ, β, βw)
 
 end
+
+
+chn = sample(β_logistic_regression(X_real, X_synth, y_real, y_synth, θ_dim, σ, β, βw), Turing.NUTS(), 5000)
+chn = sample(logistic_regression(X_real, X_synth, y_real, y_synth, θ_dim, σ, w), Turing.NUTS(), 5000)
 
 
 
