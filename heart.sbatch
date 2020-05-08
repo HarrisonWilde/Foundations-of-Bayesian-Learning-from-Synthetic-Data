@@ -7,7 +7,6 @@
 #SBATCH -e slurm.%N.%j.err # STDERR
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=h.wilde@warwick.ac.uk
-#SBATCH --job-name=%j.out
 
 # Create the machine file for Julia
 # JULIA_MACHINEFILE=machinefile-${SLURM_JOB_ID}
