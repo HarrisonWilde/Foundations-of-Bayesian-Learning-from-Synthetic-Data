@@ -29,6 +29,7 @@ using StatsFuns: log1pexp, log2π
 using MLJBase: auc
 include("utils.jl")
 include("experiment.jl")
+include("mathematical_utils.jl")
 include("distributions.jl")
 include("weight_calibration.jl")
 include("evaluation.jl")
@@ -58,6 +59,7 @@ include("evaluation.jl")
     using MLJBase: auc
     include("src/creditcard/utils.jl")
     include("src/creditcard/experiment.jl")
+    include("src/creditcard/mathematical_utils.jl")
     include("src/creditcard/distributions.jl")
     include("src/creditcard/weight_calibration.jl")
     include("src/creditcard/evaluation.jl")
@@ -96,7 +98,7 @@ function main()
         println("Distributing work...")
         p = Progress(total_steps)
         io = open("/home/dcs/csrxgb/julia_stuff/$(t)_out.csv", "w")
-        write(io, "real_α,synth_α,mlj_auc,beta_auc,weighted_auc,naive_auc,no_synth_auc,mlj_ll,beta_ll,weighted_ll,naive_ll,no_synth_ll\n")
+        write(io, "real_α,synth_α,beta_auc,weighted_auc,naive_auc,no_synth_auc,beta_ll,weighted_ll,naive_ll,no_synth_ll\n")
         close(io)
 
         outs = progress_pmap(1:total_steps, progress=p) do i
@@ -106,10 +108,10 @@ function main()
             X_real, y_real, X_synth, y_synth, X_valid, y_valid = fold_α(
                 real_data, synth_data, real_α, synth_α,
                 fold, folds, labels
-            ) # 910.578 μs (22.82% GC)  memory estimate:  2.72 MiB  allocs estimate:  1568
+            )
             metric, initial_θ = init_run(
                 θ_dim, λ, X_real, y_real, X_synth, y_synth, β
-            ) # 225.605 μs (4.17% GC)  memory estimate:  126.03 KiB  allocs estimate:  281
+            )
 
             # Define log posteriors and gradients of them
             ℓπ_β, ∂ℓπ∂θ_β = (
@@ -136,7 +138,7 @@ function main()
                 metric,
                 initial_θ,
                 use_ad=use_ad
-            ) # 78.517 ms (2.52% GC) memory estimate:  60.07 MiB  allocs estimate:  5518
+            )
             samples_β, stats_β = sample(
                 hamiltonian_β, proposal_β, initial_θ, n_samples, adaptor_β, n_warmup;
                 drop_warmup=true, progress=show_progress, verbose=show_progress

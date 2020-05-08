@@ -27,6 +27,10 @@ function parse_cl()
         "--distributed", "-c"
             help = "include when running the code in a distributed fashion"
             action = :store_true
+        "--sampler", "-o"
+            help = "choose from AHMC, Turing and Stan"
+            arg_type = String
+            default = "AHMC"
     end
     return parse_args(s)
 end

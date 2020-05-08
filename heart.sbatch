@@ -2,11 +2,12 @@
 #SBATCH --nodes=1
 #SBATCH --tasks-per-node=28
 #SBATCH --mem-per-cpu=4571
-#SBATCH --time=24:00:00
+#SBATCH --time=48:00:00
 #SBATCH -o slurm.%N.%j.out # STDOUT
 #SBATCH -e slurm.%N.%j.err # STDERR
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=h.wilde@warwick.ac.uk
+#SBATCH --output=%j.out
 
 # Create the machine file for Julia
 # JULIA_MACHINEFILE=machinefile-${SLURM_JOB_ID}
@@ -22,5 +23,5 @@ julia src/creditcard/run.jl \
     --dataset uci_heart \
     --label target \
     --epsilon 6.0 \
-    --folds 5 \
+    --folds 3 \
     --distributed

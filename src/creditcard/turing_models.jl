@@ -1,18 +1,53 @@
-function ℓπ_kld(σ, w, X_real, y_real, X_synth, y_synth)
-
-    function logpost(θ::Array{Float64,1})
-        z_real = X_real * θ
-        z_synth = X_synth * θ
-
-        ℓprior = logpdf_centred_mvnormal(σ, θ)
-        ℓreal = sum(logpdf_bernoulli_logit.(z_real, y_real))
-        ℓsynth = w * sum(logpdf_bernoulli_logit.(z_synth, y_synth))
-
-        return (ℓprior + ℓreal + ℓsynth)
-    end
-
-    return logpost
+"""
+    WeightedBernoulliLogit(p<:Real, w<:Real)
+A univariate bernoulli logit distribution with weight w
+"""
+struct WeightedBernoulliLogit{T<:Real, U<:Real} <: DiscreteUnivariateDistribution
+    logitp::T
+	w::U
 end
+
+function Distributions.logpdf(d::WeightedBernoulliLogit{<:Real}, k::Int)
+    return d.w * logpdf_bernoulli_logit(d.logitp, k)
+end
+
+function Distributions.pdf(d::WeightedBernoulliLogit{<:Real}, k::Int)
+    return pdf_bernoulli_logit(d.logitp, k)
+end
+
+
+"""
+    BetaDBernoulliLogit(p<:Real)
+A univariate bernoulli logit distribution beta-diverged
+"""
+struct BetaDBernoulliLogit{T<:Real, U<:Real, V<:Real} <: DiscreteUnivariateDistribution
+    logitp::T
+	β::U
+	βw::V
+end
+
+function Distributions.logpdf(d::BetaDBernoulliLogit{<:Real}, k::Int)
+    return d.βw * logpdf_betad_bernoulli_logit(d.logitp, k, d.β)
+end
+
+
+
+@model logistic_regression(X_real, X_synth, y_real, y_synth, θ_dim, σ, w) = begin
+
+    θ ~ MvNormal(fill(0, θ_dim), σ)
+    y_real .~ WeightedBernoulliLogit.(X_real * θ, 1)
+	y_synth .~ WeightedBernoulliLogit.(X_synth * θ, w)
+
+end
+
+@model β_logistic_regression(X_real, X_synth, y_real, y_synth, θ_dim, σ, β, βw) = begin
+
+    θ ~ MvNormal(fill(0, θ_dim), σ)
+    y_real .~ WeightedBernoulliLogit.(X_real * θ, 1)
+	y_synth .~ BetaDBernoulliLogit.(X_synth * θ, β, βw)
+
+end
+
 
 
 """
