@@ -67,9 +67,8 @@ def run_dgp(args, models, dgps, prior_config, window, seed, i):
 
     if args.plot_pdfs:
         b.set_description(f'Plotting graphs...')
-        out = pd.DataFrame(out)
-        plot_pdfs(out.filter(regex='Posterior Predictive|Y Tilde Value|DGP'), f"{seed}_{str(k_real)}_{str(k_synth)}", plot_dir)
-
+        out_df = pd.DataFrame(out)
+        plot_pdfs(out_df.filter(regex='Posterior Predictive|Y Tilde Value|DGP'), f"{seed}_{str(k_real)}_{str(k_synth)}", plot_dir)
     return out
 
 
@@ -83,12 +82,6 @@ def run(args, models, dgps, prior_config, window, iteration):
     outs = process_map(func, range(len(dgps)), max_workers=args.parallel_dgps, leave=False, position=2)
     df = pd.DataFrame([item for sublist in outs for item in sublist])
     df.to_pickle(f'{output_dir}/out_{iteration}.pkl')
-    if args.plot_metrics:
-        plot_metric_k(df.filter(regex='Log Loss|Number of|Laplace Noise'), 'Log Loss', prior_config, dgp, seed, plot_dir)
-        plot_metric_k(df.filter(regex='KLD|Number of|Laplace Noise'), 'KLD', prior_config, dgp, seed, plot_dir)
-        plot_metric_k(df.filter(regex='HellingerD|Number of|Laplace Noise'), 'HellingerD', prior_config, dgp, seed, plot_dir)
-        plot_metric_k(df.filter(regex='TVD|Number of|Laplace Noise'), 'TVD', prior_config, dgp, seed, plot_dir)
-        plot_metric_k(df.filter(regex='WassersteinD|Number of|Laplace Noise'), 'WassersteinD', prior_config, dgp, seed, plot_dir)
 
 
 if __name__ == '__main__':
@@ -127,7 +120,7 @@ if __name__ == '__main__':
     models = dict(open_models(args.models, verbose=False))
 
     n_reals = 10 * np.array(range(1, 11)) ** 2
-    n_synths = list(range(1, 10)) + list(range(10, 30, 2)) + list(range(30, 101, 5))
+    n_synths = list(range(0, 10)) + list(range(10, 30, 2)) + list(range(30, 101, 5))
     prior_config = [
         args.priormu,
         args.prioralpha,
@@ -162,6 +155,3 @@ if __name__ == '__main__':
     func = partial(run, )
     for iteration in tqdm(range(args.iterations), position=1):
         run(args, models, dgps, prior_config, window, iteration)
-
-    for prior_config, dgp in [(prior_config, dgp) for prior_config in prior_configs for dgp in dgps]:
-        plot_all_k(path, f'prior{str(prior_config)}dgp{str(dgp)}.pkl')
