@@ -15,70 +15,72 @@ from plotting import plot_metric_k, plot_pdfs
 from plotting_helper import plot_all_k
 
 
+def run_dgp(args, models, dgps, prior_config, window, seed, i):
+
+    a = tqdm(total=0, position=2, bar_format='{desc}')
+    b = tqdm(total=0, position=4, bar_format='{desc}')
+    mu, sigma, k_real, k_synth, scale = dgps[i]
+    a.set_description_str(f'DGP: y_real[{k_real}] ~ Normal({mu}, {sigma}), y_synth[{k_synth}] ~ Normal({mu}, {sigma}) + Laplace({scale})')
+
+    if args.ytildeconfig is None:
+        ytildes = generate_ytildes(mu - sigma * 3, mu + sigma * 3, args.ytildestep)
+    else:
+        ytildes = generate_ytildes(*args.ytildeconfig)
+
+    real_data = generate_data(mu, sigma, k_real)
+    pre_contam_data = generate_data(mu, sigma, k_synth)
+    synth_data = apply_noise(pre_contam_data, scale)
+    unseen_data = generate_data(mu, sigma, args.num_unseen)
+    pdf_ytilde = calculate_dgp_pdf(ytildes, mu, sigma)
+    outs = []
+
+    out = [{
+        'chain': chain, 'Number of Real Samples': k_real,
+        'Total Number of Samples': k_real + k_synth,
+        'Laplace Noise Scale': scale, 'Y Tilde Value': ytildes, 'DGP': pdf_ytilde
+    } for chain in range(args.chains)]
+
+    for name, model in tqdm(models.items(), leave=False, position=5):
+
+        b.set_description(f'Running MCMC on the {name} model...')
+
+        fit = run_experiment(
+            model, args.warmup, args.iters, args.chains,
+            real_data, synth_data, unseen_data, ytildes,
+            *prior_config, scale, mu, sigma, args.parallel_chains, args.check_hmc_diag, seed
+        )
+
+        if fit is None:
+            continue
+
+        for chain in tqdm(range(args.chains), position=6, leave=False):
+
+            log_loss, post_pred, KLD, hellingerD, TVD, wassersteinD = evaluate_fits(fit, window, pdf_ytilde, chain)
+            out[chain].update({
+                f'{name} Log Loss': log_loss,
+                f'{name} Posterior Predictive': post_pred,
+                f'{name} KLD': KLD,
+                f'{name} HellingerD': hellingerD,
+                f'{name} TVD': TVD,
+                f'{name} WassersteinD': wassersteinD
+            })
+
+    if args.plot_pdfs:
+        b.set_description(f'Plotting graphs...')
+        out = pd.DataFrame(out)
+        plot_pdfs(out.filter(regex='Posterior Predictive|Y Tilde Value|DGP'), f"{seed}_{str(k_real)}_{str(k_synth)}", plot_dir)
+
+    return out
+
+
 def run(args, models, dgps, prior_config, window, iteration):
     '''
     Parent process to run across all combinations of passed parameters, sampling and saving / plotting outputs
     '''
-
-    a = tqdm(total=0, position=2, bar_format='{desc}')
-    b = tqdm(total=0, position=4, bar_format='{desc}')
     seed = iteration + args.base_seed
     np.random.seed(seed)
-
-    for dgp in tqdm(dgps, leave=False, position=3):
-
-        mu, sigma, k_real, k_synth, scale = dgp
-
-        a.set_description_str(f'DGP: y_real[{k_real}] ~ Normal({mu}, {sigma}), y_synth[{k_synth}] ~ Normal({mu}, {sigma}) + Laplace({scale})')
-
-        if args.ytildeconfig is None:
-            ytildes = generate_ytildes(mu - sigma * 3, mu + sigma * 3, args.ytildestep)
-        else:
-            ytildes = generate_ytildes(*args.ytildeconfig)
-
-        real_data = generate_data(mu, sigma, k_real)
-        pre_contam_data = generate_data(mu, sigma, k_synth)
-        synth_data = apply_noise(pre_contam_data, scale)
-        unseen_data = generate_data(mu, sigma, args.num_unseen)
-        pdf_ytilde = calculate_dgp_pdf(ytildes, mu, sigma)
-        outs = []
-
-        out = [{
-            'chain': chain, 'Number of Real Samples': k_real,
-            'Total Number of Samples': k_real + k_synth,
-            'Laplace Noise Scale': scale, 'Y Tilde Value': ytildes, 'DGP': pdf_ytilde
-        } for chain in range(args.chains)]
-
-        for name, model in tqdm(models.items(), leave=False, position=5):
-
-            b.set_description(f'Running MCMC on the {name} model...')
-
-            fit = run_experiment(
-                model, args.warmup, args.iters, args.chains,
-                real_data, synth_data, unseen_data, ytildes,
-                *prior_config, scale, mu, sigma, 0, args.check_hmc_diag, seed
-            )
-
-            if fit is None:
-                continue
-
-            for chain in tqdm(range(args.chains), position=6, leave=False):
-
-                log_loss, post_pred, KLD, hellingerD, TVD, wassersteinD = evaluate_fits(fit, window, pdf_ytilde, chain)
-                out[chain].update({
-                    f'{name} Log Loss': log_loss,
-                    f'{name} Posterior Predictive': post_pred,
-                    f'{name} KLD': KLD,
-                    f'{name} HellingerD': hellingerD,
-                    f'{name} TVD': TVD,
-                    f'{name} WassersteinD': wassersteinD
-                })
-
-        outs.extend(out)
-        if args.plot_pdfs:
-            out = pd.DataFrame(out)
-            plot_pdfs(out.filter(regex='Posterior Predictive|Y Tilde Value|DGP'), f"{seed}_{str(k_real)}_{str(k_synth)}", plot_dir)
-
+    func = partial(run_dgp, args, models, dgps, prior_config, window, seed)
+    outs = process_map(func, range(len(dgps)), max_workers=args.parallel_dgps, leave=False, position=3)
     df = pd.DataFrame(outs)
     df.to_pickle(f'{output_dir}/out_{iteration}.pkl')
     if args.plot_metrics:
@@ -109,7 +111,9 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--chains', default=1, type=int, help='Number of MCMC chains')
     parser.add_argument('-yt', '--ytildeconfig', default=None, type=float, nargs=3, help='Provide ytilde grid config "start end freq" e.g. 0 10 0.1')
     parser.add_argument('-yts', '--ytildestep', default=0.1, type=float, help='Provide ytilde step to use with default range e.g. 0.1')
-    parser.add_argument('-cpu', '--cpu_count', default=multiprocessing.cpu_count(), type=int, help='Number of cpus to use, defaults to maximum available')
+    parser.add_argument('--iterations', default=1, type=int, help='Number of cpus to use for parallel full iterations, defaults to 1')
+    parser.add_argument('--parallel_chains', default=1, type=int, help='Number of cpus to use for parallel chain sampling, defaults to 1')
+    parser.add_argument('--parallel_dgps', default=1, type=int, help='Number of cpus to use for parallel dgps, defaults to 1')
     parser.add_argument('-p1', '--plot_pdfs', action='store_true', help='Flag to indicate whether plotting should happen automatically during execution')
     parser.add_argument('-p2', '--plot_metrics', action='store_true', help='Flag to indicate whether plotting should happen automatically during execution')
     parser.add_argument('-mult', '--multiplier', default=1, type=int, help='')
@@ -154,9 +158,10 @@ if __name__ == '__main__':
         os.remove('sampling.txt')
 
     tqdm(total=0, position=0, bar_format='{desc}').set_description_str(
-        f'Running {args.cpu_count * args.multiplier} iterations with {args.chains} chains each on {args.cpu_count} cores')
-    func = partial(run, args, models, dgps, prior_config, window)
-    process_map(func, range(args.cpu_count * args.multiplier), max_workers=args.cpu_count, leave=False, position=1)
+        f'Running {args.iterations} iterations with {args.chains} chains on {args.parallel_chains} cores')
+    func = partial(run, )
+    for iteration in tqdm(range(args.iterations), position=1):
+        run(args, models, dgps, prior_config, window, iteration)
 
     for prior_config, dgp in [(prior_config, dgp) for prior_config in prior_configs for dgp in dgps]:
         plot_all_k(path, f'prior{str(prior_config)}dgp{str(dgp)}.pkl')
