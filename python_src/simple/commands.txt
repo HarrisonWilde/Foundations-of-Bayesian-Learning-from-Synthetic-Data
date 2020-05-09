@@ -38,4 +38,4 @@ python run_seb.py \
 --weight 0.5 --beta 0.5 --betaw 1.1 \
 --warmup 1000 --iters 10000 --chains 3 \
 --ytildestep 0.1 \
---parallel_dgps 6 --parallel_chains 0 --plot_pdfs
+--parallel_dgps 8 --parallel_chains 0 --plot_pdfs

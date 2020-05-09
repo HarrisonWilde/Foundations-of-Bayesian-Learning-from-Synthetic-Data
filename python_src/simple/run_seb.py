@@ -17,8 +17,9 @@ from plotting_helper import plot_all_k
 
 def run_dgp(args, models, dgps, prior_config, window, seed, i):
 
-    a = tqdm(total=0, position=2, bar_format='{desc}')
-    b = tqdm(total=0, position=4, bar_format='{desc}')
+    proc_num = multiprocessing.current_process()._identity[0]
+    a = tqdm(total=0, position=3 + (4 * (proc_num - 1)), bar_format='{desc}', leave=False)
+    b = tqdm(total=0, position=5 + (4 * (proc_num - 1)), bar_format='{desc}', leave=False)
     mu, sigma, k_real, k_synth, scale = dgps[i]
     a.set_description_str(f'DGP: y_real[{k_real}] ~ Normal({mu}, {sigma}), y_synth[{k_synth}] ~ Normal({mu}, {sigma}) + Laplace({scale})')
 
@@ -40,7 +41,7 @@ def run_dgp(args, models, dgps, prior_config, window, seed, i):
         'Laplace Noise Scale': scale, 'Y Tilde Value': ytildes, 'DGP': pdf_ytilde
     } for chain in range(args.chains)]
 
-    for name, model in tqdm(models.items(), leave=False, position=5):
+    for name, model in tqdm(models.items(), leave=False, position=4 + (4 * (proc_num - 1))):
 
         b.set_description(f'Running MCMC on the {name} model...')
 
@@ -53,7 +54,7 @@ def run_dgp(args, models, dgps, prior_config, window, seed, i):
         if fit is None:
             continue
 
-        for chain in tqdm(range(args.chains), position=6, leave=False):
+        for chain in tqdm(range(args.chains), position=6 + (4 * (proc_num - 1)), leave=False):
 
             log_loss, post_pred, KLD, hellingerD, TVD, wassersteinD = evaluate_fits(fit, window, pdf_ytilde, chain)
             out[chain].update({
@@ -80,7 +81,7 @@ def run(args, models, dgps, prior_config, window, iteration):
     seed = iteration + args.base_seed
     np.random.seed(seed)
     func = partial(run_dgp, args, models, dgps, prior_config, window, seed)
-    outs = process_map(func, range(len(dgps)), max_workers=args.parallel_dgps, leave=False, position=3)
+    outs = process_map(func, range(len(dgps)), max_workers=args.parallel_dgps, leave=False, position=2)
     df = pd.DataFrame(outs)
     df.to_pickle(f'{output_dir}/out_{iteration}.pkl')
     if args.plot_metrics:
