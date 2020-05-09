@@ -33,7 +33,6 @@ def run_dgp(args, models, dgps, prior_config, window, seed, i):
     synth_data = apply_noise(pre_contam_data, scale)
     unseen_data = generate_data(mu, sigma, args.num_unseen)
     pdf_ytilde = calculate_dgp_pdf(ytildes, mu, sigma)
-    outs = []
 
     out = [{
         'chain': chain, 'Number of Real Samples': k_real,
@@ -82,7 +81,7 @@ def run(args, models, dgps, prior_config, window, iteration):
     np.random.seed(seed)
     func = partial(run_dgp, args, models, dgps, prior_config, window, seed)
     outs = process_map(func, range(len(dgps)), max_workers=args.parallel_dgps, leave=False, position=2)
-    df = pd.DataFrame(outs)
+    df = pd.DataFrame([item for sublist in outs for item in sublist])
     df.to_pickle(f'{output_dir}/out_{iteration}.pkl')
     if args.plot_metrics:
         plot_metric_k(df.filter(regex='Log Loss|Number of|Laplace Noise'), 'Log Loss', prior_config, dgp, seed, plot_dir)
