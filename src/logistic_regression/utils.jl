@@ -1,6 +1,10 @@
 function parse_cl()
     s = ArgParseSettings()
     @add_arg_table! s begin
+        "--path", "-p"
+            help = "specify the path to the top of the project, this is where output csv's will go"
+            arg_type = String
+            required = true
         "--dataset", "-d"
             help = "specify the dataset to be used"
             arg_type = String

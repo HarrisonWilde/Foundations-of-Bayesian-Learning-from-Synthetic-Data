@@ -19,6 +19,7 @@ module purge
 module load Julia/1.4.1-linux-x86_64
 
 julia src/creditcard/run.jl \
+    --path /home/dcs/csrxgb/julia_stuff \
     --dataset uci_heart \
     --label target \
     --epsilon 6.0 \

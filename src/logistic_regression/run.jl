@@ -57,12 +57,12 @@ include("evaluation.jl")
     using SpecialFunctions
     using StatsFuns: log1pexp, log2π
     using MLJBase: auc
-    include("src/creditcard/utils.jl")
-    include("src/creditcard/experiment.jl")
-    include("src/creditcard/mathematical_utils.jl")
-    include("src/creditcard/distributions.jl")
-    include("src/creditcard/weight_calibration.jl")
-    include("src/creditcard/evaluation.jl")
+    include("src/logistic_regression/utils.jl")
+    include("src/logistic_regression/experiment.jl")
+    include("src/logistic_regression/mathematical_utils.jl")
+    include("src/logistic_regression/distributions.jl")
+    include("src/logistic_regression/weight_calibration.jl")
+    include("src/logistic_regression/evaluation.jl")
 end
 
 
@@ -90,14 +90,14 @@ function main()
     # results = SharedArray{Float64, 2}("results", (total_steps, 10))
     # bayes_factors = SharedArray{Float64, 3}("bayes_factors", (4, 4, total_steps))
 
-    n_samples, n_warmup = 15000, 5000
+    n_samples, n_warmup = 12500, 2500
     show_progress = true
 
     if distributed
 
         println("Distributing work...")
         p = Progress(total_steps)
-        io = open("/home/dcs/csrxgb/julia_stuff/$(t)_out.csv", "w")
+        io = open("$(path)/$(t)_out.csv", "w")
         write(io, "real_α,synth_α,beta_auc,weighted_auc,naive_auc,no_synth_auc,beta_ll,weighted_ll,naive_ll,no_synth_ll\n")
         close(io)
 
@@ -190,7 +190,7 @@ function main()
             bf_matrix = create_bayes_factor_matrix([bf_β, bf_weighted, bf_naive, bf_no_synth])
             # results[i, :] =
             # bayes_factors[:, :, i] = bf_matrix
-            open("/home/dcs/csrxgb/julia_stuff/$(t)_out.csv", "a") do io
+            open("$(path)/$(t)_out.csv", "a") do io
                 write(io, "$(real_α),$(synth_α),$(auc_β),$(auc_weighted),$(auc_naive),$(auc_no_synth),$(ll_β),$(ll_weighted),$(ll_naive),$(ll_no_synth)\n")
             end
             return (
@@ -289,12 +289,12 @@ function main()
             bf_matrix = create_bayes_factor_matrix([bf_β, bf_weighted, bf_naive, bf_no_synth])
             results[i, :] = [real_α, synth_α, auc_β, auc_weighted, auc_naive, auc_no_synth, ll_β, ll_weighted, ll_naive, ll_no_synth]
             bayes_factors[:, :, i] = bf_matrix
-            CSV.write("src/creditcard/outputs/results___$(t).csv", create_results_df(results))
+            CSV.write("src/logistic_regression/outputs/results___$(t).csv", create_results_df(results))
         end
     end
 
     # Record the results in csv and JLD objects
-    save("src/creditcard/outputs/all_out___$(t).jld", "data", outs)
+    save("src/logistic_regression/outputs/all_out___$(t).jld", "data", outs)
     # results_df = create_results_df(results)
     # CSV.write("src/creditcard/outputs/results___$(t).csv", results_df)
     # save("src/creditcard/outputs/bayes_factors___$(t).jld", "data", bayes_factors)

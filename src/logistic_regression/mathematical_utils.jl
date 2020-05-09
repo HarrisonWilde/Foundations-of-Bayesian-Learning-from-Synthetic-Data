@@ -16,7 +16,7 @@ end
 """
 Derivative of the logistic function
 """
-function ∂logistic(z::Float64)
+function ∂logistic(z::T) where {T}
 	a = exp(z) + 1
     return (1 / a) - (1 / (a ^ 2))
 end

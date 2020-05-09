@@ -1,0 +1,8 @@
+```{r}
+library(rio)
+library(numDeriv)
+temp = import("real.csv", setclass="tibble")
+X = data.matrix(temp[2:14])
+y = data.matrix(temp[15])
+model <- glm(y ~ X)
+```
