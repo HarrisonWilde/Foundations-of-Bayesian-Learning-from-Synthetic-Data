@@ -92,12 +92,24 @@ def plot_pdfs(df, output_timestamp, plot_dir):
     plt.close()
 
 
-def plot_metric(df, metric, num_alphas, prior, dgp, output_timestamp, plot_dir):
+def plot_metric(df, metric, num_alphas prior, dgp, output_timestamp, plot_dir):
     '''
     Passed data frame is exploded and transformed to be passed to plot
     '''
 
-    title = f'''y[{dgp[2]}] ~ Norm({dgp[0]}, {dgp[1]}), beta = {prior[3]}, beta w = {prior[6]}, w = {prior[5]}
+    title = f'''y[{dgp[2]}] ~ N({dgp[0]}, {dgp[1]}), beta = {prior[3]}, beta w = {prior[6]}, w = {prior[5]}
+    Prior: sigma2 ~ InvGamma({prior[1]}, {prior[2]}), mu ~ Norm({prior[0]}, {prior[4]} * sigma2)'''
+    df = df.melt(['Alpha', 'Laplace Noise Scale'], var_name='Minimised\nDivergence', value_name=metric)
+    plot_alpha(df, metric, title, plot_dir, num_alphas, output_timestamp)
+
+
+def plot_seb(df, metric, prior, dgp, plot_dir):
+    '''
+    Passed data frame is exploded and transformed to be passed to plot
+    '''
+
+    title = f'''y_real[{dgp[2]}] ~ N({dgp[0]}, {dgp[1]}), y_synth[{dgp[3]}] ~ N({dgp[0]}, {dgp[1]}) + Laplace({dgp[5]})
+    beta = {prior[3]}, beta w = {prior[6]}, w = {prior[5]}
     Prior: sigma2 ~ InvGamma({prior[1]}, {prior[2]}), mu ~ Norm({prior[0]}, {prior[4]} * sigma2)'''
     df = df.melt(['Alpha', 'Laplace Noise Scale'], var_name='Minimised\nDivergence', value_name=metric)
     plot_alpha(df, metric, title, plot_dir, num_alphas, output_timestamp)
@@ -129,4 +141,3 @@ def plot_metric_gan(df, metric, num_alphas, prior, dgp, output_timestamp, plot_d
     df = df.append(df2)
     df = df.melt(['Number of Real Samples', 'Total Number of Samples'], var_name='Minimised\nDivergence', value_name=metric)
     plot_gan(df, metric, title, plot_dir, num_alphas, output_timestamp)
-
