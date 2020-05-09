@@ -68,14 +68,19 @@ def merged_stderr_stdout():
     return stdout_redirected(to=sys.stdout, stdout=sys.stderr)
 
 
-def run_experiment(model, warmup, iters, chains, y_real, y_contam, y_unseen, ytildes, priormu, priora,
-                   priorb, beta, hp, w, beta_w, scale, mu, sigma2, k, available_cpus, check_hmc_diag, seed):
+def run_experiment(
+    model, warmup, iters, chains, y_real, y_contam, y_unseen, ytildes, priormu, priora,
+    priorb, beta, hp, w, beta_w, scale, mu, sigma2, available_cpus, check_hmc_diag, seed):
     '''
     Uses Stan to perform MCMC sampling on the passed model, returns the resulting fit on passed data
     '''
 
-    data = dict(n=len(y_real), y1=y_real, m=len(y_contam), y2=y_contam, j=len(y_unseen), y_unseen=y_unseen, k=len(ytildes),
-                y_tildes=ytildes, mu_m=priormu, sig_p1=priora, sig_p2=priorb, hp=hp, scale=scale, beta=beta, beta_w=beta_w, w=w)
+    data = dict(
+        n=len(y_real), y1=y_real, m=len(y_contam), y2=y_contam,
+        j=len(y_unseen), y_unseen=y_unseen, k=len(ytildes), y_tildes=ytildes,
+        mu_m=priormu, sig_p1=priora, sig_p2=priorb, hp=hp, scale=scale,
+        beta=beta, beta_w=beta_w, w=w
+    )
     with open('sampling.txt', 'a') as f, stdout_redirected(f):
         with merged_stderr_stdout():
             try:

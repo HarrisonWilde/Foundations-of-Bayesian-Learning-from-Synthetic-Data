@@ -1,9 +1,9 @@
-// KL-Bayes Noise-Aware
+// Noise-Aware (N-Laplace Distrib.)
 functions {
 
    // real mills_ratio(real z) {
-   //    // return (1 - normal_cdf(z, 0, 1)) / exp(normal_lpdf(z | 0, 1)); 
-   //    return (1 - Phi_approx(z)) / exp(std_normal_lpdf(z)); 
+   //    // return (1 - normal_cdf(z, 0, 1)) / exp(normal_lpdf(z | 0, 1));
+   //    return (1 - Phi_approx(z)) / exp(std_normal_lpdf(z));
    // }
 
    // real normal_laplace_lpdf(vector y, real mu, real sigma, real scale) {
@@ -16,7 +16,7 @@ functions {
 
    // real log_mills_ratio(real z) {
 
-   //    real lr = log1m(Phi(z)) - std_normal_lpdf(z); 
+   //    real lr = log1m(Phi(z)) - std_normal_lpdf(z);
    //    if (lr < -1e30) {
    //       print("Phi(z): ", Phi(z))
    //       print("Std Norm lpdf: ", std_normal_lpdf(z))
@@ -27,7 +27,7 @@ functions {
 
    real log_mills_ratio(real z) {
 
-      return log1m(Phi(z)) - std_normal_lpdf(z); 
+      return log1m(Phi(z)) - std_normal_lpdf(z);
 
    }
 
@@ -50,7 +50,7 @@ functions {
 }
 
 data {
-   
+
    // Inputs for the sampler: data and prior hyperparameters
    int<lower=0> n;
    vector[n] y1;
@@ -84,7 +84,7 @@ model {
    // The prior
    sigma2 ~ inv_gamma(sig_p1, sig_p2);
    mu ~ normal(mu_m, sqrt(sigma2) * hp);
-   
+
    // The likelihood
    target += normal_lpdf(y1 | mu, sqrt(sigma2));
    target += normal_laplace_lpdf(y2 | mu, sqrt(sigma2), scale);

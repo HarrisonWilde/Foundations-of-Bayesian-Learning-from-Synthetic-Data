@@ -47,14 +47,12 @@ def generate_data(mu, sigma, k):
     return np.random.normal(mu, sigma, k)
 
 
-def apply_noise(data, scale, alpha):
+def apply_noise(data, scale):
     '''
-    Applies Laplace(0, scale) noise to alpha (proportion) of the data and returns indices
+    Applies Laplace(0, scale) noise to the data
     '''
     indices = np.ones(len(data))
-    indices[:math.floor(len(data) * alpha)] = 0
-    np.random.shuffle(indices)
-    return data + indices * np.random.laplace(0, scale, len(data)), indices.astype(bool)
+    return data + np.random.laplace(0, scale, len(data))
 
 
 def generate_ytildes(start, finish, step):
@@ -64,11 +62,10 @@ def generate_ytildes(start, finish, step):
     return np.arange(start, finish, step)
 
 
-def calculate_dgp_pdf(ytilde, *dgp):
+def calculate_dgp_pdf(ytilde, mu, sigma):
     '''
     Returns values of the dgp pdf at all passed ytilde
     '''
-    mu, sigma, _ = dgp
     return np.array([st.norm(mu, sigma).pdf(x) for x in ytilde])
 
 
