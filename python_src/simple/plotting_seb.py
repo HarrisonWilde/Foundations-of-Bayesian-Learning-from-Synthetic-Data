@@ -12,7 +12,6 @@ def plot(df, y, plot_dir, num_alphas):
     '''
     # g = sns.catplot(x='Alpha', y=y, hue='Minimised\nDivergence', row='Laplace Noise Scale', kind='violin',
     #                 inner='quartile', bw=.5, height=6, aspect=max((num_alphas - 2) * 0.3, 1), split=True, legend='full', data=df)
-    print(df.info())
     g = sns.relplot(
         x='Total Number of Samples',
         y=y,
