@@ -69,7 +69,7 @@ def merged_stderr_stdout():
 
 
 def run_experiment(model, warmup, iters, chains, y_real, y_contam, y_unseen, ytildes, priormu, priora,
-                   priorb, beta, hp, w, beta_w, scale, mu, sigma2, k, available_cpus, check_hmc_diag, seed):
+                   priorb, beta, hp, w, beta_w, scale, mu, sigma2, available_cpus, check_hmc_diag, seed):
     '''
     Uses Stan to perform MCMC sampling on the passed model, returns the resulting fit on passed data
     '''

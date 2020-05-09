@@ -22,12 +22,12 @@ def run(args, models, dgps, prior_config, window, iteration):
 
     a = tqdm(total=0, position=2, bar_format='{desc}')
     b = tqdm(total=0, position=4, bar_format='{desc}')
+    seed = iteration + args.base_seed
+    np.random.seed(seed)
 
     for dgp in tqdm(dgps, leave=False, position=3):
 
         mu, sigma, k_real, k_synth, scale = dgp
-        seed = iteration + args.base_seed
-        np.random.seed(seed)
 
         a.set_description_str(f'DGP: y_real[{k_real}] ~ Normal({mu}, {sigma}), y_synth[{k_synth}] ~ Normal({mu}, {sigma}) + Laplace({scale})')
 
@@ -56,7 +56,7 @@ def run(args, models, dgps, prior_config, window, iteration):
             fit = run_experiment(
                 model, args.warmup, args.iters, args.chains,
                 real_data, synth_data, unseen_data, ytildes,
-                *prior_config, scale, *dgp, 0, args.check_hmc_diag, seed
+                *prior_config, scale, mu, sigma, 0, args.check_hmc_diag, seed
             )
 
             if fit is None:
@@ -77,29 +77,29 @@ def run(args, models, dgps, prior_config, window, iteration):
         outs.extend(out)
         if args.plot_pdfs:
             out = pd.DataFrame(out)
-            plot_pdfs(out.filter(regex='Posterior Predictive|Y Tilde Value|DGP'), output_timestamp + '_' + str(k_real) + '_' + str(k_synth), plot_dir)
+            plot_pdfs(out.filter(regex='Posterior Predictive|Y Tilde Value|DGP'), f"{seed}_{str(k_real)}_{str(k_synth)}", plot_dir)
 
     df = pd.DataFrame(outs)
     df.to_pickle(f'{output_dir}/out_{iteration}.pkl')
     if args.plot_metrics:
-        plot_metric_k(df.filter(regex='Log Loss|Number of|Laplace Noise'), 'Log Loss', prior_config, dgp, plot_dir)
-        plot_metric_k(df.filter(regex='KLD|Number of|Laplace Noise'), 'KLD', prior_config, dgp, plot_dir)
-        plot_metric_k(df.filter(regex='HellingerD|Number of|Laplace Noise'), 'HellingerD', prior_config, dgp, plot_dir)
-        plot_metric_k(df.filter(regex='TVD|Number of|Laplace Noise'), 'TVD', prior_config, dgp, plot_dir)
-        plot_metric_k(df.filter(regex='WassersteinD|Number of|Laplace Noise'), 'WassersteinD', prior_config, dgp, plot_dir)
+        plot_metric_k(df.filter(regex='Log Loss|Number of|Laplace Noise'), 'Log Loss', prior_config, dgp, seed, plot_dir)
+        plot_metric_k(df.filter(regex='KLD|Number of|Laplace Noise'), 'KLD', prior_config, dgp, seed, plot_dir)
+        plot_metric_k(df.filter(regex='HellingerD|Number of|Laplace Noise'), 'HellingerD', prior_config, dgp, seed, plot_dir)
+        plot_metric_k(df.filter(regex='TVD|Number of|Laplace Noise'), 'TVD', prior_config, dgp, seed, plot_dir)
+        plot_metric_k(df.filter(regex='WassersteinD|Number of|Laplace Noise'), 'WassersteinD', prior_config, dgp, seed, plot_dir)
 
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Run experiments between KL and betaD models.')
     parser.add_argument('-m', '--models', default=None, nargs='+', help='name of KLD stan model (without ".stan")')
-    parser.add_argument('-u', '--num_unseen', default=None, type=float, help='amount of unseen samples')
+    parser.add_argument('-u', '--num_unseen', default=None, type=int, help='amount of unseen samples')
     parser.add_argument('-pm', '--priormu', default=None, type=float, help='normal prior mu to test')
     parser.add_argument('-pa', '--prioralpha', default=None, type=float, help='inverse gamma prior alpha to test')
     parser.add_argument('-pb', '--priorbeta', default=None, type=float, help='inverse gamma prior beta to test')
     parser.add_argument('-hp', '--hyperprior', default=None, type=float, help='hyper prior for variance to test')
-    parser.add_argument('-b', '--beta', default=None, type=float, help='beta to test for beta-divergence')
     parser.add_argument('-w', '--weight', default=None, type=float, help='w to test for weighted models')
+    parser.add_argument('-b', '--beta', default=None, type=float, help='beta to test for beta-divergence')
     parser.add_argument('-bw', '--betaw', default=None, type=float, help='beta w to test for beta-divergence weighted models')
     parser.add_argument('-mu', '--mus', default=None, type=float, nargs='+', help='Space separated list of mus to test')
     parser.add_argument('-s', '--sigmas', default=None, type=float, nargs='+', help='Space separated list of sigmas to test')
@@ -124,7 +124,15 @@ if __name__ == '__main__':
 
     n_reals = 10 * np.array(range(1, 11)) ** 2
     n_synths = list(range(1, 10)) + list(range(10, 30, 2)) + list(range(30, 101, 5))
-    prior_config = [args.priormu, args.prioralpha, args.priorbeta, args.beta, args.hyperprior, args.w, args.betaw]
+    prior_config = [
+        args.priormu,
+        args.prioralpha,
+        args.priorbeta,
+        args.beta,
+        args.hyperprior,
+        args.weight,
+        args.betaw
+    ]
     dgps = [(mu, sigma, k_real, k_synth, scale)
         for mu in args.mus
         for sigma in args.sigmas

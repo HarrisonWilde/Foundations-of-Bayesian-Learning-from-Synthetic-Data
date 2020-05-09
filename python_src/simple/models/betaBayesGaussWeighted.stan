@@ -1,4 +1,4 @@
-// Beta-Bayes
+// Beta-Div
 data {
 
    // Inputs for the sampler: data and prior hyperparameters
@@ -42,7 +42,7 @@ model {
    // The prior
    sigma2 ~ inv_gamma(sig_p1, sig_p2);
    mu ~ normal(mu_m, sqrt(sigma2) * hp);
-   
+
    target += normal_lpdf(y1 | mu, sqrt(sigma2));
    // The general Bayesian loss function
    for (i in 1:m) {
