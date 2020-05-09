@@ -18,5 +18,6 @@ gdf = groupby(results, [:real_α, :synth_α])
 df = combine(gdf, vcat([Symbol("$(div)_$(metric)") => mean for div in divergences for metric in metrics], [Symbol("$(div)_$(metric)") => std for div in divergences for metric in metrics]))
 mapcols(col -> replace!(col, NaN=>0), df)
 plot_all(df, real_αs, synth_αs, divergences, metrics, t)
+println("Done plotting")
 
 # plot_real_α(df, 0.025, divergences, metrics[1], t)
