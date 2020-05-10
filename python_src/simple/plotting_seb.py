@@ -73,4 +73,10 @@ def plot_all_k(exp):
 
 
 if __name__ == "__main__":
-    plot_all_k("sebexp_05-09-2020_19.58.30")
+    experiment = "sebexp_05-10-2020_12.47.14"
+    plot_dir = f'plots/{experiment}'
+    paths = ['plots', plot_dir]
+    for i in paths:
+        if not os.path.exists(i):
+            os.makedirs(i)
+    plot_all_k(experiment)

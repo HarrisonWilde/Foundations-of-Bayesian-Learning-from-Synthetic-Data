@@ -89,6 +89,7 @@ def run(args, models, dgp, prior_config, n_reals, n_synths, ytildes, pdf_ytilde,
         for k_synth in n_synths
         if k_real + k_synth <= max(n_reals)
     ]
+    
     all_real_data = generate_data(mu, sigma, max(n_reals))
     pre_contam_data = generate_data(mu, sigma, max(n_synths))
     all_synth_data = apply_noise(pre_contam_data, scale)
