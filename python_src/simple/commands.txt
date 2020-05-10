@@ -32,10 +32,10 @@ python3 run.py --plot \
 
 
 python run_seb.py \
---mus 0 --sigmas 1 --scales 0.25 \
+--mu 0 --sigma 1 --scale 0.25 \
 --num_unseen 100 \
 --priormu 1 --prioralpha 3 --priorbeta 5 --hyperprior 1 \
 --weight 0.5 --beta 0.5 --betaw 1.1 \
 --warmup 1000 --iters 10000 --chains 3 \
 --ytildestep 0.1 \
---parallel_dgps 8 --parallel_chains 0 --plot_pdfs
+--parallel_dgps 6 --parallel_chains 0 --plot_pdfs
