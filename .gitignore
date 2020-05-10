@@ -14,3 +14,4 @@ tgan_original/
 *.test
 *.data.Z
 *.zip
+*.npy

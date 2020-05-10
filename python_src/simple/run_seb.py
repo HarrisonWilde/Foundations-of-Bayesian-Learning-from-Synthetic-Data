@@ -77,7 +77,7 @@ def run_dgp(args, dgp, models, ks, prior_config, all_real_data, all_synth_data, 
     return out
 
 
-def run(args, models, dgp, prior_config, n_reals, n_synths, ytildes, pdf_ytilde, window, plot_dir, iteration):
+def run(args, models, dgp, prior_config, n_reals, n_synths, ytildes, pdf_ytilde, window, plot_dir, output_dir, iteration):
     '''
     Parent process to run across all combinations of passed parameters, sampling and saving / plotting outputs
     '''
@@ -90,9 +90,12 @@ def run(args, models, dgp, prior_config, n_reals, n_synths, ytildes, pdf_ytilde,
         if k_real + k_synth <= max(n_reals)
     ]
     all_real_data = generate_data(mu, sigma, max(n_reals))
+    np.save(f'{output_dir}/real_{iteration}', all_real_data)
     pre_contam_data = generate_data(mu, sigma, max(n_synths))
     all_synth_data = apply_noise(pre_contam_data, scale)
+    np.save(f'{output_dir}/synth_{iteration}', all_synth_data)
     unseen_data = generate_data(mu, sigma, args.num_unseen)
+    np.save(f'{output_dir}/unseen_{iteration}', unseen_data)
 
     func = partial(
         run_dgp, args, dgp, models, proportions, prior_config,
@@ -107,8 +110,8 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Run experiments between KL and betaD models.')
     parser.add_argument('-m', '--models', default=None, nargs='+', help='name of KLD stan model (without ".stan")')
-    parser.add_argument('-od', '--outdir', default="plots", help='name of KLD stan model (without ".stan")')
-    parser.add_argument('-pd', '--plotdir', default="outputs", help='name of KLD stan model (without ".stan")')
+    parser.add_argument('-od', '--outdir', default="plots", help='Output directory path')
+    parser.add_argument('-pd', '--plotdir', default="outputs", help='Output directory path for plots')
     parser.add_argument('-u', '--num_unseen', default=None, type=int, help='amount of unseen samples')
     parser.add_argument('-pm', '--priormu', default=None, type=float, help='normal prior mu to test')
     parser.add_argument('-pa', '--prioralpha', default=None, type=float, help='inverse gamma prior alpha to test')
@@ -181,4 +184,4 @@ if __name__ == '__main__':
         f'Running {args.iterations} iterations with {args.chains} chains on {args.parallel_chains} cores')
     func = partial(run, )
     for iteration in tqdm(range(args.iterations), position=1):
-        run(args, models, dgp, prior_config, n_reals, n_synths, ytildes, pdf_ytilde, window, plot_dir, iteration)
+        run(args, models, dgp, prior_config, n_reals, n_synths, ytildes, pdf_ytilde, window, plot_dir, output_dir, iteration)
