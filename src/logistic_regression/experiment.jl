@@ -76,7 +76,6 @@ function init_run(θ_dim, λ, X_real, y_real, X_synth, y_synth, β; use_zero_ini
     else
         lr1 = LogisticRegression(λ, 0.; fit_intercept = false)
         initial_θ = MLJLinearModels.fit(lr1, X_real, (2 .* y_real) .- 1; solver=MLJLinearModels.LBFGS())
-        # auc_mlj, ll_mlj, bf_mlj = evalu(X_test, y_test, [initial_θ])
         lr2 = LogisticRegression(λ; fit_intercept = false)
         θ_0 = MLJLinearModels.fit(lr2, X_synth, (2 .* y_synth) .- 1; solver=MLJLinearModels.LBFGS())
     end
