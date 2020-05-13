@@ -1,9 +1,24 @@
-function evalu(X_test, y_test, samples; plot_roc=false)
-    ps = probabilities(X_test, samples)
+function evalu(X, y, samples; plot_roc=false)
+    ps = probabilities(X, samples)
     if plot_roc
-        plot_roc_curve(y_test, ps)
+        plot_roc_curve(y, ps)
     end
-    return roc_auc(y_test, ps), log_loss(X_test, y_test, samples), marginal_likelihood_estimate(X_test, y_test, samples)
+    return roc_auc(y, ps), log_loss(X, y, samples), marginal_likelihood_estimate(X, y, samples)
+end
+
+
+function evaluate_stan(X, y, samples; plot_roc=false)
+    ps = probabilities_stan(X, samples)
+    if plot_roc
+        plot_roc_curve(y, ps)
+    end
+    return roc_auc(y, ps), log_loss_stan(X, y, samples), marginal_likelihood_estimate(X, y, samples)
+end
+
+
+function evaluate_stan2(y, samples)
+    probs_β = vec(mean(all_β[:, 16:end], dims=1))
+    return roc_auc(y, probs_β), -mean(all_β[:, 15])
 end
 
 
@@ -37,6 +52,38 @@ function marginal_likelihood_estimate(X, y, samples)
     N = size(samples)[1]
     avg = 0
     for θ in samples
+        avg += sum(pdf_bernoulli_logit.(X * θ, y) .^ -1) / N
+    end
+    return avg ^ -1
+    # mean(map(θ -> sum(pdf_bernoulli_logit.(X_test * θ, y_test)), samples))
+end
+
+
+function probabilities_stan(X, samples)
+    N = size(samples)[1] + 1
+    avg = zeros(size(X)[1])
+    for θ in eachrow(samples)
+        avg += logistic.(X * θ) ./ N
+    end
+    return avg
+end
+
+
+function log_loss_stan(X, y, samples)
+    N = size(samples)[1]
+    avg = 0
+    for θ in eachrow(samples)
+        avg += sum(logpdf_bernoulli_logit.(X * θ, y)) / N
+    end
+    return -avg
+end
+
+
+# https://www.jstor.org/stable/pdf/2291091.pdf?refreqid=excelsior%3Ab194b370e4efc9f1d9ae29b7c7c5c6da
+function marginal_likelihood_estimate_stan(X, y, samples)
+    N = size(samples)[1]
+    avg = 0
+    for θ in eachrow(samples)
         avg += sum(pdf_bernoulli_logit.(X * θ, y) .^ -1) / N
     end
     return avg ^ -1
