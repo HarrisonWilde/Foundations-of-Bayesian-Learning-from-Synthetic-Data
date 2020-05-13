@@ -48,7 +48,7 @@ end
 A univariate bernoulli logit distribution.
 """
 function pdf_bernoulli_logit(z::T, y::U) where {T, U}
-	y * logistic(z) + (1 - y) * (1 - logistic(z))
+	return y * logistic(z) + (1 - y) * (1 - logistic(z))
 end
 
 
@@ -58,7 +58,7 @@ end
 A univariate bernoulli logit distribution with the beta divergence applied.
 """
 function logpdf_betad_bernoulli_logit(z::T, y::U, β::V) where {T, U, V}
-	@. (1.0 / β) * (
+	return (1.0 / β) * (
 		pdf_bernoulli_logit(z, y)
 	) ^ β - (1.0 / (β + 1.0)) * (
 		logistic(z) ^ (β + 1.0)

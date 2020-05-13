@@ -13,9 +13,9 @@ end
 
 
 function probabilities(X, samples)
-    N = size(samples)[1]
-    avg = logistic.(X * samples[1]) ./ N
-    for θ in samples[2:end]
+    N = size(samples)[1] + 1
+    avg = zeros(size(X)[1])
+    for θ in samples
         avg += logistic.(X * θ) ./ N
     end
     return avg

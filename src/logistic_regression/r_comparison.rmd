@@ -1,8 +1,89 @@
-```{r}
+```{r outlier_generation_function, include=TRUE,echo=TRUE, eval=TRUE,cache=TRUE,results='hide'}
+
+p_logistic <- function(Xbeta){
+  return((exp(1/2*Xbeta))/(exp(1/2*Xbeta)+exp(-1/2*Xbeta)))
+}
+
+
 library(rio)
-library(numDeriv)
 temp = import("real.csv", setclass="tibble")
-X = data.matrix(temp[2:14])
-y = data.matrix(temp[15])
-model <- glm(y ~ X)
+X = data.matrix(temp[1:14])
+y = 2 * data.matrix(temp[15]) - 1
+
+betaD_loss_logisticRegression <- function(y,X,beta,beta_p){
+  # y in {0,1}
+  p_logistic_y1 <- 1/(1+exp(-X%*%beta))
+  bernoulli_pdf <- y*p_logistic_y1 + (1-y)*(1 - p_logistic_y1)
+
+  #return(1/beta_p*(bernoulli_pdf)^beta_p - 1/(beta_p+1)*(bernoulli_pdf^(beta_p+1)+(1-bernoulli_pdf)^(beta_p+1)))
+  return(1/beta_p*(bernoulli_pdf)^beta_p - 1/(beta_p+1)*(p_logistic_y1^(beta_p+1)+(1-p_logistic_y1)^(beta_p+1)))
+}
+
+
+betaD_loss_logisticRegression_ML <- function(y,X,beta,beta_p){
+  # y in {-1,1}
+  p_logistic <- (exp(y/2*X%*%beta))/(exp(1/2*X%*%beta)+exp(-1/2*X%*%beta))
+
+  return(1/beta_p*(p_logistic)^beta_p - 1/(beta_p+1)*(p_logistic^(beta_p+1)+(1-p_logistic)^(beta_p+1)))
+}
+library(numDeriv)
+
+## Need to define the loss on an uncontrained paramater space
+weight_calib<-function(data,loss,theta_0){
+  p <- length(theta_0)
+  n <- nrow(data)
+  #theta_hat<-optim(theta_0,function(theta){loss(data,theta)},gr=function(theta){grad(function(theta){loss(data,theta)},theta)},method="BFGS")
+  theta_hat<-optim(theta_0,function(theta){loss(data,theta)})
+  print(theta_hat)
+  #theta_hat_value <- theta_0
+  theta_hat_value <- theta_hat$par
+  print(theta_hat_value)
+
+  grad_data<-matrix(NA,nrow=n,ncol=p)
+  Hess_data<-array(NA,dim=c(n,p,p))
+  mean_grad2_data<-matrix(0,nrow=p,ncol=p)
+  mean_Hess_data<-matrix(0,nrow=p,ncol=p)
+  for(i in 1:n){
+    grad_data[i,]<-grad(function(theta){loss(matrix(data[i,], nrow = 1, ncol = p+1),theta)},theta_hat_value)
+    mean_grad2_data<-mean_grad2_data+grad_data[i,]%*%t(grad_data[i,])
+    Hess_data[i,,]<-hessian(function(theta){loss(matrix(data[i,], nrow = 1, ncol = p+1),theta)},theta_hat_value)
+    mean_Hess_data<-mean_Hess_data+Hess_data[i,,]
+    #if(i%%(n/20)==1){cat("Observation",i,"done","\n")}
+  }
+  hat_I_theta_data<-mean_grad2_data/n
+  hat_J_theta_data<-mean_Hess_data/n
+  print((hat_J_theta_data%*%solve(hat_I_theta_data)%*%t(hat_J_theta_data)))
+
+  w_data<-sum(diag((hat_J_theta_data%*%solve(hat_I_theta_data)%*%t(hat_J_theta_data))))/sum(diag(hat_J_theta_data))
+
+  return(w_data)
+}
+
+MLE <- glm((y+1)/2 ~ X+0,family=binomial(link='logit'))
+theta_0 = MLE$coefficients
+
+sum(p_logistic(y*X%*%theta_0))
+-sum(betaD_loss_logisticRegression_ML(y,X,beta = theta_0,beta_p = 0.5))
+-sum(betaD_loss_logisticRegression(y = (y+1)/2,X,beta = theta_0,beta_p = 0.5))
+
+#-sum(betaD_loss_logisticRegression(y = (y+1)/2,X,beta = theta_hat$par,beta_p = 0.5))
+
+theta_hat_harry <- c(1.7572841852143724, 0.3359872371323417, -25.97791835157776, 11.704911028117376, -0.41085970748581796, -0.05370371242622981, -2.344834002392131, 6.4107934964343904, 0.5819309695257637, -2.5623446702240007, -10.504772917805171, 7.127774957069898, -10.275988946116208, -11.812922726909788)
+
+-sum(betaD_loss_logisticRegression(y = (y+1)/2,X,beta = theta_hat_harry,beta_p = 0.5))
+
+loss = function(data, beta){-sum(betaD_loss_logisticRegression_ML(data[,1],data[,-1],beta,0.5))}
+
+weight_calib(
+  data = cbind(y, X),
+  loss = loss,
+  theta_0 = theta_hat_harry
+)
+
+weight_calib(
+  data = cbind(y, X),
+  loss = loss,
+  theta_0 = theta_0
+)
+
 ```

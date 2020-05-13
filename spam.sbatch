@@ -20,8 +20,8 @@ module load Julia/1.4.1-linux-x86_64
 
 julia src/logistic_regression/run.jl \
     --path /home/dcs/csrxgb/julia_stuff \
-    --dataset uci_heart \
-    --label target \
+    --dataset uci_spambase \
+    --label label \
     --epsilon 6.0 \
     --iterations 10 \
     --folds 5 \
