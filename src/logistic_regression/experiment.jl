@@ -37,6 +37,33 @@ function fold_α(real_data, synth_data, real_α, synth_α, fold, folds, labels)
 end
 
 
+function init_stan_models(n_samples, n_warmup)
+
+    β_model = SampleModel(
+        "Beta",
+        open(f -> read(f, String), "src/logistic_regression/stan/BetaLogisticRegression.stan");
+        method = StanSample.Sample(num_samples=n_samples - n_warmup, num_warmup=n_warmup)
+    )
+    weighted_model = SampleModel(
+        "Weighted",
+        open(f -> read(f, String), "src/logistic_regression/stan/WeightedStandardLogisticRegression.stan");
+        method = StanSample.Sample(num_samples=n_samples - n_warmup, num_warmup=n_warmup)
+    )
+    naive_model = SampleModel(
+        "Naive",
+        open(f -> read(f, String), "src/logistic_regression/stan/StandardLogisticRegression.stan");
+        method = StanSample.Sample(num_samples=n_samples - n_warmup, num_warmup=n_warmup)
+    )
+    no_synth_model = SampleModel(
+        "NoSynth",
+        open(f -> read(f, String), "src/logistic_regression/stan/NoSynthLogisticRegression.stan");
+        method = StanSample.Sample(num_samples=n_samples - n_warmup, num_warmup=n_warmup)
+    )
+    return β_model, weighted_model, naive_model, no_synth_model
+
+end
+
+
 """
 Define the mass matrix, make an initial guess at θ at the MLE using MLJ's LogiticRegression and calibrate βw
 """
@@ -49,10 +76,8 @@ function init_run(θ_dim, λ, X_real, y_real, X_synth, y_synth, β; use_zero_ini
     else
         lr1 = LogisticRegression(λ, 0.; fit_intercept = false)
         initial_θ = MLJLinearModels.fit(lr1, X_real, (2 .* y_real) .- 1; solver=MLJLinearModels.LBFGS())
-        # auc_mlj, ll_mlj, bf_mlj = evalu(X_test, y_test, [initial_θ])
         lr2 = LogisticRegression(λ; fit_intercept = false)
         θ_0 = MLJLinearModels.fit(lr2, X_synth, (2 .* y_synth) .- 1; solver=MLJLinearModels.LBFGS())
-        # βw = weight_calib(X_synth, y_synth, β, θ_0)
     end
     return metric, initial_θ
 end

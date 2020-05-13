@@ -32,12 +32,10 @@ library(numDeriv)
 weight_calib<-function(data,loss,theta_0){
   p <- length(theta_0)
   n <- nrow(data)
-  #theta_hat<-optim(theta_0,function(theta){loss(data,theta)},gr=function(theta){grad(function(theta){loss(data,theta)},theta)},method="BFGS")
   theta_hat<-optim(theta_0,function(theta){loss(data,theta)})
   print(theta_hat)
-  #theta_hat_value <- theta_0
-  theta_hat_value <- theta_hat$par
-  print(theta_hat_value)
+  theta_hat_value <- theta_0
+  # theta_hat_value <- theta_hat$par
 
   grad_data<-matrix(NA,nrow=n,ncol=p)
   Hess_data<-array(NA,dim=c(n,p,p))
@@ -45,6 +43,8 @@ weight_calib<-function(data,loss,theta_0){
   mean_Hess_data<-matrix(0,nrow=p,ncol=p)
   for(i in 1:n){
     grad_data[i,]<-grad(function(theta){loss(matrix(data[i,], nrow = 1, ncol = p+1),theta)},theta_hat_value)
+    print(i)
+    print(grad_data[i,])
     mean_grad2_data<-mean_grad2_data+grad_data[i,]%*%t(grad_data[i,])
     Hess_data[i,,]<-hessian(function(theta){loss(matrix(data[i,], nrow = 1, ncol = p+1),theta)},theta_hat_value)
     mean_Hess_data<-mean_Hess_data+Hess_data[i,,]
@@ -52,7 +52,6 @@ weight_calib<-function(data,loss,theta_0){
   }
   hat_I_theta_data<-mean_grad2_data/n
   hat_J_theta_data<-mean_Hess_data/n
-  print((hat_J_theta_data%*%solve(hat_I_theta_data)%*%t(hat_J_theta_data)))
 
   w_data<-sum(diag((hat_J_theta_data%*%solve(hat_I_theta_data)%*%t(hat_J_theta_data))))/sum(diag(hat_J_theta_data))
 

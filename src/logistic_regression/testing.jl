@@ -19,12 +19,12 @@ using SpecialFunctions
 using Random: seed!
 using StatsFuns: log1pexp, log2π
 using MLJBase: auc
-include("utils.jl")
-include("experiment.jl")
-include("mathematical_utils.jl")
-include("distributions.jl")
-include("weight_calibration.jl")
-include("evaluation.jl")
+include("src/logistic_regression/utils.jl")
+include("src/logistic_regression/experiment.jl")
+include("src/logistic_regression/mathematical_utils.jl")
+include("src/logistic_regression/distributions.jl")
+include("src/logistic_regression/weight_calibration.jl")
+include("src/logistic_regression/evaluation.jl")
 
 name, label, ε, folds, split, distributed, use_ad = "uci_heart", "target", "6.0", 5, 1.0, true, false
 t = Dates.format(now(), "HH_MM_SS__dd_mm_yyyy")
@@ -115,9 +115,7 @@ function weight_calib(X, y, β, θ_0)
 
     Iθ̂_data = mean_grad_sq_data ./ n
     Jθ̂_data = mean_Hess_data ./ n
-    @show Iθ̂_data
-    @show Jθ̂_data
-    w_data = sum(diag((Jθ̂_data .* inv(Iθ̂_data) .* transpose(Jθ̂_data)))) / sum(diag(Jθ̂_data))
+    w_data = sum(diag(Jθ̂_data * inv(Iθ̂_data) * transpose(Jθ̂_data))) / sum(diag(Jθ̂_data))
 
     return w_data
 end
