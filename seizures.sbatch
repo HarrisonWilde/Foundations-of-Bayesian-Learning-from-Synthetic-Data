@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --nodes=9
+#SBATCH --nodes=10
 #SBATCH --tasks-per-node=28
 #SBATCH --mem-per-cpu=4571
 #SBATCH --time=48:00:00
@@ -20,8 +20,8 @@ module load Julia/1.4.1-linux-x86_64
 
 julia src/logistic_regression/run.jl \
     --path /home/dcs/csrxgb/julia_stuff \
-    --dataset uci_heart \
-    --label target \
+    --dataset uci_seizures \
+    --label y \
     --epsilon 6.0 \
     --iterations 10 \
     --folds 5 \

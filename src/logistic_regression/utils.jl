@@ -17,6 +17,10 @@ function parse_cl()
             help = "choose an epsilon value: the differential privacy constant"
             arg_type = String
             default = "6.0"
+        "--iterations", "-i"
+            help = "number of full iterations to run"
+            arg_type = Int
+            default = 1
         "--folds", "-k"
             help = "specify the number of CV folds to be carried out during training"
             arg_type = Int

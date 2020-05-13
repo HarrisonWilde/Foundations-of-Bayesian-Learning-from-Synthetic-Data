@@ -35,14 +35,11 @@ end
 
 # Need to define the loss on an uncontrained paramater space
 function weight_calib(X, y, β, θ_0)
-    # temp = Matrix(CSV.read("real.csv"))
-    # y = temp[:, 15]
-    # X = temp[:, 1:14]
-    # θ_0 = [4.41720489, 0.41632245, -23.38931654, 11.71856821, -0.42375295, -0.06698908, -4.55647240, 3.97981790, 0.57330941, 3.02025206, -10.33997373, 7.97994416, -10.13166633, -13.37909493]
+
     n, p = size(X)
     f(θ_0) = beta_loss(X, y, β, θ_0)
+    # θ̂ = θ_0
     θ̂ = Optim.minimizer(optimize(f, θ_0, Optim.LBFGS(); autodiff=:forward))
-
     grad_data = zeros(n, p)
     Hess_data = zeros(p, p, n)
     mean_grad_sq_data = zeros(p, p)
@@ -57,9 +54,7 @@ function weight_calib(X, y, β, θ_0)
 
     Iθ̂_data = mean_grad_sq_data ./ n
     Jθ̂_data = mean_Hess_data ./ n
-    @show Iθ̂_data
-    @show Jθ̂_data
-    w_data = sum(diag((Jθ̂_data .* inv(Iθ̂_data) .* transpose(Jθ̂_data)))) / sum(diag(Jθ̂_data))
+    w_data = sum(diag((Jθ̂_data * inv(Iθ̂_data) * transpose(Jθ̂_data)))) / sum(diag(Jθ̂_data))
 
     return w_data
 end
