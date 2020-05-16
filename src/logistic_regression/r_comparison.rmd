@@ -5,6 +5,7 @@ p_logistic <- function(Xbeta){
 }
 
 
+library(numDeriv)
 library(rio)
 temp = import("real.csv", setclass="tibble")
 X = data.matrix(temp[1:14])
@@ -26,7 +27,6 @@ betaD_loss_logisticRegression_ML <- function(y,X,beta,beta_p){
 
   return(1/beta_p*(p_logistic)^beta_p - 1/(beta_p+1)*(p_logistic^(beta_p+1)+(1-p_logistic)^(beta_p+1)))
 }
-library(numDeriv)
 
 ## Need to define the loss on an uncontrained paramater space
 weight_calib<-function(data,loss,theta_0){
@@ -84,5 +84,67 @@ weight_calib(
   loss = loss,
   theta_0 = theta_0
 )
+
+p_logistic <- function(y, X, theta){
+  # P(Y=y|X, theta)
+  # y in {-1, 1}
+  return(1 / (1 + exp(-y*X%*%theta)))
+}
+
+log_p_logistic <- function(y, X, theta){
+  # P(Y=y|X, theta)
+  # y in {-1, 1}
+  return(-log(1 + exp(-y*X%*%theta)))
+}
+
+log_p_logistic(y, X, theta)
+log(p_logistic(y, X, theta))
+
+
+grad_log_p_logistic <- function(y, X, theta){
+  # P(Y=y|X, beta)
+  # y in {-1, 1}
+  return((X*as.vector(y*exp(-y*X%*%theta)) / (1 + exp(-y*X%*%theta))))
+}
+
+grad_log_p_logistic(y, X, theta)
+grad(function(theta){log_p_logistic(y, X, theta)}, theta)
+
+
+
+betaD_neg_loss <- function(y, X, theta, beta){
+  # -ell_beta(y, X, theta)
+  # y in {-1, 1}
+  lik_term <- 1/beta*p_logistic(y, X, theta)^beta
+  int_term <- 1/(beta + 1)*(p_logistic(y, X, theta)^(beta+1) + p_logistic(-y, X, theta)^(beta+1))
+  return(- lik_term + int_term )
+}
+
+grad_betaD_neg_loss <- function(y, X, theta, beta){
+  # -ell_beta(y, X, theta)
+  # y in {-1, 1}
+  grad_lik_term <- (X*as.vector(y*exp(-y*X%*%theta))) / (1 + exp(-y*X%*%theta))^(beta + 1)
+
+  grad_int_term <- ((X*as.vector(y*exp(-y*X%*%theta))) / (1 + exp(-y*X%*%theta))^(beta + 2) + (X*as.vector(-y*exp(y*X%*%theta))) / (1 + exp(y*X%*%theta))^(beta + 2))
+  return(- grad_lik_term + grad_int_term )
+}
+
+grad_betaD_neg_loss(y, X, theta, beta)
+grad(function(theta){betaD_neg_loss(y, X, theta, beta)}, theta)
+
+
+hessian_betaD_neg_loss <- function(y, X, theta, beta){
+  # -ell_beta(y, X, theta)
+  # y in {-1, 1}
+  hessian_lik_term <- (y*X)%*%t(y*X)*as.vector((beta + 1)*(as.vector(exp(-y*X%*%theta))^2) / (1 + exp(-y*X%*%theta))^(beta + 2) - (exp(-y*X%*%theta)) / (1 + exp(-y*X%*%theta))^(beta + 1))
+
+  hessian_int_term <- ((y*X)%*%t(y*X)*as.vector((beta + 2)*(as.vector(exp(-y*X%*%theta))^2) / (1 + exp(-y*X%*%theta))^(beta + 3) - (exp(-y*X%*%theta)) / (1 + exp(-y*X%*%theta))^(beta + 2))
+                    +
+  (-y*X)%*%t(-y*X)*as.vector((beta + 2)*(as.vector(exp(y*X%*%theta))^2) / (1 + exp(y*X%*%theta))^(beta + 3) - (exp(y*X%*%theta)) / (1 + exp(y*X%*%theta))^(beta + 2)))
+  return(- hessian_lik_term + hessian_int_term )
+}
+
+hessian_betaD_neg_loss(y, X, theta, beta)
+hessian(function(theta){betaD_neg_loss(y, X, theta, beta)}, theta)
 
 ```

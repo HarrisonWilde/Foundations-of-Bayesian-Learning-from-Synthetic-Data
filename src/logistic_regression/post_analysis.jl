@@ -7,7 +7,7 @@ include("plotting.jl")
 theme(:vibrant)
 
 
-t = "23_15_16__08_05_2020"
+t = "uci_heart_16_02_03__13_05_2020"
 results = CSV.read("src/logistic_regression/outputs/$(t)_out.csv", copycols=true)
 # bayes_factors = load("src/creditcard/outputs/bayes_factors___$(t).jld")["data"]
 sort!(results, (:real_α, :synth_α))

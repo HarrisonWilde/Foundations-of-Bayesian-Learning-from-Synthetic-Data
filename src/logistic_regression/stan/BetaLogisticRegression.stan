@@ -9,9 +9,6 @@ data {
     int<lower=0> b;
     matrix[b, f] X_synth;
     int<lower=0, upper=1> y_synth[b];
-    int<lower=0> c;
-    matrix[c, f] X_test;
-    int<lower=0, upper=1> y_test[c];
     real<lower=0> w;
     real beta;
     real<lower=0> beta_w;
@@ -39,7 +36,7 @@ model {
     }
 
 }
-// 
+//
 // generated quantities {
 //
 //     real log_like_test;

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --nodes=9
+#SBATCH --nodes=1
 #SBATCH --tasks-per-node=28
 #SBATCH --mem-per-cpu=4571
 #SBATCH --time=48:00:00
@@ -11,6 +11,7 @@
 # Create the machine file for Julia
 # JULIA_MACHINEFILE=machinefile-${SLURM_JOB_ID}
 # srun bash -c hostname > $JULIA_MACHINEFILE
+# # srun -l /bin/hostname | sort -n | awk '{print $2}' > $JULIA_MACHINEFILE
 # sed -i 's/^[[:alnum:]]*/&-ib/g' $JULIA_MACHINEFILE
 
 export JULIA_PROJECT=/home/dcs/csrxgb/julia_stuff/Project.toml
@@ -21,9 +22,11 @@ module load GCC/8.3.0 GCCcore/9.2.0 Julia/1.4.1-linux-x86_64
 
 julia src/logistic_regression/run.jl \
     --path /home/dcs/csrxgb/julia_stuff \
-    --dataset uci_spambase \
-    --label label \
+    --dataset uci_heart \
+    --label target \
     --epsilon 6.0 \
     --iterations 10 \
     --folds 5 \
+    --sampler Stan \
+    --no_shuffle \
     --distributed

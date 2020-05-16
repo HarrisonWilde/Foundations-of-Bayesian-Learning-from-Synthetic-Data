@@ -14,9 +14,10 @@
 # sed -i 's/^[[:alnum:]]*/&-ib/g' $JULIA_MACHINEFILE
 
 export JULIA_PROJECT=/home/dcs/csrxgb/julia_stuff/Project.toml
+export JULIA_CMDSTAN_HOME=/home/dcs/csrxgb/julia_stuff/cmdstan-2.23.0
 
 module purge
-module load Julia/1.4.1-linux-x86_64
+module load GCC/8.3.0 GCCcore/9.2.0 Julia/1.4.1-linux-x86_64
 
 julia src/logistic_regression/run.jl \
     --path /home/dcs/csrxgb/julia_stuff \
@@ -25,4 +26,5 @@ julia src/logistic_regression/run.jl \
     --epsilon 6.0 \
     --iterations 10 \
     --folds 5 \
+    --sampler AHMC \
     --distributed

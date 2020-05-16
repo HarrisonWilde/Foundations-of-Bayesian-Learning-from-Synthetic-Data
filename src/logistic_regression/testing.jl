@@ -19,19 +19,16 @@ using SpecialFunctions
 using Random: seed!
 using StatsFuns: log1pexp, log2π
 using MLJBase: auc
-include("src/logistic_regression/utils.jl")
-include("src/logistic_regression/experiment.jl")
-include("src/logistic_regression/mathematical_utils.jl")
-include("src/logistic_regression/distributions.jl")
-include("src/logistic_regression/weight_calibration.jl")
-include("src/logistic_regression/evaluation.jl")
+include("../common/utils.jl")
+include("../common/weight_calibration.jl")
+include("distributions.jl")
+include("loss.jl")
+include("evaluation.jl")
+include("init.jl")
 
 name, label, ε, folds, split, distributed, use_ad = "uci_heart", "target", "6.0", 5, 1.0, true, false
 t = Dates.format(now(), "HH_MM_SS__dd_mm_yyyy")
-println("Loading data...")
-labels, real_data, synth_data = load_data(name, label, ε)
 println("Setting up experiment...")
-θ_dim = size(real_data)[2] - 1
 w = 0.5
 β = 0.5
 βw = 1.15
@@ -45,19 +42,102 @@ total_steps = num_αs * folds
 # results = SharedArray{Float64, 2}("results", (total_steps, 10))
 # bayes_factors = SharedArray{Float64, 3}("bayes_factors", (4, 4, total_steps))
 
-n_samples, n_warmup = 15000, 5000
+n_samples, n_warmup = 10000, 2000
 show_progress = true
+labels, real_data, synth_data = load_data(name, label, ε)
+θ_dim = size(real_data)[2] - 1
+c = classes(categorical(real_data[:, labels[1]])[1])
 
 i = 628
 
 fold = ((i - 1) % folds)
 real_α, synth_α = αs[Int(ceil(i / folds))]
+X_real, y_real, X_synth, y_synth, X_valid, y_valid = fold_α(
+    real_data, synth_data, real_α, synth_α,
+    fold, folds, labels
+)
+metric, initial_θ = init_run(
+    θ_dim, λ, X_real, y_real, X_synth, y_synth, β
+)
+y_r = (2 .* y_real) .- 1
+y_s = (2 .* y_synth) .- 1
+
+chn1 = sample(β_model(X_real, X_synth, y_real, y_synth, θ_dim, σ, β, βw), Turing.NUTS(), 10000)
+chn2 = sample(weighted_model(X_real, X_synth, y_real, y_synth, θ_dim, σ, w), Turing.NUTS(), 10000)
+chn3 = sample(naive_model(X_real, X_synth, y_real, y_synth, θ_dim, σ), Turing.NUTS(), 10000)
+chn4 = sample(no_synth_model(X_real, y_real, θ_dim, σ), Turing.NUTS(), 10000)
+describe(chn, sections=:internals)
+
+yX_real = y_r .* X_real
+yX_synth = y_s .* X_synth
+yXθ_real = yX_real * initial_θ
+Xθ_synth = X_synth * initial_θ
+yXθ_synth = y_s .* Xθ_synth
+ℓπ_β(θ) = (
+    ℓpdf_MvNorm(σ, θ) +
+    sum(ℓpdf_BL.(yX_real * θ)) +
+    βw * sum(ℓpdf_βBL.(X_synth * θ, y_s, β))
+)
+∇ℓπ_β(θ) = (
+    ℓπ_β(θ),
+    ∇ℓpdf_MvNorm(σ, θ) +
+    ∇ℓpdf_BL(yX_real, θ) +
+    βw * ∇ℓpdf_βBL(yX_synth, β, θ)
+)
+
+ℓπ_w(θ) = (
+    ℓpdf_MvNorm(σ, θ) +
+    sum(ℓpdf_BL.(yX_real * θ)) +
+    w * sum(ℓpdf_BL.(yX_synth * θ))
+)
+∇ℓπ_w(θ) = (
+    ℓπ_w(θ),
+    ∇ℓpdf_MvNorm(σ, θ) +
+    ∇ℓpdf_BL(yX_real, θ) +
+    w * ∇ℓpdf_BL(yX_synth, θ)
+)
+
+ℓπ(θ) = (
+    ℓpdf_MvNorm(σ, θ) +
+    sum(ℓpdf_BL.(yX_real * θ)) +
+    sum(ℓpdf_BL.(yX_synth * θ))
+)
+∇ℓπ(θ) = (
+    ℓπ(θ),
+    ∇ℓpdf_MvNorm(σ, θ) +
+    ∇ℓpdf_BL(yX_real, θ) +
+    ∇ℓpdf_BL(yX_synth, θ)
+)
+
+ℓπ_ns(θ) = (
+    ℓpdf_MvNorm(σ, θ) +
+    sum(ℓpdf_BL.(yX_real * θ))
+)
+∇ℓπ_ns(θ) = (
+    ℓπ_ns(θ),
+    ∇ℓpdf_MvNorm(σ, θ) +
+    ∇ℓpdf_BL(yX_real, θ)
+)
+
+
+
+
+
+
+
+
+
+
+
+
 temp = Matrix(CSV.read("real.csv"))
 y = temp[:, 15]
 X = temp[:, 1:14]
-
+y_stat = y
 lr2 = LogisticRegression(λ, 0.; fit_intercept = false)
-θ_0 = MLJLinearModels.fit(lr2, X, (2 .* y) .- 1; solver=MLJLinearModels.LBFGS())
+y_ml = (2 .* y) .- 1
+y = y_ml
+θ_0 = MLJLinearModels.fit(lr2, X, y_ml; solver=MLJLinearModels.LBFGS())
 weight_calib(X,y,β,θ_0)
 
 
