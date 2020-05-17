@@ -877,7 +877,9 @@ version = "1.9.2+0"
 
 [[MCMCChains]]
 deps = ["AbstractMCMC", "AxisArrays", "Distributions", "Formatting", "LinearAlgebra", "Random", "RecipesBase", "Requires", "Serialization", "SpecialFunctions", "Statistics", "StatsBase"]
-git-tree-sha1 = "4ecb0414630d9b6e8dd9937085f8e1aba5891444"
+git-tree-sha1 = "f29beb122f96eb2c25c289e45f6b7393117dbff5"
+repo-rev = "csp/diagfix"
+repo-url = "https://github.com/TuringLang/MCMCChains.jl.git"
 uuid = "c7f686f2-ff18-58e9-bc7b-31028e88f75d"
 version = "3.0.12"
 

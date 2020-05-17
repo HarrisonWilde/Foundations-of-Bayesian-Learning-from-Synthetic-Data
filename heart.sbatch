@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --nodes=9
+#SBATCH --nodes=12
 #SBATCH --tasks-per-node=28
 #SBATCH --mem-per-cpu=4571
 #SBATCH --time=48:00:00
@@ -24,7 +24,7 @@ julia src/logistic_regression/run.jl \
     --dataset uci_heart \
     --label target \
     --epsilon 6.0 \
-    --iterations 10 \
+    --iterations 100 \
     --folds 5 \
     --sampler AHMC \
     --distributed

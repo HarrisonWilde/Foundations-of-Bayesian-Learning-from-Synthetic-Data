@@ -8,11 +8,9 @@ function parse_cl()
         "--dataset", "-d"
             help = "specify the dataset to be used"
             arg_type = String
-            required = true
         "--label", "-l"
             help = "specify the label to be used, must be present in dataset, obviously"
             arg_type = String
-            required = true
         "--epsilon", "-e"
             help = "choose an epsilon value: the differential privacy constant"
             arg_type = String
@@ -42,6 +40,9 @@ function parse_cl()
         "--no_shuffle"
             help = "Disable row shuffling on load of data"
             action = :store_true
+        "--scales"
+            help = "List of scales to use for Laplace noise"
+            nargs = '*'
     end
     return parse_args(s)
 end
@@ -118,7 +119,7 @@ function setup_run(ℓπ, ∂ℓπ∂θ, metric, initial_θ; use_ad=true, target
     )
 
     # Define a leapfrog solver, with initial step size chosen heuristically
-    initial_ϵ = find_good_stepsize(hamiltonian, initial_θ; max_n_iters=10000)
+    initial_ϵ = find_good_stepsize(hamiltonian, initial_θ; max_n_iters=100)
     integrator = Leapfrog(initial_ϵ)
 
     # Define an HMC sampler, with multinomial sampling scheme, generalised No-U-Turn criteria, and windowed adaption for step-size and diagonal mass matrix

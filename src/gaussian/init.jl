@@ -1,44 +1,21 @@
-function init_stan_models(n_samples, n_warmup; dist = true)
+function init_stan_models(model_names, n_samples, n_warmup; dist = true)
 
     r = randstring(15)
-    β_dir = "$(@__DIR__)/tmp/beta_$(r)/"
-    mkpath(β_dir)
-    β_stan = SampleModel(
-        "Beta",
-        open(f -> read(f, String), "src/logistic_regression/stan/BetaLogisticRegression.stan");
-        method = StanSample.Sample(num_samples=n_samples - n_warmup, num_warmup=n_warmup),
-        tmpdir = dist ? β_dir : mktempdir()
-    )
-    weighted_dir = "$(@__DIR__)/tmp/weighted_$(r)/"
-    mkpath(weighted_dir)
-    weighted_stan = SampleModel(
-        "Weighted",
-        open(f -> read(f, String), "src/logistic_regression/stan/WeightedStandardLogisticRegression.stan");
-        method = StanSample.Sample(num_samples=n_samples - n_warmup, num_warmup=n_warmup),
-        tmpdir = dist ? weighted_dir : mktempdir()
-    )
-    naive_dir = "$(@__DIR__)/tmp/naive_$(r)/"
-    mkpath(naive_dir)
-    naive_stan = SampleModel(
-        "Naive",
-        open(f -> read(f, String), "src/logistic_regression/stan/StandardLogisticRegression.stan");
-        method = StanSample.Sample(num_samples=n_samples - n_warmup, num_warmup=n_warmup),
-        tmpdir = dist ? naive_dir : mktempdir()
-    )
-    no_synth_dir = "$(@__DIR__)/tmp/no_synth_$(r)/"
-    mkpath(no_synth_dir)
-    no_synth_stan = SampleModel(
-        "NoSynth",
-        open(f -> read(f, String), "src/logistic_regression/stan/NoSynthLogisticRegression.stan");
-        method = StanSample.Sample(num_samples=n_samples - n_warmup, num_warmup=n_warmup),
-        tmpdir = dist ? no_synth_dir : mktempdir()
-    )
-    return [
-        ("beta", β_stan),
-        ("weighted", weighted_stan),
-        ("naive", naive_stan),
-        ("no_synth", no_synth_stan)
-    ]
+    if dist
+        for name in model_names
+            mkpath("$(@__DIR__)/tmp/$(name)_$(r)/")
+        end
+    end
+    models = [(
+        name,
+        SampleModel(
+            name,
+            open(f -> read(f, String), "src/gaussian/stan/$(name)_gaussian.stan");
+            method = StanSample.Sample(num_samples=n_samples - n_warmup, num_warmup=n_warmup),
+            tmpdir = dist ? "$(@__DIR__)/tmp/$(name)_$(r)/" : mktempdir()
+        )
+    ) for name in model_names]
+    return models
 
 end
 
@@ -126,7 +103,7 @@ end
 """
 Define the mass matrix, make an initial guess at θ at the MLE using MLJ's LogiticRegression and calibrate βw
 """
-function init_run(λ, X_real, y_real, X_synth, y_synth, β; use_zero_init=false)
+function init_run(θ_dim)
 
     # initial guess at θ
     if use_zero_init

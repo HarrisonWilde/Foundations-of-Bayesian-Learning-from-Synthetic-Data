@@ -31,9 +31,6 @@ using MLJBase: auc
 using StanSample
 include("../common/utils.jl")
 include("../common/weight_calibration.jl")
-include("distributions.jl")
-include("loss.jl")
-include("evaluation.jl")
 include("init.jl")
 
 @everywhere begin
@@ -72,44 +69,57 @@ end
 function main()
 
     args = parse_cl()
-    path, dataset, label, ε = args["path"], args["dataset"], args["label"], args["epsilon"]
-    iterations, folds, split = args["iterations"], args["folds"], args["split"]
+    λs = args["scales"]
+    path, iterations = args["path"], args["iterations"]
     use_ad, distributed, sampler, no_shuffle = args["use_ad"], args["distributed"], args["sampler"], args["no_shuffle"]
-    # path, dataset, label, ε, iterations, folds, split, distributed, use_ad, sampler, no_shuffle = "src", "uci_heart", "target", "6.0", 1, 5, 1.0, false, false, "Stan", false
+    # λs, path, iterations, distributed, use_ad, sampler, no_shuffle = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0], "src", 5, false, false, "Stan", false
     t = Dates.format(now(), "HH_MM_SS__dd_mm_yyyy")
 
     println("Setting up experiment...")
     w = 0.5
     β = 0.5
     βw = 1.15
-    σ = 50.0
-    λ = 1.0
-    real_αs = [0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175, 0.2, 0.3, 0.4, 0.5, 0.75]
-    synth_αs = [0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.075, 0.1, 0.2, 0.3, 0.4, 0.5, 0.75]
-    αs = get_conditional_pairs(real_αs, synth_αs)
-    num_αs = size(αs)[1]
-    iter_steps = num_αs * folds
+    μ = 0.
+    σ = 1.
+    real_ns = vcat([1, 5], collect(1:5) .^ 2 .* 10)
+    synth_ns = vcat(collect(0:2:9), collect(10:5:29), collect(30:10:149), collect(150:25:250))
+    unseen_n = 500
+    ns = get_conditional_pairs(real_ns, synth_ns, max_sum=maximum(real_ns))
+    num_ns = length(ns)
+    num_λs = length(λs)
+    iter_steps = num_ns * num_λs
     total_steps = iter_steps * iterations
-    @everywhere n_samples, n_warmup = 10000, 2000
-    n_chains = 1
+    metrics = ["ll"]
+    if distributed
+        @everywhere n_samples, n_warmup = 5000, 1000
+        @everywhere model_names = [
+            "beta", "weighted", "naive", "no_synth", "beta_all", "noise_aware"
+        ]
+    else
+        n_samples, n_warmup = 5000, 1000
+        model_names = [
+            "beta", "weighted", "naive", "no_synth", "beta_all", "noise_aware"
+        ]
+    end
+    if (sampler == "Stan") & distributed
+        @everywhere models = init_stan_models(model_names, n_samples, n_warmup; dist = true)
+    elseif sampler == "Stan"
+        models = init_stan_models(model_names, n_samples, n_warmup; dist = false)
+    end
+    n_chains = 3
     show_progress = true
 
-    # if (sampler == "Stan") & distributed
-    #     @everywhere models = init_stan_models(n_samples, n_warmup; dist = true)
-    # elseif sampler == "Stan"
-    #     models = init_stan_models(n_samples, n_warmup; dist = false)
-    # end
-
     io = open("$(path)/$(dataset)_$(t)_out.csv", "w")
-    write(io, "iter,fold,real_α,synth_α,beta_auc,beta_ll,beta_bf,weighted_auc,weighted_ll,weighted_bf,naive_auc,naive_ll,naive_bf,no_synth_auc,no_synth_ll,no_synth_bf\n")
+    name_metrics = join(["$(name)_$(metric)" for name in model_names for metric in metrics], ",")
+    write(io, "iter,scale,real_α,synth_α,$(name_metrics)\n")
     close(io)
 
-    println("Loading data...")
-    labels, unshuffled_real_data, unshuffled_synth_data = load_data(dataset, label, ε)
-    θ_dim = size(real_data)[2] - 1
-    unshuffled_real_data[:, labels[1]] = (2 .* unshuffled_real_data[:, labels[1]]) .- 1
-    unshuffled_synth_data[:, labels[1]] = (2 .* unshuffled_synth_data[:, labels[1]]) .- 1
-    c = classes(categorical(real_data[:, labels[1]])[1])
+    println("Generating data...")
+    dgp = Normal(μ, σ)
+    all_real_data = rand(dgp, (iterations, maximum(real_ns)))
+    pre_contam_data = rand(dgp, (iterations, maximum(real_ns)))
+    all_synth_data = vcat([pre_contam_data + rand(Laplace(0, λ), (iterations, maximum(real_ns))) for λ in λs]...)
+    unseen_data = rand(dgp, (iterations, unseen_n))
     println("Distributing work...")
     p = Progress(total_steps)
 
@@ -117,21 +127,14 @@ function main()
 
         iter = Int(ceil(i / iter_steps))
         iter_i = i - (iter - 1) * iter_steps
-        fold = ((iter_i - 1) % folds)
-        Random.seed!(iter)
-        real_data = unshuffled_real_data[shuffle(axes(unshuffled_real_data, 1)), :]
-        synth_data = unshuffled_synth_data[shuffle(axes(unshuffled_synth_data, 1)), :]
-        real_α, synth_α = αs[Int(ceil(iter_i / folds))]
-
-        println("Worker $(myid()) on iter $(iter), step $(iter_i) with real alpha = $(real_α) and synthetic alpha = $(synth_α)...")
-        X_real, y_real, X_synth, y_synth, X_valid, y_valid = fold_α(
-            real_data, synth_data, real_α, synth_α,
-            fold, folds, labels
-        )
-        initial_θ = init_run(
-            λ, X_real, y_real, X_synth, y_synth, β
-        )
-        # βw_calib = weight_calib(X_synth, y_synth, β, initial_θ, βloss, ∇βloss, Hβloss)
+        scale = Int(ceil(iter_i / num_ns))
+        scale_i = iter_i - (scale - 1) * num_ns
+        real_n, synth_n = ns[scale_i]
+        real_data = all_real_data[iter, 1:real_n]
+        synth_data = all_synth_data[scale * iter, 1:synth_n]
+        λ = λs[scale]
+        println("Worker $(myid()) on iter $(iter), step $(iter_i) with scale = $(λ), real n = $(real_n) and synthetic n = $(synth_n)...")
+        # βw_calib = weight_calib(synth_data, β, βloss, ∇βloss, Hβloss)
         # if isnan(βw_calib)
         #     βw_calib = βw
         # end
@@ -141,18 +144,19 @@ function main()
 
         if sampler == "Stan"
 
-            models = init_stan_models(n_samples, n_warmup; dist = true)
             data = Dict(
-                "f" => θ_dim - 1,
-                "a" => size(X_real)[1],
-                "X_real" => X_real[:, 2:end],
-                "y_real" => Int.((y_real .+ 1) ./ 2),
-                "b" => size(X_synth)[1],
-                "X_synth" => X_synth[:, 2:end],
-                "y_synth" => Int.((y_synth .+ 1) ./ 2),
-                "w" => w,
+                "n" => real_n,
+                "y1" => real_data,
+                "m" => synth_n,
+                "y2" => synth_data,
+                "p_mu" => 1,
+                "p_alpha" => 3,
+                "p_beta" => 5,
+                "hp" => 1,
+                "scale" => λ,
                 "beta" => β,
-                "beta_w" => βw_calib
+                "beta_w" => βw_calib,
+                "w" => w,
             )
             for (name, model) in models
 
@@ -161,12 +165,11 @@ function main()
                     model;
                     data=data,
                     n_chains=n_chains,
-                    init=[Dict("alpha" => initial_θ[1], "coefs" => initial_θ[2:end])],
                     cores=1
                 )
                 if success(rc)
                     samples = mean(read_samples(model)[:, 1:θ_dim, :], dims=3)[:, :, 1]
-                    auc_score, ll, bf = evaluate_samples(X_valid, y_valid, samples, c)
+                    ll, kld, wass = evaluate_samples(unseen_data, samples, c)
                     append!(evaluations, [auc_score, ll, bf])
                 else
                     append!(evaluations, [NaN, NaN, NaN])
@@ -213,7 +216,7 @@ function main()
                 varinfo = Turing.VarInfo(model)
                 model(varinfo, Turing.SampleFromPrior(), Turing.PriorContext((θ = initial_θ,)))
                 init_θ = varinfo[Turing.SampleFromPrior()]
-                chn = sample(model, Turing.NUTS(), n_samples, init_theta = init_θ)
+                chn = sample(model, Turing.NUTS(), n_samples, init_theta = init_\theta)
                 auc_score, ll, bf = evaluate_samples(X_valid, y_valid, Array(chn), c)
                 append!(evaluations, [auc_score, ll, bf])
 
