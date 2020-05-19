@@ -8,17 +8,6 @@ function evaluate_samples(X, y, samples, c; plot_roc=false)
 end
 
 
-function roc_auc(y, ps, c)
-    yc = categorical(y)
-    levels!(yc, levels(c))
-    a = auc([UnivariateFinite(c, [1.0 - p, p]) for p in ps], yc)
-    if isnan(a)
-        a = 1
-    end
-    return a
-end
-
-
 function probabilities(X, samples)
     N = size(samples)[1] + 1
     avg = zeros(size(X)[1])
@@ -33,7 +22,7 @@ function log_loss(yX, samples)
     N = size(samples)[1]
     avg = 0
     for θ in eachrow(samples)
-        avg += sum(ℓpdf_BL.(yX * θ)) / N
+        avg += sum(ℓpdf_Gaussian.(yX * θ)) / N
     end
     return -avg
 end
@@ -44,7 +33,7 @@ function marginal_likelihood_estimate(yX, samples)
     N = size(samples)[1]
     avg = 0
     for θ in eachrow(samples)
-        avg += sum(pdf_BL.(yX * θ) .^ -1) / N
+        avg += sum(pdf_Gaussian.(yX * θ) .^ -1) / N
     end
     return avg ^ -1
     # mean(map(θ -> sum(pdf_bernoulli_logit.(X_test * θ, y_test)), samples))

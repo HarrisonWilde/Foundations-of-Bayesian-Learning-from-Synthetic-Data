@@ -1,18 +1,12 @@
 function init_stan_models(model_names, n_samples, n_warmup; dist = true)
 
-    r = randstring(15)
-    if dist
-        for name in model_names
-            mkpath("$(@__DIR__)/tmp/$(name)_$(r)/")
-        end
-    end
     models = [(
-        name,
+        "$(name)_$(myid())",
         SampleModel(
-            name,
+            "$(name)_$(myid())",
             open(f -> read(f, String), "src/gaussian/stan/$(name)_gaussian.stan");
             method = StanSample.Sample(num_samples=n_samples - n_warmup, num_warmup=n_warmup),
-            tmpdir = dist ? "$(@__DIR__)/tmp/$(name)_$(r)/" : mktempdir()
+            tmpdir = dist ? "$(@__DIR__)/tmp/" : mktempdir()
         )
     ) for name in model_names]
     return models

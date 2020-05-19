@@ -90,15 +90,20 @@ function main()
     num_αs = size(αs)[1]
     iter_steps = num_αs * folds
     total_steps = iter_steps * iterations
-    @everywhere n_samples, n_warmup = 10000, 2000
+    n_samples, n_warmup = 10000, 2000
+    model_names = [
+        "beta", "weighted", "naive", "no_synth"
+    ]
+    if sampler == "Stan"
+        mkpath("$(@__DIR__)/tmp/")
+        models = Dict(
+            pmap(1:nworkers()) do i
+                (myid() => init_stan_models(model_names, n_samples, n_warmup; dist = distributed))
+            end
+        )
+    end
     n_chains = 1
     show_progress = true
-
-    # if (sampler == "Stan") & distributed
-    #     @everywhere models = init_stan_models(n_samples, n_warmup; dist = true)
-    # elseif sampler == "Stan"
-    #     models = init_stan_models(n_samples, n_warmup; dist = false)
-    # end
 
     io = open("$(path)/$(dataset)_$(t)_out.csv", "w")
     write(io, "iter,fold,real_α,synth_α,beta_auc,beta_ll,beta_bf,weighted_auc,weighted_ll,weighted_bf,naive_auc,naive_ll,naive_bf,no_synth_auc,no_synth_ll,no_synth_bf\n")
@@ -106,10 +111,10 @@ function main()
 
     println("Loading data...")
     labels, unshuffled_real_data, unshuffled_synth_data = load_data(dataset, label, ε)
-    θ_dim = size(real_data)[2] - 1
+    θ_dim = size(unshuffled_real_data)[2] - 1
     unshuffled_real_data[:, labels[1]] = (2 .* unshuffled_real_data[:, labels[1]]) .- 1
     unshuffled_synth_data[:, labels[1]] = (2 .* unshuffled_synth_data[:, labels[1]]) .- 1
-    c = classes(categorical(real_data[:, labels[1]])[1])
+    c = classes(categorical(unshuffled_real_data[:, labels[1]])[1])
     println("Distributing work...")
     p = Progress(total_steps)
 
@@ -136,12 +141,11 @@ function main()
         #     βw_calib = βw
         # end
         βw_calib = βw
-        println(βw_calib)
+        # println(βw_calib)
         evaluations = []
 
         if sampler == "Stan"
 
-            models = init_stan_models(n_samples, n_warmup; dist = true)
             data = Dict(
                 "f" => θ_dim - 1,
                 "a" => size(X_real)[1],
@@ -154,7 +158,7 @@ function main()
                 "beta" => β,
                 "beta_w" => βw_calib
             )
-            for (name, model) in models
+            for (name, model) in models[myid()]
 
                 println("Running $(name)...")
                 rc = stan_sample(

@@ -13,7 +13,7 @@ function roc_auc(y, ps, c)
     levels!(yc, levels(c))
     a = auc([UnivariateFinite(c, [1.0 - p, p]) for p in ps], yc)
     if isnan(a)
-        a = 1
+        a = 1.
     end
     return a
 end

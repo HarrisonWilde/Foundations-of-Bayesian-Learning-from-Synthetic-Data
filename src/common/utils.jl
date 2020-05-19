@@ -48,7 +48,7 @@ function parse_cl()
 end
 
 
-function load_data(name, label, ε; shuffle_rows=true)
+function load_data(name, label, ε)
 
     labels = [Symbol(label),]
     real_data = CSV.read("data/splits/$(name)_$(label)_eps$(ε)_real.csv")
@@ -57,12 +57,6 @@ function load_data(name, label, ε; shuffle_rows=true)
     # Append 1s column to each to allow for intercept term in logistic regression
     real_data = hcat(DataFrame(intercept = ones(size(real_data)[1])), real_data)
     synth_data = hcat(DataFrame(intercept = ones(size(synth_data)[1])), synth_data)
-
-    if shuffle_rows
-        println("Shuffling...")
-        real_data = real_data[shuffle(axes(real_data, 1)), :]
-        synth_data = synth_data[shuffle(axes(synth_data, 1)), :]
-    end
 
     return labels, real_data, synth_data
 end

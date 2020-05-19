@@ -26,7 +26,7 @@ using ProgressMeter
 using SharedArrays
 using SpecialFunctions
 using Random
-using StatsFuns: log1pexp, log2π
+using StatsFuns: invsqrt2π, log2π
 using MLJBase: auc
 using StanSample
 include("../common/utils.jl")
@@ -34,6 +34,7 @@ include("../common/weight_calibration.jl")
 include("init.jl")
 
 @everywhere begin
+    using Pkg; Pkg.activate(".")
     using Distributed
     using ArgParse
     using ForwardDiff
@@ -59,10 +60,7 @@ include("init.jl")
     using StanSample
     include("src/common/utils.jl")
     include("src/common/weight_calibration.jl")
-    include("src/logistic_regression/distributions.jl")
-    include("src/logistic_regression/loss.jl")
-    include("src/logistic_regression/evaluation.jl")
-    include("src/logistic_regression/init.jl")
+    include("src/gaussian/init.jl")
 end
 
 
@@ -90,26 +88,22 @@ function main()
     iter_steps = num_ns * num_λs
     total_steps = iter_steps * iterations
     metrics = ["ll"]
-    if distributed
-        @everywhere n_samples, n_warmup = 5000, 1000
-        @everywhere model_names = [
-            "beta", "weighted", "naive", "no_synth", "beta_all", "noise_aware"
-        ]
-    else
-        n_samples, n_warmup = 5000, 1000
-        model_names = [
-            "beta", "weighted", "naive", "no_synth", "beta_all", "noise_aware"
-        ]
-    end
-    if (sampler == "Stan") & distributed
-        @everywhere models = init_stan_models(model_names, n_samples, n_warmup; dist = true)
-    elseif sampler == "Stan"
-        models = init_stan_models(model_names, n_samples, n_warmup; dist = false)
+    n_samples, n_warmup = 5000, 1000
+    model_names = [
+        "beta", "weighted", "naive", "no_synth", "beta_all", "noise_aware"
+    ]
+    if sampler == "Stan"
+        mkpath("$(@__DIR__)/tmp/")
+        models = Dict(
+            pmap(1:nworkers()) do i
+                (myid() => init_stan_models(model_names, n_samples, n_warmup; dist = distributed))
+            end
+        )
     end
     n_chains = 3
     show_progress = true
 
-    io = open("$(path)/$(dataset)_$(t)_out.csv", "w")
+    io = open("$(path)/$(t)_out.csv", "w")
     name_metrics = join(["$(name)_$(metric)" for name in model_names for metric in metrics], ",")
     write(io, "iter,scale,real_α,synth_α,$(name_metrics)\n")
     close(io)
@@ -158,7 +152,7 @@ function main()
                 "beta_w" => βw_calib,
                 "w" => w,
             )
-            for (name, model) in models
+            for (name, model) in models[myid()]
 
                 println("Running $(name)...")
                 rc = stan_sample(
@@ -168,7 +162,7 @@ function main()
                     cores=1
                 )
                 if success(rc)
-                    samples = mean(read_samples(model)[:, 1:θ_dim, :], dims=3)[:, :, 1]
+                    samples = mean(read_samples(model)[:, 1:2, :], dims=3)[:, :, 1]
                     ll, kld, wass = evaluate_samples(unseen_data, samples, c)
                     append!(evaluations, [auc_score, ll, bf])
                 else
