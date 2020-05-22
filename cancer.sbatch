@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --nodes=1
+#SBATCH --nodes=12
 #SBATCH --tasks-per-node=28
 #SBATCH --mem-per-cpu=4571
 #SBATCH --time=48:00:00
@@ -19,4 +19,12 @@ export JULIA_CMDSTAN_HOME=/home/dcs/csrxgb/julia_stuff/cmdstan-2.23.0
 module purge
 module load GCC/8.3.0 GCCcore/9.2.0 Julia/1.4.1-linux-x86_64
 
-julia cluster_3.jl
+julia src/logistic_regression/run.jl \
+    --path /home/dcs/csrxgb/julia_stuff \
+    --dataset kag_cervical_cancer \
+    --label Biopsy \
+    --epsilon 6.0 \
+    --iterations 100 \
+    --folds 5 \
+    --sampler AHMC \
+    --distributed

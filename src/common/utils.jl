@@ -103,17 +103,17 @@ function fold_α(real_data, synth_data, real_α, synth_α, fold, folds, labels)
 end
 
 
-function setup_run(ℓπ, ∂ℓπ∂θ, metric, initial_θ; use_ad=true, target_acceptance_rate=0.75)
+function setup_run(ℓπ, metric, initial_θ; ∂ℓπ∂θ=ForwardDiff, target_acceptance_rate=0.8)
 
     # Setup a Hamiltonian system
     hamiltonian = Hamiltonian(
         metric,
         ℓπ,
-        use_ad ? ForwardDiff : ∂ℓπ∂θ,
+        ∂ℓπ∂θ,
     )
 
     # Define a leapfrog solver, with initial step size chosen heuristically
-    initial_ϵ = find_good_stepsize(hamiltonian, initial_θ; max_n_iters=100)
+    initial_ϵ = find_good_stepsize(hamiltonian, initial_θ; max_n_iters=1000)
     integrator = Leapfrog(initial_ϵ)
 
     # Define an HMC sampler, with multinomial sampling scheme, generalised No-U-Turn criteria, and windowed adaption for step-size and diagonal mass matrix

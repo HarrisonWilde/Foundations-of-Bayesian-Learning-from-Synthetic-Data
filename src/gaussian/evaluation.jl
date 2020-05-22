@@ -1,40 +1,48 @@
-function evaluate_samples(X, y, samples, c; plot_roc=false)
-    ps = probabilities(X, samples)
-    if plot_roc
-        plot_roc_curve(y, ps)
+function evaluate_samples(y, dgp, samples)
+
+    ll = log_loss(y, samples)
+    Dkl = kld(dgp, samples)
+    # Dwass = wasserstein_d(dgp, samples)
+    return ll, Dkl
+end
+
+function setup_posterior_predictive(samples)
+
+    function pp(x)
+        p = 0
+        for (μ, σ²) in eachrow(samples)
+            p += pdf_N(μ, √σ², x)
+        end
+        return p / size(samples)[1]
     end
-    yX = y .* X
-    return roc_auc(y, ps, c), log_loss(yX, samples), marginal_likelihood_estimate(yX, samples)
+    return pp
+
+end
+# Approximate posterior predictive by averaging over sample pdfs
+# integrate over limits +- 5 * std of DGP
+function kld(dgp, samples)
+    pp = setup_posterior_predictive(samples)
+    f(x) = pdf(dgp, x) * log(pdf(dgp, x) / pp(x))
+    Dkl, err = quadgk(f, dgp.σ * -5, dgp.σ * 5)
+    return Dkl
 end
 
 
-function probabilities(X, samples)
-    N = size(samples)[1] + 1
-    avg = zeros(size(X)[1])
-    for θ in eachrow(samples)
-        avg += logistic.(X * θ) ./ N
-    end
-    return avg
-end
-
-
-function log_loss(yX, samples)
+function log_loss(y, samples)
     N = size(samples)[1]
     avg = 0
-    for θ in eachrow(samples)
-        avg += sum(ℓpdf_Gaussian.(yX * θ)) / N
+    for (μ, σ²) in eachrow(samples)
+        avg += sum(ℓpdf_N.(μ, √σ², y)) / N
     end
     return -avg
 end
 
 
-# https://www.jstor.org/stable/pdf/2291091.pdf?refreqid=excelsior%3Ab194b370e4efc9f1d9ae29b7c7c5c6da
-function marginal_likelihood_estimate(yX, samples)
-    N = size(samples)[1]
-    avg = 0
-    for θ in eachrow(samples)
-        avg += sum(pdf_Gaussian.(yX * θ) .^ -1) / N
-    end
-    return avg ^ -1
-    # mean(map(θ -> sum(pdf_bernoulli_logit.(X_test * θ, y_test)), samples))
-end
+# function wasserstein_distance(dgp, samples)
+#     N = size(samples)[1]
+#     avg = 0
+#     for (μ, σ²) in eachrow(samples)
+#         avg += WassersteinD(dgp, Distributions.Normal(μ, √σ²)) / N
+#     end
+#     return avg
+# end

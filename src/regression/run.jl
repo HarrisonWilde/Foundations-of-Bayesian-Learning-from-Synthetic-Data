@@ -39,6 +39,7 @@ include("init.jl")
 include("weight_calibration.jl")
 
 @everywhere begin
+    using Pkg; Pkg.activate(".")
     using Distributed
     using ArgParse
     using ForwardDiff
@@ -80,7 +81,7 @@ function main()
     # iterations, folds, split = args["iterations"], args["folds"], args["split"]
     # use_ad, distributed, sampler, no_shuffle = args["use_ad"], args["distributed"], args["sampler"], args["no_shuffle"]
     path, dataset, label, ε, iterations, folds, split, distributed, use_ad, sampler, no_shuffle = ".", "uci_heart", "target", "6.0", 1, 5, 1.0, false, false, "CmdStan", false
-    experiment_type = "logistic_regression"
+    experiment_type = "regression"
     t = Dates.format(now(), "HH_MM_SS__dd_mm_yyyy")
     out_path = "$(path)/src/$(experiment_type)/outputs/$(dataset)_$(t)"
     mkpath(out_path)
@@ -163,6 +164,16 @@ function main()
 
         if sampler == "CmdStan"
 
+            # @show X_synth
+            # @show X_synth[:, 2:end]
+            # @show size(X_synth)[1]
+            # if size(X_synth)[1] == 0
+            #     X_synth =  zeros(1, size(X_synth)[2])
+            # end
+            # @show X_synth
+            # @show X_synth[:, 2:end]
+            # @show size(X_synth)[1]
+
             data = Dict(
                 "f" => θ_dim - 1,
                 "a" => size(X_real)[1],
@@ -180,7 +191,7 @@ function main()
                 "alpha" => initial_θ[1],
                 "coefs" => initial_θ[2:end]
             )
-            @time for (name, model) in models[myid()]
+            for (name, model) in models[myid()]
 
                 println("Running $(name)...")
                 rc, chn, _ = stan(
@@ -189,11 +200,11 @@ function main()
                     init=init
                 )
                 if rc == 0
-                    samples = Array(chn)[:, 1:θ_dim]
-                    @show mean(samples, dims=1)
-                    auc_score, ll, bf = evaluate_samples(X_valid, y_valid, samples, c)
-                    append!(evaluations, [auc_score, ll, bf])
-                else
+                    samples = mean((chn[chn.name_map[:parameters]].value.data)[:, 1:θ_dim, :], dims=3)[:, :, 1]
+                    @show size(samples)
+                #     auc_score, ll, bf = evaluate_samples(X_valid, y_valid, samples, c)
+                #     append!(evaluations, [auc_score, ll, bf])
+                # else
                     append!(evaluations, [NaN, NaN, NaN])
                 end
 
@@ -242,7 +253,7 @@ function main()
                 X_real, y_real, X_synth, y_synth, σ, w, βw_calib, β, initial_θ
             )
 
-            @time for (name, model) in models
+            for (name, model) in models
 
                 println("Running $(name)...")
                 metric = DiagEuclideanMetric(θ_dim)
@@ -253,12 +264,11 @@ function main()
                     ∂ℓπ∂θ = model.∇ℓπ,
                     target_acceptance_rate = target_acceptance_rate
                 )
-                chn, _ = sample(
+                samples, stats = sample(
                     hamiltonian, proposal, initial_θ, n_samples, adaptor, n_warmup;
                     drop_warmup=true, progress=show_progress, verbose=show_progress
                 )
-                @show mean(hcat(chn...)')
-                auc_score, ll, bf = evaluate_samples(X_valid, y_valid, hcat(chn...)', c)
+                auc_score, ll, bf = evaluate_samples(X_valid, y_valid, hcat(samples...)', c)
                 append!(evaluations, [auc_score, ll, bf])
 
             end
@@ -269,14 +279,13 @@ function main()
                 X_real, y_real, X_synth, y_synth, σ, w, βw_calib, β
             )
 
-            @time for (name, model) in models
+            for (name, model) in models
 
                 println("Running $(name)...")
                 varinfo = Turing.VarInfo(model)
                 model(varinfo, Turing.SampleFromPrior(), Turing.PriorContext((θ = initial_θ,)))
                 init_θ = varinfo[Turing.SampleFromPrior()]
-                chn = sample(model, Turing.NUTS(n_warmup, target_acceptance_rate), n_samples, init_theta = init_θ)
-                @show mean(Array(chn), dims=1)
+                chn = sample(model, Turing.NUTS(n_adapts = n_warmup, δ = target_acceptance_rate), n_samples, init_theta = init_θ)
                 auc_score, ll, bf = evaluate_samples(X_valid, y_valid, Array(chn), c)
                 append!(evaluations, [auc_score, ll, bf])
 

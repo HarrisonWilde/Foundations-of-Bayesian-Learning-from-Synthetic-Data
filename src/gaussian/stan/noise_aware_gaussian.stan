@@ -1,4 +1,17 @@
-// Noise-Aware (Data Aug.)
+// Noise Aware (NL Convolution)
+functions {
+   // Need to write vectorised normal lpdf functions.
+   real normal_laplace_pdf(real y, real mu, real sigma, real lambda) {
+      return 1 / (2 * lambda) * (
+         exp((mu - y) / lambda + sigma ^ 2 / (2 * lambda ^ 2)) *
+         std_normal_cdf(((y - mu) / sigma - sigma / lambda)) +
+         exp((y - mu) / lambda + sigma ^ 2 / (2 * lambda ^ 2)) *
+         (1 - std_normal_cdf(((y - mu) / sigma + sigma / lambda)))
+      );
+   }
+
+}
+
 data {
 
    // Inputs for the sampler: data and prior hyperparameters
@@ -14,31 +27,29 @@ data {
    real beta;
    real beta_w;
    real w;
+   real<lower=0> lambda;
 
 }
+
 
 parameters {
 
+   // Parameters for which we do inference
    real mu;
    real<lower=0> sigma2;
-   vector[m] eps_private;
-
-}
-
-transformed parameters {
-
-   vector[m] contam_y2;
-   contam_y2 = y2 - eps_private;
 
 }
 
 model {
 
+   // The prior
    sigma2 ~ inv_gamma(p_alpha, p_beta);
    mu ~ normal(p_mu, sqrt(sigma2) * hp);
-   eps_private ~ double_exponential(0, scale);
 
+   // The likelihood
    target += normal_lpdf(y1 | mu, sqrt(sigma2));
-   target += normal_lpdf(contam_y2 | mu, sqrt(sigma2));
+   for (i in 1:m) {
+      target += log(normal_laplace_pdf(y2[i], mu, sqrt(sigma2), lambda));
+   }
 
 }

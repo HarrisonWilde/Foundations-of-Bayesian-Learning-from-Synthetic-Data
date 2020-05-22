@@ -12,6 +12,7 @@ data {
     real<lower=0> w;
     real beta;
     real<lower=0> beta_w;
+    int flag;
 
 }
 
@@ -26,13 +27,15 @@ parameters {
 model {
 
     // Uninformative priors
-    coefs ~ normal(0, 50);
     alpha ~ normal(0, 50);
+    coefs ~ normal(0, 50);
 
     // The likelihood
     target += bernoulli_logit_glm_lpmf(y_real | X_real, alpha, coefs);
-    for (i in 1:b) {
-        target += beta_w * ((1 / beta) * exp(bernoulli_logit_glm_lpmf(y_synth | X_synth[i], alpha, coefs)) ^ (beta) - (1 / (beta + 1)) * inv_logit(alpha + X_synth[i] * coefs) ^ (beta + 1) + (1 - inv_logit(alpha + X_synth[i] * coefs)) ^ (beta + 1));
+    if (flag == 0) {
+        for (i in 1:b) {
+            target += beta_w * ((1 / beta) * exp(bernoulli_logit_glm_lpmf(y_synth | X_synth[i], alpha, coefs)) ^ (beta) - (1 / (beta + 1)) * inv_logit(alpha + X_synth[i] * coefs) ^ (beta + 1) + (1 - inv_logit(alpha + X_synth[i] * coefs)) ^ (beta + 1));
+        }
     }
 
 }

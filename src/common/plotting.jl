@@ -34,12 +34,14 @@ function plot_real_α(df, α, divergences, metric, t)
     p = @df fdf plot(
         :synth_α,
         [cols(Symbol("$(div)_$(metric)_mean") for div in divergences)],
-        ribbon = [cols(Symbol("$(div)_$(metric)_std") for div in divergences)],
+        ribbon = [cols(Symbol("$(div)_$(metric)_mean_std") for div in divergences)],
+        fillalpha = 0.2,
         title = "$(metric) divergence comparison, real alpha = $(α)",
         label = [div for div in divergences],
         xlabel = "Synthetic Alpha",
         ylabel = metric,
         legendtitle = "Divergence",
+        yscale = (metric == "ll") ? :log10 : :identity
     )
     p = plot!(size=(1000, 700), legend=:outertopright)
     png(p, "src/logistic_regression/plots/$(t)/real_alpha_$(α)__$(metric)")
@@ -53,12 +55,14 @@ function plot_synth_α(df, α, divergences, metric, t)
     p = @df filter(row -> row[:synth_α] == α, df) plot(
         :real_α,
         [cols(Symbol("$(div)_$(metric)_mean") for div in divergences)],
-        ribbon = [cols(Symbol("$(div)_$(metric)_std") for div in divergences)],
+        ribbon = [cols(Symbol("$(div)_$(metric)_mean_std") for div in divergences)],
+        fillalpha = 0.2,
         title = "$(metric) divergence comparison, synth alpha = $(α)",
         label = [div for div in divergences],
         xlabel = "Real Alpha",
         ylabel = metric,
         legendtitle = "Divergence",
+        yscale = (metric == "ll") ? :log10 : :identity
     )
     p = plot!(size=(1000, 700), legend=:outertopright)
     png(p, "src/logistic_regression/plots/$(t)/synth_alpha_$(α)__$(metric)")
@@ -83,18 +87,22 @@ function plot_divergences(df, divergence, metric, t)
     p = @df df plot(
         :real_α + :synth_α,
         [cols(Symbol("$(divergence)_$(metric)_mean"))],
-        ribbon = [cols(Symbol("$(divergence)_$(metric)_std"))],
+        ribbon = [cols(Symbol("$(divergence)_$(metric)_mean_std"))],
+        fillalpha = 0.1,
         title = divergence,
         group = :real_α,
         legendtitle = "Real Alpha",
         xlabel = "Real + Synthetic Alpha",
         ylabel = metric,
+        yscale = (metric == "ll") ? :log10 : :identity
     )
     p = @df filter(row -> row[:synth_α] == 0.0, df) plot!(
         :real_α,
         [cols(Symbol("$(divergence)_$(metric)_mean"))],
-        ribbon = [cols(Symbol("$(divergence)_$(metric)_std"))],
-        label = "varying"
+        ribbon = [cols(Symbol("$(divergence)_$(metric)_mean_std"))],
+        fillalpha = 0.2,
+        label = "varying",
+        yscale = (metric == "ll") ? :log10 : :identity
     )
     p = plot!(size=(1000, 700), legend=:outertopright)
     png(p, "src/logistic_regression/plots/$(t)/$(divergence)__$(metric)")

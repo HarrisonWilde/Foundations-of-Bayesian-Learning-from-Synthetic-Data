@@ -14,6 +14,7 @@ data {
    real beta;
    real beta_w;
    real w;
+   real lambda;
 
 }
 

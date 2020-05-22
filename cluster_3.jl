@@ -1,12 +1,17 @@
-using ClusterManagers
-using Distributed
-# addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])), o=string(ENV["SLURM_JOB_ID"]))
-addprocs_slurm(parse(Int, ENV["SLURM_NTASKS"]))
-println("We are all connected and ready.")
-for i in workers()
-    host, pid = fetch(@spawnat i (gethostname(), getpid()))
-    println(host, pid)
-end
+# using ClusterManagers
+# using Distributed
+# # addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])), o=string(ENV["SLURM_JOB_ID"]))
+# addprocs_slurm(parse(Int, ENV["SLURM_NTASKS"]))
+# println("We are all connected and ready.")
+# for i in workers()
+#     host, pid = fetch(@spawnat i (gethostname(), getpid()))
+#     println(host, pid)
+# end
+#
+
+@everywhere ENV["JULIA_CMDSTAN_HOME"]="/Users/harrisonwilde/cmdstan-2.23.0"
+@everywhere using Pkg
+@everywhere Pkg.activate(".")
 @everywhere using StanSample, Distributions, Distributed
 
 ProjDir = @__DIR__
@@ -25,13 +30,13 @@ ProjDir = @__DIR__
   sm::Union{Nothing, SampleModel}
 end
 function Job(
-    name::AbstractString, 
-    model::AbstractString, 
-    data::Dict; 
+    name::AbstractString,
+    model::AbstractString,
+    data::Dict;
     output_format=:particles,
     tmpdir=pwd()
   )
-  
+
   nchains=4
   num_samples=1000
   num_warmup=1000
@@ -39,7 +44,7 @@ function Job(
   delta=0.85
 
   sm = SampleModel("name", model, [nchains],
-    tmpdir=tmpdir, 
+    tmpdir=tmpdir,
     method=StanSample.Sample(
       num_samples=num_samples,
       num_warmup=num_warmup,
@@ -49,19 +54,19 @@ function Job(
   )
 
   Job(name, model, data, output_format,
-    tmpdir, nchains, num_samples, num_warmup, 
+    tmpdir, nchains, num_samples, num_warmup,
     save_warmup, delta, sm)
 end
 
 # Assume we have 2 models, m1 & m2
 m1 = "
-data { 
-  int<lower=1> N; 
+data {
+  int<lower=1> N;
   int<lower=0,upper=1> y[N];
-} 
+}
 parameters {
   real<lower=0,upper=1> theta;
-} 
+}
 model {
   theta ~ beta(1,1);
   y ~ bernoulli(theta);
@@ -69,27 +74,27 @@ model {
 ";
 
 m2 = "
-data { 
-  int<lower=1> N; 
+data {
+  int<lower=1> N;
   int<lower=0,upper=1> y[N];
-} 
+}
 parameters {
   real<lower=0,upper=1> theta;
-} 
+}
 model {
   theta ~ beta(1,1);
   y ~ bernoulli(theta);
 }
 ";
 
-# Assume we have 4 sets of data 
+# Assume we have 4 sets of data
 d = Vector{Dict}(undef, 4)
 d[1] = Dict(:N => 10, :y => [0, 1, 0, 0, 0, 0, 0, 0, 0, 1])
 d[2] = Dict(:N => 10, :y => [0, 1, 0, 0, 0, 1, 1, 1, 0, 1])
 d[3] = Dict(:N => 10, :y => [0, 1, 0, 1, 0, 0, 0, 0, 0, 1])
 d[4] = Dict(:N => 10, :y => [0, 1, 1, 1, 0, 1, 1, 1, 0, 1])
 
-tmpdir = "$(ProjDir)/tmp"
+tmpdir = mktempdir()
 @everywhere jobs = Vector{Job}(undef, 4)
 jobs[1] = Job("m1.1", m1, d[1]; output_format=:particles, tmpdir=tmpdir*"1")
 jobs[2] = Job("m1.2", m1, d[2]; output_format=:particles, tmpdir=tmpdir*"2")
@@ -113,4 +118,3 @@ end
 for i in 1:length(jobs)
   display(res[i][1][1])
 end
-

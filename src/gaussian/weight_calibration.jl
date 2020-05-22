@@ -1,10 +1,9 @@
 # Need to define the loss on an uncontrained paramater space
-function weight_calib(X, y, β, θ_0, loss, ∇loss, Hloss)
+function weight_calib(y, β, μ_0, σ²_0)
 
-    n, p = size(X)
-    f(θ_0) = loss(X, y, β, θ_0)
-    # θ̂ = θ_0
-    θ̂ = Optim.minimizer(optimize(f, θ_0, Optim.LBFGS(); autodiff=:forward))
+    n, p = length(y), 2
+    f(θ) = βloss(θ..., β, y)
+    μ̂, σ̂² = Optim.minimizer(optimize(f, [μ_0, σ²_0]; autodiff=:forward))
 
     grad_data = zeros(n, p)
     Hess_data = zeros(p, p, n)
@@ -12,9 +11,9 @@ function weight_calib(X, y, β, θ_0, loss, ∇loss, Hloss)
     mean_Hess_data = zeros(p, p)
 
     for i in 1:n
-        grad_data[i, :] = ∇loss(X[i, :]', y[i], β, θ̂)
+        grad_data[i, :] = ForwardDiff.gradient(θ -> βloss(θ..., β, y[i]), [μ̂, σ̂²])
         mean_grad_sq_data += (grad_data[i, :] .* transpose(grad_data[i, :]))
-        Hess_data[:, :, i] = Hloss(X[i, :]', y[i], β, θ̂)
+        Hess_data[:, :, i] = ForwardDiff.hessian(θ -> βloss(θ..., β, y[i]), [μ̂, σ̂²])
         mean_Hess_data += Hess_data[:, :, i]
     end
 

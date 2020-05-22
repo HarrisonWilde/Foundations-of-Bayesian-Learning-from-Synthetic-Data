@@ -37,6 +37,8 @@ set.seed(5)
 
 
 library(mlmRev)
+library(rstan)
+library(rio)
 data(Gcsemv, package = "mlmRev")
 Gcsemv$female <- relevel(Gcsemv$gender, "M")
 GCSE <- subset(x = Gcsemv, select = c(school, student, female, course))
@@ -63,38 +65,38 @@ GCSE <- subset(x = Gcsemv, select = c(school, student, female, course))
 mu <- 1
 
 
-n_observations = 1200,
-n_groups = 3,
-p_theta = 1,
-y = rnorm(n, alphas[school], sqrt(sigma2_y)),
-X = GCSE$female,
-schools = GCSE$school,
-p_mu = 0,
-p_sigma = 1.5,
-p_alpha = 2,
-p_beta = 5,
-p_nu = 2,
-p_Sigma = ,
-w = 0.5,
-beta = 0.5,
-beta_w = 1.25,
+n_observations = 1200
+n_groups = 3
+n_theta = 1
+y = rnorm(n, alphas[school], sqrt(sigma2_y))
+X = GCSE$female
+schools = GCSE$school
+p_mu = 0
+p_sigma = 1.5
+p_alpha = 2
+p_beta = 5
+p_nu = 2
+p_Sigma = rep(3, n_theta)
+w = 0.5
+beta = 0.5
+beta_w = 1.25
 
 hierarchical_data <- list(
-    n_observations = 1200,
-    n_groups = 3,
-    p_theta = 1,
-    y = rnorm(n, alphas[school], sqrt(sigma2_y)),
-    X = GCSE$female,
-    schools = GCSE$school,
-    p_mu = 0,
-    p_sigma = 1.5,
-    p_alpha = 2,
-    p_beta = 5,
-    p_nu = 2,
-    p_Sigma = ,
-    w = 0.5,
-    beta = 0.5,
-    beta_w = 1.25,
+    n_observations = n_observations,
+    n_groups = n_groups,
+    n_theta = n_theta,
+    y = y,
+    X = X,
+    schools = schools,
+    p_mu = p_mu,
+    p_sigma = p_sigma,
+    p_alpha = p_alpha,
+    p_beta = p_beta,
+    p_nu = p_nu,
+    p_Sigma = p_Sigma,
+    w = w,
+    beta = beta,
+    beta_w = beta_w,
 )
 
 hier_model_stan <- stan_model(file="src/regression/stan/model.stan")

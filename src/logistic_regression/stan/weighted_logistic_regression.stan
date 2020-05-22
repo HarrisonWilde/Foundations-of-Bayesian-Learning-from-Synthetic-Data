@@ -12,26 +12,29 @@ data {
     real<lower=0> w;
     real beta;
     real<lower=0> beta_w;
+    int flag;
 
 }
 
 parameters {
 
     // Parameters for which we do inference
-    vector[f] coefs;
     real alpha;
+    vector[f] coefs;
 
 }
 
 model {
 
     // Uninformative priors
-    coefs ~ normal(0, 100);
-    alpha ~ normal(0, 100);
+    alpha ~ normal(0, 50);
+    coefs ~ normal(0, 50);
 
     // The likelihood
     target += bernoulli_logit_glm_lpmf(y_real | X_real, alpha, coefs);
-    target += w * bernoulli_logit_glm_lpmf(y_synth | X_synth, alpha, coefs);
+    if (flag == 0) {
+        target += w * bernoulli_logit_glm_lpmf(y_synth | X_synth, alpha, coefs);
+    }
 
 }
 

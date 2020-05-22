@@ -97,7 +97,7 @@ end
 """
 Define the mass matrix, make an initial guess at θ at the MLE using MLJ's LogiticRegression and calibrate βw
 """
-function init_run(λ, X_real, y_real, X_synth, y_synth, β; use_zero_init=false)
+function init_run(λ, X_real, y_real, β; use_zero_init=false)
 
     # initial guess at θ
     if use_zero_init
@@ -105,8 +105,6 @@ function init_run(λ, X_real, y_real, X_synth, y_synth, β; use_zero_init=false)
     else
         lr1 = LogisticRegression(λ; fit_intercept = false)
         initial_θ = MLJLinearModels.fit(lr1, X_real, y_real; solver = MLJLinearModels.LBFGS())
-        lr2 = LogisticRegression(λ; fit_intercept = false)
-        θ_0 = MLJLinearModels.fit(lr2, X_synth, y_synth; solver = MLJLinearModels.LBFGS())
     end
     return initial_θ
 end

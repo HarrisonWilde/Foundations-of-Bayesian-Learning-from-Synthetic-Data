@@ -26,4 +26,5 @@ julia src/logistic_regression/run.jl \
     --epsilon 6.0 \
     --iterations 10 \
     --folds 5 \
+    --sampler CmdStan \
     --distributed

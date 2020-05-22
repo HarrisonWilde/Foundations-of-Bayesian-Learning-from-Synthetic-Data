@@ -34,37 +34,37 @@
 
 function βloss(X, y, β, θ)
 
-    yXθ = y .* X * θ
-    p = logistic.(yXθ)
-    loss = @. 1 / β * p ^ β - 1 / (β + 1) * (p ^ (β + 1) + logistic(-yXθ) ^ (β + 1))
+    Xθ = X * θ
+    loss = @. 1 / β * logistic(y .* Xθ) ^ β - 1 / (β + 1) * (logistic(Xθ) ^ (β + 1) + logistic(Xθ) ^ (β + 1))
     return -sum(loss)
 
 end
 
 
-function yXβ(yX::T, β::U, θ::V) where {T, U, V}
+function yXβ(yX, β, θ)
+
     eyXθ = exp.(-yX * θ)
     return yX' * (eyXθ ./ (1 .+ eyXθ) .^ β)
+
 end
 function ∇βloss(yX, β, θ)
+
     return -yXβ(yX, β + 1, θ) + yXβ(yX, β + 2, θ) + yXβ(-yX, β + 2, θ)
+
 end
 
-function βyXᵀyX(X, y, β, θ)
 
-    eyXθ = exp.(-y .* X * θ)
-    return (y .* X)' * (y .* X) .* (
+function βyXᵀyX(yX, β, θ)
+
+    eyXθ = exp.(-yX * θ)
+    return (yX)' * (yX) .* (
         (β .* eyXθ .^ 2) ./ ((1 .+ eyXθ) .^ (β + 1))
         - (eyXθ ./ (1 .+ eyXθ) .^ β)
     )
 
 end
+function Hβloss(yX, β, θ)
 
-
-function Hβloss(X, y, β, θ)
-
-    hessian_lik_term = βyXᵀyX(X, y, β + 1, θ)
-    hessian_int_term = βyXᵀyX(X, y, β + 2, θ) + βyXᵀyX(X, -y, β + 2, θ)
-    return -hessian_lik_term + hessian_int_term
+    return -βyXᵀyX(yX, β + 1, θ) + βyXᵀyX(yX, β + 2, θ) + βyXᵀyX(-yX, β + 2, θ)
 
 end

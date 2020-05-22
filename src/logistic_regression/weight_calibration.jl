@@ -1,20 +1,26 @@
 # Need to define the loss on an uncontrained paramater space
-function weight_calib(X, y, β, θ_0, loss, ∇loss, Hloss)
+function weight_calib(X, y, β, λ)
 
+    f(θ) = βloss(X, y, β, θ)
+    lr = LogisticRegression(λ; fit_intercept = false)
+    θ_0 = MLJLinearModels.fit(lr, X, y; solver = MLJLinearModels.LBFGS())
+    @show θ_0
+    @show f(θ_0)
+    @show Hβloss(y' * X, β, θ_0)
     n, p = size(X)
-    f(θ_0) = loss(X, y, β, θ_0)
     # θ̂ = θ_0
     θ̂ = Optim.minimizer(optimize(f, θ_0, Optim.LBFGS(); autodiff=:forward))
-
+    @show θ̂
+    @show f(θ̂)
     grad_data = zeros(n, p)
     Hess_data = zeros(p, p, n)
     mean_grad_sq_data = zeros(p, p)
     mean_Hess_data = zeros(p, p)
 
     for i in 1:n
-        grad_data[i, :] = ∇loss(X[i, :]', y[i], β, θ̂)
+        grad_data[i, :] = ∇βloss(X[i, :]' * y[i], β, θ̂)
         mean_grad_sq_data += (grad_data[i, :] .* transpose(grad_data[i, :]))
-        Hess_data[:, :, i] = Hloss(X[i, :]', y[i], β, θ̂)
+        Hess_data[:, :, i] = Hβloss(X[i, :]' * y[i], β, θ̂)
         mean_Hess_data += Hess_data[:, :, i]
     end
 
