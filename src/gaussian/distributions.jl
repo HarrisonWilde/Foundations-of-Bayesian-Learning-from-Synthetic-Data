@@ -25,6 +25,13 @@ function Distributions.pdf(d::MyNormal{<:Real}, y::Real)
     return pdf_N(d.μ, d.σ, y)
 end
 
+function cdf_N(μ, σ, y)
+	return erfc(-(y - μ) / (σ * sqrt2)) / 2
+end
+# function Distributions.cdf(d::MyNormal{<:Real}, y::real)
+# 	return cdf_N(d.μ, d.σ, y)
+# end
+
 
 """
 	w-Normal distribution

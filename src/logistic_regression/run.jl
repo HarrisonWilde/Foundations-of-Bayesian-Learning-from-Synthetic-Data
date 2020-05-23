@@ -75,11 +75,11 @@ end
 
 function main()
 
-    # args = parse_cl()
-    # path, dataset, label, ε = args["path"], args["dataset"], args["label"], args["epsilon"]
-    # iterations, folds, split = args["iterations"], args["folds"], args["split"]
-    # use_ad, distributed, sampler, no_shuffle = args["use_ad"], args["distributed"], args["sampler"], args["no_shuffle"]
-    path, dataset, label, ε, iterations, folds, split, distributed, use_ad, sampler, no_shuffle = ".", "uci_heart", "target", "6.0", 1, 5, 1.0, false, false, "CmdStan", false
+    args = parse_cl()
+    path, dataset, label, ε = args["path"], args["dataset"], args["label"], args["epsilon"]
+    iterations, folds, split = args["iterations"], args["folds"], args["split"]
+    use_ad, distributed, sampler, no_shuffle = args["use_ad"], args["distributed"], args["sampler"], args["no_shuffle"]
+    # path, dataset, label, ε, iterations, folds, split, distributed, use_ad, sampler, no_shuffle = ".", "uci_heart", "target", "6.0", 1, 5, 1.0, false, false, "CmdStan", false
     experiment_type = "logistic_regression"
     t = Dates.format(now(), "HH_MM_SS__dd_mm_yyyy")
     out_path = "$(path)/src/$(experiment_type)/outputs/$(dataset)_$(t)"
@@ -257,7 +257,7 @@ function main()
                     hamiltonian, proposal, initial_θ, n_samples, adaptor, n_warmup;
                     drop_warmup=true, progress=show_progress, verbose=show_progress
                 )
-                @show mean(hcat(chn...)')
+                @show mean(hcat(chn...)', dims=1)
                 auc_score, ll, bf = evaluate_samples(X_valid, y_valid, hcat(chn...)', c)
                 append!(evaluations, [auc_score, ll, bf])
 

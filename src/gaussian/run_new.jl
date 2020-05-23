@@ -99,12 +99,12 @@ function main()
     σ = 1.
     αₚ, βₚ, μₚ, σₚ = 3., 5., 1., 1.
     real_ns = vcat([1, 5], collect(1:5) .^ 2 .* 10)
-    synth_ns = vcat(collect(0:2:9), collect(10:5:29), collect(30:10:149), collect(150:25:250))
-    unseen_n = 500
-    ns = get_conditional_pairs(real_ns, synth_ns, max_sum=maximum(real_ns))
-    num_ns = length(ns)
+    synth_overflow = 50
+    synth_δ = Int(0.01 * maximum(real_ns))
+    unseen_n = 1000
+    num_real_ns = length(real_ns)
     num_λs = length(λs)
-    iter_steps = num_ns * num_λs
+    iter_steps = num_real_ns * num_λs
     total_steps = iter_steps * iterations
     n_samples, n_warmup = 12500, 2500
     nchains = 3
@@ -133,8 +133,8 @@ function main()
     println("Generating data...")
     dgp = Distributions.Normal(μ, σ)
     all_real_data = rand(dgp, (iterations, maximum(real_ns)))
-    pre_contam_data = rand(dgp, (iterations, maximum(real_ns)))
-    all_synth_data = vcat([pre_contam_data + rand(Laplace(0, λ), (iterations, maximum(real_ns))) for λ in λs]...)
+    # pre_contam_data = rand(dgp, (iterations, synth_overflow + maximum(real_ns)))
+    # all_synth_data = vcat([pre_contam_data + rand(Laplace(0, λ), (iterations, maximum(real_ns))) for λ in λs]...)
     all_unseen_data = rand(dgp, (iterations, unseen_n))
     println("Distributing work...")
     p = Progress(total_steps)
@@ -153,13 +153,19 @@ function main()
 
         iter = Int(ceil(i / iter_steps))
         iter_i = i - (iter - 1) * iter_steps
-        noise_scale = Int(ceil(iter_i / num_ns))
+        noise_scale = Int(ceil(iter_i / num_real_ns))
         noise_scale_i = iter_i - (noise_scale - 1) * num_ns
-        real_n, synth_n = ns[noise_scale_i]
+        real_n = real_ns[noise_scale_i]
         real_data = all_real_data[iter, 1:real_n]
-        synth_data = all_synth_data[noise_scale * iter, 1:synth_n]
         unseen_data = all_unseen_data[iter, :]
         λ = λs[noise_scale]
+
+        max_syn = synth_overflow + maximum(real_ns) - real_n
+        ks = DiscreteNonParametric(collect(1:max_syn), [1/max_syn for _ in 1:max_syn])
+
+        for n in 1:N
+            synth_n = rand(ks)
+            synth_data = all_synth_data[noise_scale * iter, 1:synth_n]
         println("Worker $(myid()) on iter $(iter), step $(iter_i) with scale = $(λ), real n = $(real_n) and synthetic n = $(synth_n)...")
 
         evaluations = []
