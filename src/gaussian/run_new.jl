@@ -161,11 +161,14 @@ function main()
         λ = λs[noise_scale]
 
         max_syn = synth_overflow + maximum(real_ns) - real_n
-        ks = DiscreteNonParametric(collect(1:max_syn), [1/max_syn for _ in 1:max_syn])
+        ks = DiscreteNonParametric(collect(0:max_syn), [1 / (max_syn + 1) for _ in 1:(max_syn + 1)])
 
         for n in 1:N
+            
             synth_n = rand(ks)
             synth_data = all_synth_data[noise_scale * iter, 1:synth_n]
+
+
         println("Worker $(myid()) on iter $(iter), step $(iter_i) with scale = $(λ), real n = $(real_n) and synthetic n = $(synth_n)...")
 
         evaluations = []
