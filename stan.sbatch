@@ -11,7 +11,6 @@
 # Create the machine file for Julia
 # JULIA_MACHINEFILE=machinefile-${SLURM_JOB_ID}
 # srun bash -c hostname > $JULIA_MACHINEFILE
-# # srun -l /bin/hostname | sort -n | awk '{print $2}' > $JULIA_MACHINEFILE
 # sed -i 's/^[[:alnum:]]*/&-ib/g' $JULIA_MACHINEFILE
 
 export JULIA_PROJECT=/home/dcs/csrxgb/julia_stuff/Project.toml
@@ -25,8 +24,7 @@ julia src/logistic_regression/run.jl \
     --dataset uci_heart \
     --label target \
     --epsilon 6.0 \
-    --iterations 10 \
+    --iterations 100 \
     --folds 5 \
-    --sampler Stan \
-    --no_shuffle \
+    --sampler CmdStan \
     --distributed

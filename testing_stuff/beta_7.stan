@@ -34,13 +34,7 @@ model {
     target += bernoulli_logit_glm_lpmf(y_real | X_real, alpha, coefs);
     if (flag == 0) {
         for (i in 1:b) {
-            target += beta_w * (
-                (1 / beta) * exp(bernoulli_logit_glm_lpmf(y_synth | X_synth[i], alpha, coefs)) ^ (beta) -
-                (1 / (beta + 1)) * (
-                    inv_logit(alpha + X_synth[i] * coefs) ^ (beta + 1) +
-                    (1 - inv_logit(alpha + X_synth[i] * coefs)) ^ (beta + 1)
-                )
-            );
+            target += beta_w * ((1 / beta) * exp(bernoulli_logit_glm_lpmf(y_synth | X_synth[i], alpha, coefs)) ^ (beta) - (1 / (beta + 1)) * inv_logit(alpha + X_synth[i] * coefs) ^ (beta + 1) + (1 - inv_logit(alpha + X_synth[i] * coefs)) ^ (beta + 1));
         }
     }
 

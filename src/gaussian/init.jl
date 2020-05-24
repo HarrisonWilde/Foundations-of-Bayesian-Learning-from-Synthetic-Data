@@ -49,26 +49,26 @@ function init_ahmc_models(real_data, synth_data, w, βw, β, λ, αₚ, βₚ, �
     )
     ℓπ_na_unconstrained(θ_unconstrained) = (ℓπ_na ∘ b)(θ_unconstrained) + logabsdetjac(b, θ_unconstrained)
 
-    return b, [
+    return b, OrderedDict([
         ("beta", ℓπ_β_unconstrained),
         ("weighted", ℓπ_w_unconstrained),
         ("naive", ℓπ_unconstrained),
         ("no_synth", ℓπ_ns_unconstrained),
         ("beta_all", ℓπ_βa_unconstrained),
         ("noise_aware", ℓπ_na_unconstrained)
-    ]
+    ])
 
 end
 
 function init_turing_models(real_data, synth_data, w, βw, β, λ, αₚ, βₚ, μₚ, σₚ)
 
-    return [
+    return OrderedDict([
         ("beta", β_model(real_data, synth_data, βw, β, αₚ, βₚ, μₚ, σₚ)),
         ("weighted", weighted_model(real_data, synth_data, w, αₚ, βₚ, μₚ, σₚ)),
         ("naive", naive_model(real_data, synth_data, αₚ, βₚ, μₚ, σₚ)),
         ("no_synth", no_synth_model(real_data, αₚ, βₚ, μₚ, σₚ)),
         ("beta_all", β_all_model(real_data, synth_data, βw, β, αₚ, βₚ, μₚ, σₚ)),
         ("noise_aware", noise_aware_model(real_data, synth_data, λ, αₚ, βₚ, μₚ, σₚ))
-    ]
+    ])
 
 end

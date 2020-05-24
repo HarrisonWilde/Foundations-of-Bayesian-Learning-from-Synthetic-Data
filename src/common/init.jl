@@ -1,6 +1,6 @@
-function init_stan_models(sampler, model_names, experiment_type, target_acceptance_rate, nchains, n_samples, n_warmup; dist = true)
+function init_stan_models(path, sampler, model_names, experiment_type, target_acceptance_rate, nchains, n_samples, n_warmup; dist = true)
 
-    tmpdir = dist ? "$(@__DIR__)/tmp/" : mktempdir()
+    tmpdir = dist ? "$(path)/src/$(experiment_type)/tmp$(sampler)/" : mktempdir()
     if sampler == "Stan"
         models = [(
             "$(name)_$(myid())",
@@ -39,6 +39,6 @@ function init_stan_models(sampler, model_names, experiment_type, target_acceptan
             )
         ) for name in model_names]
     end
-    return models
+    return OrderedDict(models)
 
 end

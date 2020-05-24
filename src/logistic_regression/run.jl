@@ -1,7 +1,7 @@
 using ClusterManagers
 using Distributed
 # addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])), o=string(ENV["SLURM_JOB_ID"]))
-addprocs_slurm(parse(Int, ENV["SLURM_NTASKS"]))
+addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])))
 println("We are all connected and ready.")
 for i in workers()
     host, pid = fetch(@spawnat i (gethostname(), getpid()))
@@ -106,10 +106,10 @@ function main()
     ]
     name_metrics = join(["$(name)_$(metric)" for name in model_names for metric in metrics], ",")
     if (sampler == "CmdStan") | (sampler == "Stan")
-        mkpath("$(@__DIR__)/tmp$(sampler)/")
+        mkpath("$(path)/src/$(experiment_type)/tmp$(sampler)/")
         models = Dict(
             pmap(1:nworkers()) do i
-                (myid() => init_stan_models(sampler, model_names, experiment_type, target_acceptance_rate, nchains, n_samples, n_warmup; dist = distributed))
+                (myid() => init_stan_models(path, sampler, model_names, experiment_type, target_acceptance_rate, nchains, n_samples, n_warmup; dist = distributed))
             end
         )
     end
@@ -183,17 +183,17 @@ function main()
             @time for (name, model) in models[myid()]
 
                 println("Running $(name)...")
-                rc, chn, _ = stan(
-                    model,
-                    data;
-                    init=init
-                )
-                if rc == 0
+                try
+                    _, chn, _ = stan(
+                        model,
+                        data;
+                        init=init
+                    )
                     samples = Array(chn)[:, 1:θ_dim]
                     @show mean(samples, dims=1)
                     auc_score, ll, bf = evaluate_samples(X_valid, y_valid, samples, c)
                     append!(evaluations, [auc_score, ll, bf])
-                else
+                catch
                     append!(evaluations, [NaN, NaN, NaN])
                 end
 

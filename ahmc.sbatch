@@ -26,7 +26,7 @@ julia src/logistic_regression/run.jl \
     --dataset uci_heart \
     --label target \
     --epsilon 6.0 \
-    --iterations 10 \
+    --iterations 100 \
     --folds 5 \
     --sampler AHMC \
     --no_shuffle \

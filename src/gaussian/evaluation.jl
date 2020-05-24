@@ -3,9 +3,9 @@ function evaluate_samples(y, dgp, samples, method="Newton")
     post_pdf, post_cdf, inv_post_cdf = setup_posterior_predictive(samples)
     # mixture = MixtureModel(Distributions.Normal[Distributions.Normal(μ, √σ²) for (μ, σ²) in eachrow(samples)])
     ll = log_loss(y, samples)
-    @time Dkl, _ = kld(post_pdf, dgp, samples)
-    @time Dwass, _ = wassersteind(inv_post_cdf, post_cdf, dgp, samples, method)
-    return ll, Dkl, Dwass
+    Dkl, _ = kld(post_pdf, dgp, samples)
+    # @time Dwass, _ = wassersteind(inv_post_cdf, post_cdf, dgp, samples, method)
+    return ll, Dkl, 0.1
 end
 
 function setup_posterior_predictive(samples)
@@ -102,7 +102,7 @@ end
 function wassersteind(inv_post_cdf, post_cdf, dgp, samples, method)
     inv_dgp_cdf(x) = quantile(dgp, x)
     f(x) = abs(inv_post_cdf(x, method) - inv_dgp_cdf(x))
-    @time Dwass, err = quadgk(f, 0, 1)
+    Dwass, err = quadgk(f, 0, 1)
     return Dwass, err
 end
 
