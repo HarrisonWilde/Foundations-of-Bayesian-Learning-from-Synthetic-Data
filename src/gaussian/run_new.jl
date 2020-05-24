@@ -1,12 +1,12 @@
-using ClusterManagers
+# using ClusterManagers
 using Distributed
 # addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])), o=string(ENV["SLURM_JOB_ID"]))
-addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])))
-println("We are all connected and ready.")
-for i in workers()
-    host, pid = fetch(@spawnat i (gethostname(), getpid()))
-    println(host, pid)
-end
+# addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])))
+# println("We are all connected and ready.")
+# for i in workers()
+#     host, pid = fetch(@spawnat i (gethostname(), getpid()))
+#     println(host, pid)
+# end
 using Bijectors
 using ArgParse
 using ForwardDiff
@@ -41,42 +41,42 @@ include("evaluation.jl")
 include("init.jl")
 include("weight_calibration.jl")
 
-@everywhere begin
-    using Distributed
-    using Bijectors
-    using ArgParse
-    using ForwardDiff
-    using LinearAlgebra
-    using CSV
-    using DataFrames
-    using AdvancedHMC
-    using Distributions
-    using Turing
-    using Zygote
-    using Random
-    using MCMCChains
-    using JLD
-    using MLJ
-    using Optim
-    using MLJLinearModels
-    using Dates
-    using ProgressMeter
-    using SharedArrays
-    using SpecialFunctions
-    using StatsFuns: invsqrt2π, log2π, sqrt2
-    using MLJBase: auc
-    using StanSample
-    using CmdStan
-    using QuadGK
-    using Roots
-    include("src/common/utils.jl")
-    include("src/common/init.jl")
-    include("src/gaussian/init.jl")
-    include("src/gaussian/distributions.jl")
-    include("src/gaussian/evaluation.jl")
-    include("src/gaussian/loss.jl")
-    include("src/gaussian/weight_calibration.jl")
-end
+# @everywhere begin
+#     using Distributed
+#     using Bijectors
+#     using ArgParse
+#     using ForwardDiff
+#     using LinearAlgebra
+#     using CSV
+#     using DataFrames
+#     using AdvancedHMC
+#     using Distributions
+#     using Turing
+#     using Zygote
+#     using Random
+#     using MCMCChains
+#     using JLD
+#     using MLJ
+#     using Optim
+#     using MLJLinearModels
+#     using Dates
+#     using ProgressMeter
+#     using SharedArrays
+#     using SpecialFunctions
+#     using StatsFuns: invsqrt2π, log2π, sqrt2
+#     using MLJBase: auc
+#     using StanSample
+#     using CmdStan
+#     using QuadGK
+#     using Roots
+#     include("src/common/utils.jl")
+#     include("src/common/init.jl")
+#     include("src/gaussian/init.jl")
+#     include("src/gaussian/distributions.jl")
+#     include("src/gaussian/evaluation.jl")
+#     include("src/gaussian/loss.jl")
+#     include("src/gaussian/weight_calibration.jl")
+# end
 
 
 function main()
