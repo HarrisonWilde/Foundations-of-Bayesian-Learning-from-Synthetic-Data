@@ -9,6 +9,137 @@ import pandas as pd
 # config.gpu_options.per_process_gpu_memory_fraction = gpu_frac
 # set_session(tf.Session(config=config))
 
+def from_dummies(
+    data,
+    prefix = None,
+    prefix_sep = "_",
+    dtype = "category",
+):
+    """
+    The inverse transformation of ``pandas.get_dummies``.
+    .. versionadded:: 1.1.0
+    Parameters
+    ----------
+    data : DataFrame
+        Data which contains dummy indicators.
+    prefix : list-like, default None
+        How to name the decoded groups of columns. If there are columns
+        containing `prefix_sep`, then the part of their name preceding
+        `prefix_sep` will be used (see examples below).
+    prefix_sep : str, default '_'
+        Separator between original column name and dummy variable.
+    dtype : dtype, default 'category'
+        Data dtype for new columns - only a single data type is allowed.
+    Returns
+    -------
+    DataFrame
+        Decoded data.
+    See Also
+    --------
+    get_dummies : The inverse operation.
+    Examples
+    --------
+    Say we have a dataframe where some variables have been dummified:
+    >>> df = pd.DataFrame(
+    ...     {
+    ...         "baboon": [0, 0, 1],
+    ...         "lemur": [0, 1, 0],
+    ...         "zebra": [1, 0, 0],
+    ...     }
+    ... )
+    >>> df
+       baboon  lemur  zebra
+    0       0      0      1
+    1       0      1      0
+    2       1      0      0
+    We can recover the original dataframe using `from_dummies`:
+    >>> pd.from_dummies(df, prefix='animal')
+      animal
+    0  zebra
+    1  lemur
+    2 baboon
+    If our dataframe already has columns with `prefix_sep` in them,
+    we don't need to pass in the `prefix` argument:
+    >>> df = pd.DataFrame(
+    ...     {
+    ...         "animal_baboon": [0, 0, 1],
+    ...         "animal_lemur": [0, 1, 0],
+    ...         "animal_zebra": [1, 0, 0],
+    ...         "other": ['a', 'b', 'c'],
+    ...     }
+    ... )
+    >>> df
+       animal_baboon  animal_lemur  animal_zebra other
+    0              0             0             1     a
+    1              0             1             0     b
+    2              1             0             0     c
+    >>> pd.from_dummies(df)
+      other  animal
+    0     a   zebra
+    1     b   lemur
+    2     c  baboon
+    """
+    if dtype is None:
+        dtype = "category"
+
+    columns_to_decode = [i for i in data.columns if prefix_sep in i]
+    if not columns_to_decode:
+        if prefix is None:
+            raise ValueError(
+                "If no columns contain `prefix_sep`, you must "
+                "pass a value to `prefix` with which to name "
+                "the decoded columns."
+            )
+        # If no column contains `prefix_sep`, we prepend `prefix` and
+        # `prefix_sep` to each column.
+        out = data.rename(columns=lambda x: f"{prefix}{prefix_sep}{x}").copy()
+        columns_to_decode = out.columns
+    else:
+        out = data.copy()
+
+    data_to_decode = out[columns_to_decode]
+
+    if prefix is None:
+        # If no prefix has been passed, extract it from columns containing
+        # `prefix_sep`
+        seen: Set[str] = set()
+        prefix = []
+        for i in columns_to_decode:
+            i = i.split(prefix_sep)[0]
+            if i in seen:
+                continue
+            seen.add(i)
+            prefix.append(i)
+    elif isinstance(prefix, str):
+        prefix = [prefix]
+
+    # Check each row sums to 1 or 0
+    def _validate_values(data):
+        if (data.sum(axis=1) != 1).any():
+            raise ValueError(
+                "Data cannot be decoded! Each row must contain only 0s and "
+                "1s, and each row may have at most one 1."
+            )
+
+    for prefix_ in prefix:
+        cols, labels = (
+            [
+                i.replace(x, "")
+                for i in data_to_decode.columns
+                if prefix_ + prefix_sep in i
+            ]
+            for x in ["", prefix_ + prefix_sep]
+        )
+        if not cols:
+            continue
+        _validate_values(data_to_decode[cols])
+        out = out.drop(cols, axis=1)
+        out[prefix_] = pd.Series(
+            np.array(labels)[np.argmax(data_to_decode[cols].to_numpy(), axis=1)],
+            dtype=dtype,
+        )
+    return out
+
 
 def tt_split(df, ratio=0.7):
 
@@ -58,6 +189,10 @@ def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, no
         df = df.fillna(df.mean())
     elif name == "kag_creditcard":
         df = df.drop(columns=["Time"], axis=1)
+    elif name == "gcse":
+        students = df["student"]
+        df.drop("student", axis=1, inplace=True)
+        df = pd.get_dummies(df, columns=["school"])
 
     features = list(df.columns)
     for lbl in targets:
@@ -76,7 +211,8 @@ def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, no
             delta,
             niter,
             num_teachers,
-            no_split)
+            no_split
+        )
 
         cols = features
         cols.extend(targets)
@@ -86,6 +222,14 @@ def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, no
                 [x_new,
                  y_new.reshape(len(y_new), -1)]),
             columns=cols)
+
+        if name == "gcse":
+            df["school"] = df.filter(regex=(r"school_")).idxmax(axis=1).str.replace("school_", "")
+            df.drop(list(df.filter(regex='school_')), axis=1, inplace=True)
+            df["student"] = students
+            df_new["school"] = df_new.filter(regex=(r"school_")).idxmax(axis=1).str.replace("school_", "")
+            df_new.drop(list(df_new.filter(regex='school_')), axis=1, inplace=True)
+            df_new["student"] = df_new.groupby(["school"]).cumcount() + 1
 
         df.to_csv(f'{path}splits/{out_name}_real.csv', index=False)
         df_new.to_csv(f'{path}splits/{out_name}_synth.csv', index=False)

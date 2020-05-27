@@ -126,7 +126,7 @@ function main()
 
     @everywhere begin
         open("$($out_path)/$(myid())_out.csv", "w") do io
-            write(io, "iter,scale,real_α,synth_α,$($name_metrics)\n")
+            write(io, "iter,scale,real_n,synth_n,$($name_metrics)\n")
         end
     end
 

@@ -33,6 +33,7 @@ using StanSample
 using CmdStan
 using QuadGK
 using Roots
+using DataStructures
 include("../common/utils.jl")
 include("../common/init.jl")
 include("distributions.jl")
@@ -69,6 +70,7 @@ include("weight_calibration.jl")
 #     using CmdStan
 #     using QuadGK
 #     using Roots
+#     using DataStructures
 #     include("src/common/utils.jl")
 #     include("src/common/init.jl")
 #     include("src/gaussian/init.jl")
@@ -85,7 +87,7 @@ function main()
     # λs = args["scales"]
     # path, iterations = args["path"], args["iterations"]
     # use_ad, distributed, sampler, no_shuffle = args["use_ad"], args["distributed"], args["sampler"], args["no_shuffle"]
-    λs, path, iterations, distributed, use_ad, sampler, no_shuffle = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0], ".", 5, false, false, "CmdStan", false
+    λs, path, iterations, distributed, use_ad, sampler, no_shuffle = [1.0, 1.25, 1.5, 1.75, 2.0], ".", 5, false, false, "AHMC", false
     experiment_type = "gaussian"
     t = Dates.format(now(), "HH_MM_SS__dd_mm_yyyy")
     out_path = "$(path)/src/$(experiment_type)/outputs/$(t)_$(sampler)"
@@ -99,9 +101,11 @@ function main()
     σ = 1.
     αₚ, βₚ, μₚ, σₚ = 3., 5., 1., 1.
     N = 10
-    K = 5
-    real_ns = vcat([1, 5], collect(1:5) .^ 2 .* 10)
+    K = 10
+    # real_ns = vcat([1, 5], collect(1:5) .^ 2 .* 10)
+    real_ns = [20, 100, 200, 300]
     init_synth_δ = floor(0.05 * maximum(real_ns))
+    min_synth_n = 50
     unseen_n = 1000
     num_real_ns = length(real_ns)
     num_λs = length(λs)
@@ -122,12 +126,12 @@ function main()
             end
         )
     end
-    show_progress = true
+    show_progress = false
 
     metrics = join([metric for metric in metrics], ",")
     @everywhere begin
         open("$($out_path)/$(myid())_out.csv", "w") do io
-            write(io, "iter,scale,real_α,synth_α,name,$($metrics)\n")
+            write(io, "iter,scale,real_n,synth_n,name,$($metrics)\n")
         end
     end
 
@@ -160,10 +164,10 @@ function main()
         real_data = all_real_data[iter, 1:real_n]
         unseen_data = all_unseen_data[iter, :]
         λ = λs[noise_scale]
-        max_syn = Int(init_synth_δ + maximum(real_ns) - real_n)
+        max_syn = max(Int(init_synth_δ + maximum(real_ns) - real_n), min_synth_n)
 
-        println("Worker $(myid()) on iter $(iter), step $(iter_i) with scale = $(λ), real n = $(real_n)...")
-        for name in model_names
+        println("Worker $(myid()) on iter $(iter), step $(iter_i) with scale = $(λ), real n = $(real_n), max synth n = $(max_syn)...")
+        for name in model_names[2:end]
 
             println("Running $(name)...")
 
@@ -211,7 +215,7 @@ function main()
                             )
                             if rc == 0
                                 samples = Array(chn)[:, 1:2]
-                                @show mean(samples, dims=1)
+                                # @show mean(samples, dims=1)
                                 ll, kl, wass = evaluate_samples(unseen_data, dgp, samples)
                             end
 
@@ -223,7 +227,6 @@ function main()
                             )
                             model = models[name]
 
-                            println("Running $(name)...")
                             chains = map(1:nchains) do i
                                 metric = DiagEuclideanMetric(2)
                                 initial_θ = rand(2)
@@ -240,8 +243,7 @@ function main()
                                 chn
                             end
                             chains = hcat(b.(vcat(chains...))...)'
-                            @show size(chains)
-                            @show mean(chains, dims=1)
+                            # @show mean(chains, dims=1)
                             ll, kl, wass = evaluate_samples(unseen_data, dgp, chains)
 
                         elseif sampler == "Turing"
@@ -262,7 +264,7 @@ function main()
 
                         end
 
-                        @show ll, kl, wass
+                        # @show ll, kl, wass
 
                         open("$(out_path)/$(myid())_out.csv", "a") do io
                             write(io, "$(iter),$(λ),$(real_n),$(synth_n),$(name),$(ll),$(kl),$(wass)\n")
@@ -274,10 +276,11 @@ function main()
                             differences -= [ll, kl, wass]
                         end
 
-                        @show differences
                     end
 
-                    if differences[1] < 0
+                    @show differences
+
+                    if differences[2] > 0
                         pos += 1
                     end
 
@@ -285,12 +288,15 @@ function main()
 
                 @show pos
 
-                p̂ = (pos + 1) / (K + 2)
+                p̂ = maximum([(pos + 1) / (K + 2), 1 - (pos + 1) / (K + 2)])
                 l_mult = p̂ ^ (pos + 1) * (1 - p̂) ^ (K + 2 - pos)
                 @show l_mult
                 r_mult = (1 - p̂) ^ (pos + 1) * p̂ ^ (K + 2 - pos)
                 @show r_mult
-                new_ps = vcat(ks.p[1:synth_n] .* l_mult, ks.p[synth_n+1:end] .* r_mult)
+                new_ps = vcat(
+                    ks.p[1:Int(floor(synth_n + 0.5synth_δ))] .* l_mult,
+                    ks.p[(Int(floor(synth_n + 0.5synth_δ)) + 1):end] .* r_mult
+                )
                 ks = DiscreteNonParametric(collect(0:max_syn), new_ps ./ sum(new_ps))
                 display(plot(0:max_syn, ks.p))
 

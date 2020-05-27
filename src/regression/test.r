@@ -39,10 +39,12 @@ set.seed(5)
 library(mlmRev)
 library(rstan)
 library(rio)
+library(dplyr)
 data(Gcsemv, package = "mlmRev")
 Gcsemv$female <- relevel(Gcsemv$gender, "M")
 GCSE <- subset(x = Gcsemv, select = c(school, student, female, course))
-
+GCSE <- GCSE %>% mutate(female = ifelse(female == "M", 0, 1)) %>% na.omit()
+GCSE %>% export("gcse.csv")
 # hierarchical_data <- list(
 #     n_observations = nrow(GCSE),
 #     n_groups = length(unique(GCSE$school)),

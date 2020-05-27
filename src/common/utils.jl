@@ -1,3 +1,6 @@
+invϕ = (√5 - 1) / 2
+invϕ² = (3 - √5) / 2
+
 function parse_cl()
     s = ArgParseSettings()
     @add_arg_table! s begin
@@ -22,7 +25,7 @@ function parse_cl()
         "--folds", "-k"
             help = "specify the number of CV folds to be carried out during training"
             arg_type = Int
-            required = true
+            default = 5
         "--split", "-s"
             help = "specify the ratio of the data to be used for training, the rest will be held back for testing"
             arg_type = Float64
@@ -42,7 +45,11 @@ function parse_cl()
             action = :store_true
         "--scales"
             help = "List of scales to use for Laplace noise"
+            arg_type = Float64
             nargs = '*'
+        "--num_repeats"
+            arg_type = Int
+            default = 100
     end
     return parse_args(s)
 end

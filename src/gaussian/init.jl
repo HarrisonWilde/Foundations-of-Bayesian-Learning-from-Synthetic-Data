@@ -60,6 +60,7 @@ function init_ahmc_models(real_data, synth_data, w, βw, β, λ, αₚ, βₚ, �
 
 end
 
+
 function init_turing_models(real_data, synth_data, w, βw, β, λ, αₚ, βₚ, μₚ, σₚ)
 
     return OrderedDict([
@@ -71,4 +72,9 @@ function init_turing_models(real_data, synth_data, w, βw, β, λ, αₚ, βₚ,
         ("noise_aware", noise_aware_model(real_data, synth_data, λ, αₚ, βₚ, μₚ, σₚ))
     ])
 
+end
+
+
+function gen_synth(n, dgp, λ)
+    return rand(dgp, n) + rand(Laplace(0, λ), n)
 end
