@@ -93,7 +93,7 @@ function main()
     # λs, K = args["scales"], args["num_repeats"]
     # path, iterations = args["path"], args["iterations"]
     # use_ad, distributed, sampler, no_shuffle = args["use_ad"], args["distributed"], args["sampler"], args["no_shuffle"]
-    λs, K, path, iterations, distributed, sampler, no_shuffle = [1.0, 1.25, 1.5, 1.75, 2.0], 10, ".", 5, false, "AHMC", false
+    λs, K, path, iterations, distributed, sampler, no_shuffle = [1.0, 1.25, 1.5, 1.75, 2.0], 1000, ".", 5, false, "AHMC", false
     experiment_type = "gaussian"
     t = Dates.format(now(), "HH_MM_SS__dd_mm_yyyy")
     out_path = "$(path)/src/$(experiment_type)/outputs/$(t)_$(sampler)"
@@ -182,7 +182,7 @@ function main()
         metric = metrics[modelᵢ]
 
         if metric == "ll"
-            gtol = 2.5
+            gtol = 5
         else
             gtol = 0.02
         end
@@ -280,33 +280,36 @@ function main()
         println("Worker $(myid()) on iter: $(iter), noise: $(λ), realn: $(real_n), model: $(model_name), metric: $(metric), max synthn: $(max_syn)...")
 
         xmin, xmax = 0, min_synth_n
-        xs = [xmin, xmax]
         synths = [gen_synth(max_syn, dgp, λ) for _ in 1:K]
         gmins = [g(synths[i][1:xmin]) for i in 1:K]
-        gprevs = gmins
         gmaxs = [g(synths[i][1:xmax]) for i in 1:K]
         p = plot([xmin, xmax], [mean(gmins), mean(gmaxs)])
         display(p)
         # Assuming unimodality we can safely step forward in xmax until we see an increase
-        # then golden section search to the turning point
+        # then golden section search within xprev2 and xmax to the turning point
+        xprev, gprevs, xprev2, gprevs2, xprev3 = xmin, gmins, xmin, gmins, xmin
         while (mean(gmaxs) < mean(gprevs)) & (xmax * 2 <= max_syn)
+            xprev3 = xprev2
+            xprev2, gprevs2 = xprev, gprevs
             xprev, gprevs = xmax, gmaxs
             xmax *= 2
             gmaxs = [g(synths[i][1:xmax]) for i in 1:K]
-            plot!([xprev, xmax], [mean(gprevs), mean(gmaxs)])
-            append!(xs, xmax)
+            plot!([xprev2, xprev, xmax], [mean(gprevs2), mean(gprevs), mean(gmaxs)])
             display(p)
         end
         # png(p, "INIT_xs_iter$(iter)noise$(λ)realn$(real_n)model$(model_name)metric$(metric)")
         if mean(gmaxs) < mean(gprevs)
 
             open("$(out_path)/$(myid())_tps.csv", "a") do io
-                write(io, "$(iter),$(λ),$(real_n),$(model_name),$(metric),$(xs[end-3]),$(xs[end-2]),$(xs[end-1]),$(xmax)\n")
+                write(io, "$(iter),$(λ),$(real_n),$(model_name),$(metric),$(xprev3),$(xprev2),$(xprev),$(xmax)\n")
             end
 
         else
 
-            xmin = xmax >= 100 ? xmax / 4 : 0
+            if xprev != xprev2
+                xmin = xprev2
+                gmins = gprevs2
+            end
             h = xmax - xmin
             N = ceil(Int, log(1 / h) / log(invϕ))
             xmid₁ = round(Int, xmin + invϕ² * h)
@@ -322,12 +325,15 @@ function main()
             for n in 1:N
 
                 display(p)
-                # png(p, "$(plot_path)/xs_iter$(iter)noise$(λ)realn$(real_n)model$(model_name)metric$(metric)n$(n)")
 
-                gdiffall = abs(mean(gmid₁s) - mean(gmins)) + abs(mean(gdiffs)) + abs(mean(gmid₂s) - mean(gmaxs))
                 if (xmid₁ == xmid₂ == xmin) | (xmid₁ == xmid₂ == xmax)
                     break
-                elseif gdiffall < gtol
+                elseif (abs(mean(gmid₁s) - mean(gmins)) < gtol) &
+                    (abs(mean(gdiffs)) < gtol) &
+                    (abs(mean(gmid₂s) - mean(gmaxs)) < gtol) &
+                    (abs(mean(gmid₂s) - mean(gmins)) < gtol) &
+                    (abs(mean(gmid₁s) - mean(gmaxs)) < gtol) &
+                    (abs(mean(gmins) - mean(gmaxs)) < gtol)
                     @show "Breaking due to gdiffall"
                     break
                 end
