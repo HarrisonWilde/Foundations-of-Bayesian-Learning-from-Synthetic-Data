@@ -52,7 +52,7 @@ if hasattr(os, "register_at_fork"):
 
 ## Acknowledgements
 
-I'd like to extend special thanks to the great groups of people managing the [Turing Language](https://github.com/TuringLang), [StanJulia](https://github.com/StanJulia) and [MLJ](https://github.com/alan-turing-institute/MLJ.jl) for being so helpful in my queries throughout. Especially to Thibaut Lienart, Hong Ge, David Widmann, Mohamed Tarek, Cameron Pfiffer, Robert Goedman, Tor Fjelde, Martin Trapp who all spared their time in helping with bugs I uncovered, performance issues or other pain points throughout this research. Additional thanks to the Stan and Julia communities in general for enabling such excellent environments for research.
+I'd like to extend special thanks to the great groups of people managing the [Turing Language](https://github.com/TuringLang), [StanJulia](https://github.com/StanJulia) and [MLJ](https://github.com/alan-turing-institute/MLJ.jl) for being so helpful. Especially to Thibaut Lienart, Hong Ge, David Widmann, Mohamed Tarek, Cameron Pfiffer, Robert Goedman, Tor Fjelde, Martin Trapp who all spared their time in helping with questions, bugs, performance issues or other pain points throughout. Additional thanks to the Stan and Julia communities in general for enabling such excellent environments for research.
 
 ## Citing this work
 
