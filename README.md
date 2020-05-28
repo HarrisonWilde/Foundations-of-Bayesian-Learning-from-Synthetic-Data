@@ -53,3 +53,7 @@ if hasattr(os, "register_at_fork"):
 ## Acknowledgements
 
 I'd like to extend special thanks to the great groups of people managing  `Turing.jl`, `Stan.jl`, `MLJ.jl` and `AdvancedHMC.jl` for being so helpful in my queries throughout. Especially to Thibaut Lienart, Hong Ge, David Widmann, Mohamed Tarek, Cameron Pfiffer, Robert Goedman, Tor Fjelde, Martin Trapp who all spared their time in helping with bugs I uncovered, performance issues or other pain points throughout this research.
+
+## Citing this work
+
+<Reference to follow>
