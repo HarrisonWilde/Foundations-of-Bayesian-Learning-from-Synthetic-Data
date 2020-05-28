@@ -1,4 +1,4 @@
-# Synthetic Data Experiments with Bayesian Inference
+# Fundamentals of Bayesian Learning from Synthetic Data
 
 *All of the code is written by Harrison Wilde with help from Jack Jewson on the Stan models and general advice from Sebastian Vollmer.*
 
