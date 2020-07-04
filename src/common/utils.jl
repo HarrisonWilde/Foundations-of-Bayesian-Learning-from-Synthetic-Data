@@ -5,7 +5,7 @@ function parse_cl()
     s = ArgParseSettings()
     @add_arg_table! s begin
         "--path", "-p"
-            help = "specify the path to the top of the project, this is where output csv's will go"
+            help = "specify the path to the top of the project"
             arg_type = String
             required = true
         "--dataset", "-d"
@@ -14,7 +14,7 @@ function parse_cl()
         "--label", "-l"
             help = "specify the label to be used, must be present in dataset, obviously"
             arg_type = String
-        "--epsilon", "-e"
+        "--epsilon"
             help = "choose an epsilon value: the differential privacy constant"
             arg_type = String
             default = "6.0"
@@ -30,16 +30,16 @@ function parse_cl()
             help = "specify the ratio of the data to be used for training, the rest will be held back for testing"
             arg_type = Float64
             default = 1.0
-        "--use_ad", "-a"
-            help = "include to use Zygote rather than manually defined derivatives"
+        "--use_ad"
+            help = "include to use ForwardDiff rather than manually defined derivatives"
             action = :store_true
         "--distributed", "-c"
             help = "include when running the code in a distributed fashion"
             action = :store_true
         "--sampler", "-o"
-            help = "choose from AHMC, Turing and Stan"
+            help = "choose from AHMC, Turing and CmdStan"
             arg_type = String
-            default = "AHMC"
+            default = "Turing"
         "--no_shuffle"
             help = "Disable row shuffling on load of data"
             action = :store_true
@@ -50,6 +50,12 @@ function parse_cl()
         "--num_repeats"
             arg_type = Int
             default = 100
+        "--algorithm", "-a"
+            arg_type = String
+            default = "golden"
+        "--experiment", "-e"
+            arg_type = String
+            default = "logistic_regression"
     end
     return parse_args(s)
 end
@@ -69,7 +75,7 @@ function load_data(name, label, ε)
 end
 
 
-function fold_α(real_data, synth_data, real_α, synth_α, fold, folds, labels)
+function fold_α(real_data, synth_data, real_α, synth_α, fold, folds, labels; predictors = [], groups = [], add_intercept = false, continuous_y = false)
 
     len_real = size(real_data)[1]
     len_synth = size(synth_data)[1]
@@ -93,20 +99,65 @@ function fold_α(real_data, synth_data, real_α, synth_α, fold, folds, labels)
         )[1:floor(Int, synth_chunk * (folds - 1) * synth_α)]
     end
 
-    X_real = Matrix(real_data[real_ix, Not(labels)])
-    y_real = Int.(real_data[real_ix, labels[1]])
-    X_synth = Matrix(synth_data[synth_ix, Not(labels)])
-    y_synth = Int.(synth_data[synth_ix, labels[1]])
-    X_valid = Matrix(real_data[
-        floor(Int, 1 + (fold * real_chunk)):floor(Int, (fold + 1) * real_chunk),
-        Not(labels)
-    ])
-    y_valid = Int.(real_data[
-        floor(Int, 1 + (fold * real_chunk)):floor(Int, (fold + 1) * real_chunk),
-        labels[1]
-    ])
-    return X_real, y_real, X_synth, y_synth, X_valid, y_valid
+    if length(predictors) == 0
 
+        X_real = Matrix(real_data[real_ix, Not(labels)])
+        X_synth = Matrix(synth_data[synth_ix, Not(labels)])
+        X_valid = Matrix(real_data[
+            floor(Int, 1 + (fold * real_chunk)):floor(Int, (fold + 1) * real_chunk),
+            Not(labels)
+        ])
+
+    else
+
+        X_real = Matrix(real_data[real_ix, predictors])
+        X_synth = Matrix(synth_data[synth_ix, predictors])
+        X_valid = Matrix(real_data[
+            floor(Int, 1 + (fold * real_chunk)):floor(Int, (fold + 1) * real_chunk),
+            predictors
+        ])
+
+    end
+
+    if add_intercept
+
+        X_real = hcat(ones(size(X_real)[1]), X_real)
+        X_synth = hcat(ones(size(X_synth)[1]), X_synth)
+        X_valid = hcat(ones(size(X_valid)[1]), X_valid)
+
+    end
+
+    if continuous_y
+
+        y_real = Array(real_data[real_ix, labels[1]])
+        y_synth = Array(synth_data[synth_ix, labels[1]])
+        y_valid = Array(real_data[
+            floor(Int, 1 + (fold * real_chunk)):floor(Int, (fold + 1) * real_chunk),
+            labels[1]
+        ])
+
+    else
+
+        y_real = Int.(real_data[real_ix, labels[1]])
+        y_synth = Int.(synth_data[synth_ix, labels[1]])
+        y_valid = Int.(real_data[
+            floor(Int, 1 + (fold * real_chunk)):floor(Int, (fold + 1) * real_chunk),
+            labels[1]
+        ])
+
+    end
+
+    if length(groups) == 0
+        return X_real, y_real, X_synth, y_synth, X_valid, y_valid
+    else
+        groups_real = Array(real_data[real_ix, groups[1]])
+        groups_synth = Array(synth_data[synth_ix, groups[1]])
+        groups_valid = Array(real_data[
+            floor(Int, 1 + (fold * real_chunk)):floor(Int, (fold + 1) * real_chunk),
+            groups[1]
+        ])
+        return X_real, y_real, groups_real, X_synth, y_synth, groups_synth, X_valid, y_valid, groups_valid
+    end
 end
 
 

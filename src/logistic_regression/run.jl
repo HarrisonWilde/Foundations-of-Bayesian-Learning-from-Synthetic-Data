@@ -1,13 +1,4 @@
-using ClusterManagers
 using Distributed
-# addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])), o=string(ENV["SLURM_JOB_ID"]))
-addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])))
-println("We are all connected and ready.")
-for i in workers()
-    host, pid = fetch(@spawnat i (gethostname(), getpid()))
-    println(host, pid)
-end
-using ArgParse
 using ForwardDiff
 using LinearAlgebra
 using CSV
@@ -30,6 +21,7 @@ using StatsFuns: log1pexp, log2π
 using MLJBase: auc
 using StanSample
 using CmdStan
+using DataStructures
 include("../common/utils.jl")
 include("../common/init.jl")
 include("distributions.jl")
@@ -40,7 +32,6 @@ include("weight_calibration.jl")
 
 @everywhere begin
     using Distributed
-    using ArgParse
     using ForwardDiff
     using LinearAlgebra
     using CSV
@@ -63,6 +54,7 @@ include("weight_calibration.jl")
     using MLJBase: auc
     using StanSample
     using CmdStan
+    using DataStructures
     include("src/common/utils.jl")
     include("src/common/init.jl")
     include("src/logistic_regression/distributions.jl")
@@ -72,15 +64,13 @@ include("weight_calibration.jl")
     include("src/logistic_regression/weight_calibration.jl")
 end
 
+# path, dataset, label, ε = ".", "uci_heart", "target", "6.0"
+# iterations, folds, split = 1, 5, 1.0
+# distributed, use_ad, sampler, no_shuffle = false, false, "CmdStan", false
+# experiment_type = "logistic_regression"
 
-function main()
+function run_experiment()
 
-    args = parse_cl()
-    path, dataset, label, ε = args["path"], args["dataset"], args["label"], args["epsilon"]
-    iterations, folds, split = args["iterations"], args["folds"], args["split"]
-    use_ad, distributed, sampler, no_shuffle = args["use_ad"], args["distributed"], args["sampler"], args["no_shuffle"]
-    # path, dataset, label, ε, iterations, folds, split, distributed, use_ad, sampler, no_shuffle = ".", "uci_heart", "target", "6.0", 1, 5, 1.0, false, false, "CmdStan", false
-    experiment_type = "logistic_regression"
     t = Dates.format(now(), "HH_MM_SS__dd_mm_yyyy")
     out_path = "$(path)/src/$(experiment_type)/outputs/$(dataset)_$(t)"
     mkpath(out_path)
@@ -88,7 +78,7 @@ function main()
     println("Setting up experiment...")
     w = 0.5
     β = 0.5
-    βw = 1.15
+    βw = 1.25
     σ = 50.0
     λ = 1.0
     real_αs = [0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175, 0.2, 0.3, 0.4, 0.5, 0.75]
@@ -130,16 +120,24 @@ function main()
     println("Distributing work...")
     p = Progress(total_steps)
 
-    # βw_calib = weight_calib(
-    #     Matrix(unshuffled_synth_data[:, Not(labels)]),
-    #     Int.(unshuffled_synth_data[:, labels[1]]),
-    #     β, λ
-    # )
-    # if isnan(βw_calib)
-    #     βw_calib = βw
-    # end
     βw_calib = βw
-    # println(βw_calib)
+    try
+        βw_calib = weight_calib(
+            Matrix(unshuffled_synth_data[:, Not(labels)]),
+            Int.(unshuffled_synth_data[:, labels[1]]),
+            β, λ
+        )
+        if isnan(βw_calib)
+            βw_calib = βw
+        elseif βw_calib > 5
+            βw_calib = 5
+        elseif βw_calib < 0.5
+            βw_calib = 0.5
+        end
+    catch
+        print("That didn't work")
+    end
+    @show βw_calib
 
     progress_pmap(1:total_steps, progress=p) do i
 
@@ -292,8 +290,4 @@ function main()
     println("Done")
 end
 
-main()
-
-for i in workers()
-    rmprocs(i)
-end
+run_experiment()

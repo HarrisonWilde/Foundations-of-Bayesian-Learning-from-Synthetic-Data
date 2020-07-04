@@ -1,14 +1,5 @@
-# using ClusterManagers
 using Distributed
-# # addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])), o=string(ENV["SLURM_JOB_ID"]))
-# addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])))
-# println("We are all connected and ready.")
-# for i in workers()
-#     host, pid = fetch(@spawnat i (gethostname(), getpid()))
-#     println(host, pid)
-# end
 using Bijectors
-using ArgParse
 using ForwardDiff
 using LinearAlgebra
 using CSV
@@ -45,56 +36,53 @@ include("evaluation.jl")
 include("init.jl")
 include("weight_calibration.jl")
 
-# @everywhere begin
-#     using Distributed
-#     using Bijectors
-#     using ArgParse
-#     using ForwardDiff
-#     using LinearAlgebra
-#     using CSV
-#     using DataFrames
-#     using AdvancedHMC
-#     using Distributions
-#     using Turing
-#     using Zygote
-#     using Random
-#     using MCMCChains
-#     using JLD
-#     using MLJ
-#     using Optim
-#     using MLJLinearModels
-#     using Dates
-#     using ProgressMeter
-#     using SharedArrays
-#     using SpecialFunctions
-#     using StatsFuns: invsqrt2π, log2π, sqrt2
-#     using MLJBase: auc
-#     using StanSample
-#     using CmdStan
-#     using QuadGK
-#     using Roots
-#     using DataStructures
-#     using Statistics
-#     using HypothesisTests
-#     using Plots
-#     include("src/common/utils.jl")
-#     include("src/common/init.jl")
-#     include("src/gaussian/init.jl")
-#     include("src/gaussian/distributions.jl")
-#     include("src/gaussian/evaluation.jl")
-#     include("src/gaussian/loss.jl")
-#     include("src/gaussian/weight_calibration.jl")
-# end
+@everywhere begin
+    using Distributed
+    using Bijectors
+    using ForwardDiff
+    using LinearAlgebra
+    using CSV
+    using DataFrames
+    using AdvancedHMC
+    using Distributions
+    using Turing
+    using Zygote
+    using Random
+    using MCMCChains
+    using JLD
+    using MLJ
+    using Optim
+    using MLJLinearModels
+    using Dates
+    using ProgressMeter
+    using SharedArrays
+    using SpecialFunctions
+    using StatsFuns: invsqrt2π, log2π, sqrt2
+    using MLJBase: auc
+    using StanSample
+    using CmdStan
+    using QuadGK
+    using Roots
+    using DataStructures
+    using Statistics
+    using HypothesisTests
+    using Plots
+    include("src/common/utils.jl")
+    include("src/common/init.jl")
+    include("src/gaussian/init.jl")
+    include("src/gaussian/distributions.jl")
+    include("src/gaussian/evaluation.jl")
+    include("src/gaussian/loss.jl")
+    include("src/gaussian/weight_calibration.jl")
+end
 
+λs, K = [1.0, 1.25, 1.5, 1.75, 2.0], 100
+path, iterations = ".", 5
+distributed, sampler, no_shuffle, alg = false, "AHMC", false, "bisection"
+experiment_type = "gaussian"
 
-function main()
+function run_experiment()
 
-    # args = parse_cl()
-    # λs, K = args["scales"], args["num_repeats"]
-    # path, iterations = args["path"], args["iterations"]
-    # use_ad, distributed, sampler, no_shuffle = args["use_ad"], args["distributed"], args["sampler"], args["no_shuffle"]
-    λs, K, path, iterations, distributed, sampler, no_shuffle = [1.0, 1.25, 1.5, 1.75, 2.0], 1000, ".", 5, false, "AHMC", false
-    experiment_type = "gaussian"
     t = Dates.format(now(), "HH_MM_SS__dd_mm_yyyy")
     out_path = "$(path)/src/$(experiment_type)/outputs/$(t)_$(sampler)"
     plot_path = "$(path)/src/$(experiment_type)/plots/IN_RUN_$(t)_$(sampler)"
@@ -104,16 +92,25 @@ function main()
     println("Setting up experiment...")
     w = 0.5
     β = 0.5
-    βw = 1.15
+    βw = 1.25
     μ = 0.
     σ = 1.
     αₚ, βₚ, μₚ, σₚ = 3., 5., 1., 1.
     # real_ns = vcat([1, 5, 10, 50, 100, 150, 250, 400], collect(1:6) .^ 2 .* 11)
-    real_ns = [1, 5, 10, 50, 100, 150, 250, 400]
-    # real_ns = [5, 10, 20, 100, 200, 300]
-    metrics = ["ll", "kld", "wass"]
+    # real_ns = [1, 5, 10, 50, 100, 150, 250, 400]
+    real_ns = [1, 5, 10, 25, 50, 100, 200, 300, 400]
+    metrics = [
+        "ll",
+        "kld",
+        "wass"
+    ]
     model_names = [
-        "beta", "weighted", "naive", "no_synth", "beta_all", "noise_aware"
+        "beta",
+        "weighted",
+        "naive",
+        "no_synth",
+        "beta_all",
+        "noise_aware"
     ]
     min_synth_n = 25
     unseen_n = 1000
@@ -140,7 +137,7 @@ function main()
             end
         )
     end
-    show_progress = false
+    show_progress = distributed
 
     metrics_string = join([metric for metric in metrics], ",")
     @everywhere begin
@@ -159,21 +156,29 @@ function main()
     println("Distributing work...")
     p = Progress(total_steps)
 
-    # βw_calib = weight_calib(
-    #     all_synth_data,
-    #     β
-    # )
-    # if isnan(βw_calib)
-    #     βw_calib = βw
-    # end
-    βw_calib = βw
-    # println(βw_calib)
+    βws = zeros(0)
+    for λ in λs
+        βw_calib = weight_calib(
+            rand(dgp, maximum(real_ns)) + rand(Laplace(0, λ), maximum(real_ns)),
+            β, αₚ, βₚ, μₚ, σₚ
+        )
+        if isnan(βw_calib)
+            βw_calib = βw
+        elseif βw_calib > 5
+            βw_calib = 5.
+        elseif βw_calib < 0.5
+            βw_calib = 0.5
+        end
+        append!(βws, βw_calib)
+    end
+    @show βws
 
     progress_pmap(1:total_steps, progress=p) do i
 
         iter = ceil(Int, i / iter_steps)
         iterᵢ = ((i - 1) % iter_steps) + 1
         λ = λs[ceil(Int, iterᵢ / λ_steps)]
+        βw = βws[ceil(Int, iterᵢ / λ_steps)]
         λᵢ = ((iterᵢ - 1) % λ_steps) + 1
         real_n = real_ns[ceil(Int, λᵢ / real_n_steps)]
         real_nᵢ = ((λᵢ - 1) % real_n_steps) + 1
@@ -207,7 +212,7 @@ function main()
                     "hp" => σₚ,
                     "scale" => λ,
                     "beta" => β,
-                    "beta_w" => βw_calib,
+                    "beta_w" => βw,
                     "w" => w,
                     "lambda" => λ
                 )
@@ -228,7 +233,7 @@ function main()
 
                 # Define log posteriors and gradients of them
                 b, models = init_ahmc_models(
-                    real_data, synth_data, w, βw_calib, β, λ, αₚ, βₚ, μₚ, σₚ
+                    real_data, synth_data, w, βw, β, λ, αₚ, βₚ, μₚ, σₚ
                 )
                 model = models[model_name]
 
@@ -254,7 +259,7 @@ function main()
             elseif sampler == "Turing"
 
                 models = init_turing_models(
-                    real_data, synth_data, w, βw_calib, β, λ, αₚ, βₚ, μₚ, σₚ
+                    real_data, synth_data, w, βw, β, λ, αₚ, βₚ, μₚ, σₚ
                 )
                 model = models[model_name]
 
@@ -279,14 +284,14 @@ function main()
 
         println("Worker $(myid()) on iter: $(iter), noise: $(λ), realn: $(real_n), model: $(model_name), metric: $(metric), max synthn: $(max_syn)...")
 
+        # Assuming unimodality we can safely step forward in xmax until we see an increase in g,
+        # then run a search algorithm ideally within xprev2 and xmax to find the turning point
         xmin, xmax = 0, min_synth_n
         synths = [gen_synth(max_syn, dgp, λ) for _ in 1:K]
         gmins = [g(synths[i][1:xmin]) for i in 1:K]
         gmaxs = [g(synths[i][1:xmax]) for i in 1:K]
         p = plot([xmin, xmax], [mean(gmins), mean(gmaxs)])
         display(p)
-        # Assuming unimodality we can safely step forward in xmax until we see an increase
-        # then golden section search within xprev2 and xmax to the turning point
         xprev, gprevs, xprev2, gprevs2, xprev3 = xmin, gmins, xmin, gmins, xmin
         while (mean(gmaxs) < mean(gprevs)) & (xmax * 2 <= max_syn)
             xprev3 = xprev2
@@ -297,87 +302,140 @@ function main()
             plot!([xprev2, xprev, xmax], [mean(gprevs2), mean(gprevs), mean(gmaxs)])
             display(p)
         end
-        # png(p, "INIT_xs_iter$(iter)noise$(λ)realn$(real_n)model$(model_name)metric$(metric)")
+
         if mean(gmaxs) < mean(gprevs)
 
-            open("$(out_path)/$(myid())_tps.csv", "a") do io
-                write(io, "$(iter),$(λ),$(real_n),$(model_name),$(metric),$(xprev3),$(xprev2),$(xprev),$(xmax)\n")
-            end
+            png(p, "$(plot_path)/DONE_xs_iter$(iter)noise$(λ)realn$(real_n)model$(model_name)metric$(metric)")
+            xmin, xmid₁, xmid₂ = xprev3, xprev2, xprev
 
         else
 
+            png(p, "$(plot_path)/INIT_xs_iter$(iter)noise$(λ)realn$(real_n)model$(model_name)metric$(metric)")
+
+            # Check if xprev2 was updated, i.e. enough iters in prev step, to set xmin to something above 0
             if xprev != xprev2
                 xmin = xprev2
                 gmins = gprevs2
             end
-            h = xmax - xmin
-            N = ceil(Int, log(1 / h) / log(invϕ))
-            xmid₁ = round(Int, xmin + invϕ² * h)
-            xmid₂ = round(Int, xmin + invϕ * h)
 
-            gmid₁s = [g(synths[i][1:xmid₁]) for i in 1:K]
-            gmid₂s = [g(synths[i][1:xmid₂]) for i in 1:K]
-            gdiffs = gmid₂s - gmid₁s
-            ci = confint(OneSampleTTest(gdiffs))
+            if alg == "golden"
 
-            plot!([xmin, xmid₁, xmid₂, xmax], [mean(gmins), mean(gmid₁s), mean(gmid₂s), mean(gmaxs)])
+                h = xmax - xmin
+                N = ceil(Int, log(1 / h) / log(invϕ))
+                xmid₁ = round(Int, xmin + invϕ² * h)
+                xmid₂ = round(Int, xmin + invϕ * h)
 
-            for n in 1:N
-
-                display(p)
-
-                if (xmid₁ == xmid₂ == xmin) | (xmid₁ == xmid₂ == xmax)
-                    break
-                elseif (abs(mean(gmid₁s) - mean(gmins)) < gtol) &
-                    (abs(mean(gdiffs)) < gtol) &
-                    (abs(mean(gmid₂s) - mean(gmaxs)) < gtol) &
-                    (abs(mean(gmid₂s) - mean(gmins)) < gtol) &
-                    (abs(mean(gmid₁s) - mean(gmaxs)) < gtol) &
-                    (abs(mean(gmins) - mean(gmaxs)) < gtol)
-                    @show "Breaking due to gdiffall"
-                    break
-                end
-
-                synths = [gen_synth(xmax, dgp, λ) for _ in 1:K]
-
-                if mean(ci) > 0
-                    xmax = xmid₂
-                    xmid₂ = xmid₁
-                    h = invϕ * h
-                    xmid₁ = round(Int, xmin + invϕ² * h)
-                    gmaxs = gmid₂s
-                    gmid₂s = gmid₁s
-                    gmid₁s = [g(synths[i][1:xmid₁]) for i in 1:K]
-                else
-                    xmin = xmid₁
-                    xmid₁ = xmid₂
-                    h = invϕ * h
-                    xmid₂ = round(Int, xmin + invϕ * h)
-                    gmins = gmid₁s
-                    gmid₁s = gmid₂s
-                    gmid₂s = [g(synths[i][1:xmid₂]) for i in 1:K]
-                end
-
+                gmid₁s = [g(synths[i][1:xmid₁]) for i in 1:K]
+                gmid₂s = [g(synths[i][1:xmid₂]) for i in 1:K]
                 gdiffs = gmid₂s - gmid₁s
                 ci = confint(OneSampleTTest(gdiffs))
 
-                plot!([xmin, xmid₁, xmid₂, xmax], [mean(gmins), mean(gmid₁s), mean(gmid₂s), mean(gmaxs)])
+                p = plot([xmin, xmid₁, xmid₂, xmax], [mean(gmins), mean(gmid₁s), mean(gmid₂s), mean(gmaxs)])
+
+                for n in 1:N
+
+                    # display(p)
+
+                    if (xmid₁ == xmid₂ == xmin) | (xmid₁ == xmid₂ == xmax)
+                        break
+                    elseif (abs(mean(gmid₁s) - mean(gmins)) < gtol) &
+                        (abs(mean(gdiffs)) < gtol) &
+                        (abs(mean(gmid₂s) - mean(gmaxs)) < gtol) &
+                        (abs(mean(gmid₂s) - mean(gmins)) < gtol) &
+                        (abs(mean(gmid₁s) - mean(gmaxs)) < gtol) &
+                        (abs(mean(gmins) - mean(gmaxs)) < gtol)
+                        @show "Breaking due to gdiffall"
+                        break
+                    end
+
+                    synths = [gen_synth(xmax, dgp, λ) for _ in 1:K]
+
+                    if mean(ci) > 0
+                        xmax = xmid₂
+                        xmid₂ = xmid₁
+                        h = invϕ * h
+                        xmid₁ = round(Int, xmin + invϕ² * h)
+                        gmaxs = gmid₂s
+                        gmid₂s = gmid₁s
+                        gmid₁s = [g(synths[i][1:xmid₁]) for i in 1:K]
+                    else
+                        xmin = xmid₁
+                        xmid₁ = xmid₂
+                        h = invϕ * h
+                        xmid₂ = round(Int, xmin + invϕ * h)
+                        gmins = gmid₁s
+                        gmid₁s = gmid₂s
+                        gmid₂s = [g(synths[i][1:xmid₂]) for i in 1:K]
+                    end
+
+                    gdiffs = gmid₂s - gmid₁s
+                    ci = confint(OneSampleTTest(gdiffs))
+
+                    plot!([xmin, xmid₁, xmid₂, xmax], [mean(gmins), mean(gmid₁s), mean(gmid₂s), mean(gmaxs)])
+
+                end
+
+                png(p, "$(plot_path)/DONE_xs_iter$(iter)noise$(λ)realn$(real_n)model$(model_name)metric$(metric)")
+
+            else
+
+                synth_δ = 5
+                ks = DiscreteNonParametric(collect(xmin:xmax), [1 / (xmax - xmin + 1) for _ in xmin:xmax])
+
+                while maximum(ks.p) < maximum(10 / (xmax - xmin), 0.12)
+
+                    synth_n = rand(ks)
+                    pos = 0
+                    for k in 1:K
+
+                        synth_data_a = rand(dgp, Int(synth_n + synth_δ)) + rand(Laplace(0, λ), Int(synth_n + synth_δ))
+                        synth_data_b = synth_data_a[1:synth_n]
+                        difference = g(synth_data_a) - g(synth_data_b)
+                        if difference > 0
+                            pos += 1
+                        end
+
+                    end
+
+                    @show synth_n
+                    @show pos
+                    p̂ = cdf(
+                        Beta(0.125, 0.125),
+                        maximum([(pos + 1) / (K + 2), 1 - (pos + 1) / (K + 2)])
+                    )
+                    @show p̂
+                    l_mult = p̂ ^ (pos + 1) * (1 - p̂) ^ (K + 2 - pos)
+                    @show l_mult
+                    r_mult = (1 - p̂) ^ (pos + 1) * p̂ ^ (K + 2 - pos)
+                    @show r_mult
+                    new_ps = vcat(
+                        ks.p[1:(synth_n - xmin + 1)] .* l_mult,
+                        ks.p[(synth_n - xmin + 2):end] .* r_mult
+                    )
+                    ks = DiscreteNonParametric(collect(xmin:xmax), new_ps ./ sum(new_ps))
+                    p = plot(xmin:xmax, ks.p)
+                    display(p)
+
+                end
+
+                xmin = argmax(ks.p)
+                xmax = length(ks.p) - argmax(reverse(ks.p)) + 1
+                h = xmax - xmin
+                xmid₁ = round(Int, xmin + invϕ² * h)
+                xmid₂ = round(Int, xmin + invϕ * h)
+
+                png(p, "$(plot_path)/DONE_xs_iter$(iter)noise$(λ)realn$(real_n)model$(model_name)metric$(metric)")
 
             end
 
-            png(p, "$(plot_path)/DONE_xs_iter$(iter)noise$(λ)realn$(real_n)model$(model_name)metric$(metric)")
+        end
 
-            open("$(out_path)/$(myid())_tps.csv", "a") do io
-                write(io, "$(iter),$(λ),$(real_n),$(model_name),$(metric),$(xmin),$(xmid₁),$(xmid₂),$(xmax)\n")
-            end
+        open("$(out_path)/$(myid())_tps.csv", "a") do io
+            write(io, "$(iter),$(λ),$(real_n),$(model_name),$(metric),$(xmin),$(xmid₁),$(xmid₂),$(xmax)\n")
         end
 
     end
 
 end
 
-main()
-
-for i in workers()
-    rmprocs(i)
-end
+run_experiment()

@@ -77,31 +77,10 @@ function log_loss(y, samples)
     N = size(samples)[1]
     avg = 0
     for (μ, σ²) in eachrow(samples)
-        avg += sum(ℓpdf_N.(μ, √σ², y)) / N
+        avg += sum(pdf_N.(μ, √σ², y))
     end
-    return -avg
+    return -log(avg / N)
 end
-
-
-# function quantile_bisect(post_cdf, p::Real, lx::Real=-1e8, rx::Real=1e8, tol::Real=1.0e-12)
-#
-#     # find quantile using bisect algorithm
-#     cl = post_cdf(lx)
-#     cr = post_cdf(rx)
-#     @assert cl <= p <= cr
-#     while rx - lx > tol
-#         m = (lx + rx)/2
-#         c = post_cdf(m)
-#         if p > c
-#             cl = c
-#             lx = m
-#         else
-#             cr = c
-#             rx = m
-#         end
-#     end
-#     return (lx + rx)/2
-# end
 
 
 function wass_approx(dgp, samples, n=1000000)
@@ -118,21 +97,3 @@ function wassersteind(inv_post_cdf, post_cdf, dgp, samples, method)
     Dwass, err = quadgk(f, 0, 1)
     return Dwass, err
 end
-
-
-# g(x) = abs(find_zero((a -> post_cdf(a) - x, a -> post_pdf(a)), 0.0, Roots.Newton()) - inv_dgp_cdf(x))
-# @time quadgk(g, 0, 1)
-# g(x) = abs(find_zero((a -> post_cdf(a) - x, a -> post_pdf(a), a -> ForwardDiff.derivative(post_pdf, float(a))), 0.0, Roots.Halley()) - inv_dgp_cdf(x))
-# @time quadgk(g, 0, 1)
-# g(x) = abs(find_zero(a -> post_cdf(a) - x, 0.0, Roots.Order16()) - inv_dgp_cdf(x))
-# @time quadgk(g, 0, 1)
-# g(x) = abs(find_zero(a -> post_cdf(a) - x, 0.0, Roots.Order8()) - inv_dgp_cdf(x))
-# @time quadgk(g, 0, 1)
-# g(x) = abs(find_zero(a -> post_cdf(a) - x, 0.0, Roots.Order5()) - inv_dgp_cdf(x))
-# @time quadgk(g, 0, 1)
-# g(x) = abs(find_zero(a -> post_cdf(a) - x, 0.0, Roots.Order2()) - inv_dgp_cdf(x))
-# @time quadgk(g, 0, 1)
-# g(x) = abs(find_zero(a -> post_cdf(a) - x, 0.0, Roots.Order1()) - inv_dgp_cdf(x))
-# @time quadgk(g, 0, 1)
-# g(x) = abs(find_zero(a -> post_cdf(a) - x, 0.0, Roots.Order0()) - inv_dgp_cdf(x))
-# @time quadgk(g, 0, 1)
