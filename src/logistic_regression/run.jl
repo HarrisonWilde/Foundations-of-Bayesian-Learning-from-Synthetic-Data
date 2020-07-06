@@ -64,10 +64,10 @@ include("weight_calibration.jl")
     include("src/logistic_regression/weight_calibration.jl")
 end
 
-# path, dataset, label, ε = ".", "uci_heart", "target", "6.0"
-# iterations, folds, split = 1, 5, 1.0
-# distributed, use_ad, sampler, no_shuffle = false, false, "CmdStan", false
-# experiment_type = "logistic_regression"
+path, dataset, label, ε = ".", "uci_heart", "target", "6.0"
+iterations, folds, split = 1, 5, 1.0
+distributed, use_ad, sampler, no_shuffle = false, false, "CmdStan", false
+experiment_type = "logistic_regression"
 
 function run_experiment()
 

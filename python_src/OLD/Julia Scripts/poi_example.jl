@@ -40,7 +40,7 @@ end
 function poi_gamma_posterior(λ, α, β, x, ℓ)
 	quadgk(gamma_prior(λ) * exp(-sum(map(item -> ℓ(item, poi_likelihood(λ, item))))), )
 
-post_pred = quadgk(poi_likelihood(λ, labels) * )
+post_pred = quadgk(poi_likelihood(λ, labels) * 1)
 
 
 # Generate your own data
@@ -67,7 +67,7 @@ Plots.plot(chain)
 	λ ~ Gamma(2, 2)
 	ρ ~ Uniform(0, ρ̂)
 	for i = 1:n
-		y[i] ~ (1-ρ) Poisson(λ) + ρ Zeros(y[i])
+		y[i] ~ (1-ρ) Poisson(λ) + ρ * Zeros(y[i])
 	end
 end
 
@@ -76,14 +76,14 @@ end
 	λc ~ Gamma(2, 2)
 	ρ ~ Uniform(0, ρ̂)
 	for i = 1:n
-		y[i] ~ (1-ρ) Poisson(λ) + ρ Poisson(λc)
+		y[i] ~ (1-ρ) Poisson(λ) + ρ * Poisson(λc)
 	end
 end
 
 
 simplePoi ~ Poisson(λ)
 # bcZeroIPoi ~ (1 - ρbc)Poisson(λ) + ρbc
-gtZeroIPoi ~ (1 - ρgt)Poisson(λ) + ρgt
+gtZeroIPoi ~ (1 - ρgt) * Poisson(λ) + ρgt
 # bcPoiMix ~ (1 - ρbc)Poisson(λ) + ρbc Poisson(λc)
-gtPoiMix ~ (1 - ρgt)Poisson(λ) + ρgt Poisson(λc)
+gtPoiMix ~ (1 - ρgt) * Poisson(λ) + ρgt * Poisson(λc)
 
