@@ -44,3 +44,27 @@ function posterior(prior_weights,prior_params,data)
     posterior_v=posterior_v/sum(posterior_v)
     return posterior_v
 end
+
+
+using Turing
+@model function normal()
+            a ~ Normal(4,5)
+            3 ~ Normal(a,2)
+            b ~ Normal(a,1)
+            1.5 ~ Normal(b,2)
+            a, b
+end
+
+using Random
+
+# needs to init by hand
+rng=MersenneTwister()
+
+AbstractMCMC.sample_init!(rng,normal(), SMC(), 100)
+# MCMC step
+tested = sample(normal(), SMC(), 100);
+tested
+
+#function AbstractMCMC.step!(
+
+# link https://docs.pymc.io/notebooks/SMC2_gaussians.html
