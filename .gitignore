@@ -15,4 +15,5 @@ tgan_original/
 *.data.Z
 *.zip
 *.npy
-cmdstan-2.23.0/
+cmdstan-2.24.1/
+*.tar
