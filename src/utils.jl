@@ -1,63 +1,232 @@
 invϕ = (√5 - 1) / 2
 invϕ² = (3 - √5) / 2
 
+
+"""
+Return the logistic function computed in a numerically stable way:
+``logistic(x) = 1/(1+exp(-x))``
+"""
+function LOGISTIC(T)
+    log(one(T) / Base.eps(T) - one(T))
+end
+function logistic(x::T) where {T}
+    LOGISTIC_T = LOGISTIC(T)
+    x > LOGISTIC_T && return one(x)
+    x < -LOGISTIC_T && return zero(x)
+    return one(x) / (one(x) + exp(-x))
+end
+
+"""
+Derivative of the logistic function
+"""
+function ∂logistic(z::T) where {T}
+	a = exp(z) + 1
+    return (1 / a) - (1 / (a ^ 2))
+end
+
+
+function dotmany(X, Θ, groups, nₚ)
+    res = similar(groups, typeof(zero(eltype(X)) * zero(eltype(Θ))))
+    @inbounds for obs in eachindex(groups)
+        Θi = groups[obs]
+        y = zero(eltype(res))
+        for p in 1:nₚ
+            y += X[obs, p] * Θ[p, Θi]
+        end
+        res[obs] = y
+    end
+    return res
+end
+
+
+function to_float(l)
+    return map(x -> parse(Float64, x), l)
+end
+
+
 function parse_cl()
     s = ArgParseSettings()
     @add_arg_table! s begin
-        "--path", "-p"
+        "--experiment_type"
+            arg_type = String
+            default = "gaussian"
+            required = true
+        "--path"
             help = "specify the path to the top of the project"
             arg_type = String
-            required = true
-        "--dataset", "-d"
-            help = "specify the dataset to be used"
-            arg_type = String
-        "--label", "-l"
-            help = "specify the label to be used, must be present in dataset, obviously"
-            arg_type = String
-        "--epsilon"
-            help = "choose an epsilon value: the differential privacy constant"
-            arg_type = String
-            default = "6.0"
-        "--iterations", "-i"
+            default = "."
+        "--show_progress"
+            action = :store_true
+        "--iterations"
             help = "number of full iterations to run"
             arg_type = Int
             default = 1
-        "--folds", "-k"
-            help = "specify the number of CV folds to be carried out during training"
-            arg_type = Int
-            default = 5
-        "--split", "-s"
+        "--split"
             help = "specify the ratio of the data to be used for training, the rest will be held back for testing"
             arg_type = Float64
             default = 1.0
         "--use_ad"
             help = "include to use ForwardDiff rather than manually defined derivatives"
             action = :store_true
-        "--distributed", "-c"
+        "--distributed"
             help = "include when running the code in a distributed fashion"
             action = :store_true
-        "--sampler", "-o"
+        "--n_samples"
+            help = "number of MCMC samples to take"
+            arg_type = Int
+            default = 10000
+        "--n_warmup"
+            arg_type = Int
+            default = 1000
+        "--n_chains"
+            arg_type = Int
+            default = 1
+        "--target_acceptance"
+            arg_type = Float64
+            default = 0.8
+        "--sampler"
             help = "choose from AHMC, Turing and CmdStan"
             arg_type = String
             default = "Turing"
         "--no_shuffle"
             help = "Disable row shuffling on load of data"
             action = :store_true
+        "--betas", "-b"
+            nargs = '*'
+            arg_type = Float64
+            default = [0.5]
+        "--beta_weights"
+            nargs = '*'
+            arg_type = Float64
+            default = [1.25]
+        "--calibrate_beta_weight"
+            action = :store_true
+        "--weights", "-w"
+            nargs = '*'
+            arg_type = Float64
+            default = [0.0, 0.5, 1.0]
+        "--metrics"
+            nargs = '*'
+            arg_type = String
+        "--model_names"
+            nargs = '*'
+            arg_type = String
+        # (Logistic) Regression specific
+        "--dataset"
+            help = "specify the dataset to be used"
+            arg_type = String
+        "--label"
+            help = "specify the label to be used, must be present in dataset, obviously"
+            arg_type = String
+        "--epsilon"
+            help = "choose an epsilon value: the differential privacy constant"
+            arg_type = String
+            default = "6.0"
+        "--real_alphas"
+            nargs = '*'
+            arg_type = Float64
+        "--synth_alphas"
+            nargs = '*'
+            arg_type = Float64
+        "--folds"
+            help = "specify the number of CV folds to be carried out during training"
+            arg_type = Int
+            default = 5
+        # Gaussian specific
+        "--mu"
+            arg_type = Float64
+            default = 0.0
+        "--sigma"
+            arg_type = Float64
+            default = 1.0
         "--scales"
             help = "List of scales to use for Laplace noise"
             arg_type = Float64
             nargs = '*'
+        "--real_ns"
+            nargs = '*'
+            arg_type = Int
+        "--synth_ns"
+            nargs = '*'
+            arg_type = Int
+        "--n_unseen"
+            arg_type = Int
+            default = 500
+        "--algorithm"
+            arg_type = String
+            default = "golden"
+        ### Golden Section specific
         "--num_repeats"
             arg_type = Int
             default = 100
-        "--algorithm", "-a"
-            arg_type = String
-            default = "golden"
-        "--experiment", "-e"
-            arg_type = String
-            default = "logistic_regression"
+        # Priors
+        "--mu_p"
+            arg_type = Float64
+            default = 0.0
+        "--sigma_p"
+            arg_type = Float64
+            default = 1.0
+        "--alpha_p"
+            arg_type = Float64
+            default = 0.1
+        "--beta_p"
+            arg_type = Float64
+            default = 0.1
+        "--nu_p"
+            arg_type = Float64
+            default = 3.0
+        "--Sigma_p"
+            arg_type = Matrix
+        
     end
     return parse_args(s)
+end
+
+
+function generate_model_configs(model_names, βs, βws, ws)
+
+    model_pairs = vcat(
+        [(
+            model = m,
+            weight = w,
+            β = -1
+        ) for m ∈ model_names for w ∈ ws if m == "weighted"],
+        [(
+            model = m,
+            weight = w,
+            β = b
+        ) for m ∈ model_names for w ∈ βws for b ∈ βs if m ∈ ["beta", "beta_all"]],
+        [(
+            model = m,
+            weight = -1,
+            β = -1,
+        ) for m ∈ model_names if m ∉ ["beta", "beta_all", "weighted"]],
+    )
+
+end
+
+
+function config_dict(experiment_type, args)
+
+    if experiment_type in ["logistic_regression", "regression"]
+        config = (
+            real_alphas = args["real_alphas"],
+            synth_alphas = args["synth_alphas"],
+            folds = args["folds"]
+        )
+    elseif experiment_type == "gaussian"
+        config = (
+            real_ns = args["real_ns"],
+            synth_ns = args["synth_ns"],
+            n_unseen = args["n_unseen"],
+            λs = args["scales"],
+            K = args["num_repeats"],
+            algorithm = args["algorithm"],
+            metrics = args["metrics"]
+        )
+    end
+    return config
+
 end
 
 
@@ -72,6 +241,54 @@ function load_data(name, label, ε)
     synth_data = hcat(DataFrame(intercept = ones(size(synth_data)[1])), synth_data)
 
     return labels, real_data, synth_data
+
+end
+
+
+function generate_all_steps(experiment_type, algorithm, iterations, config, model_configs)
+
+    if experiment_type in ["logistic_regression", "regression"]
+        # S = Iterators.product(
+        #     iterations,
+        #     config[:real_alphas],
+        #     config[:synth_alphas],
+        #     config[:folds],
+        #     model_configs
+        # )
+        S = [
+            (a, b, c, d, e)
+            for a ∈ iterations
+            for b ∈ config[:real_alphas]
+            for c ∈ config[:synth_alphas]
+            for d ∈ config[:folds]
+            for e ∈ model_configs
+        ]
+    else
+        if (experiment_type == "gaussian") & (algorithm != "basic")
+            S = [
+                (a, b, c, d, e, f, g)
+                for a ∈ iterations
+                for b ∈ config[:real_ns]
+                for c ∈ config[:synth_ns]
+                for d ∈ config[:n_unseen]
+                for e ∈ config[:λs]
+                for f ∈ model_configs
+                for g ∈ config[:metrics]
+            ]
+        else
+            S = [
+                (a, b, c, d, e, f)
+                for a ∈ iterations
+                for b ∈ config[:real_ns]
+                for c ∈ config[:synth_ns]
+                for d ∈ config[:n_unseen]
+                for e ∈ config[:λs]
+                for f ∈ model_configs
+            ]
+        end
+    end
+    return S
+
 end
 
 

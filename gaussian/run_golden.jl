@@ -1,4 +1,12 @@
+using ClusterManagers
 using Distributed
+# addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])), o=string(ENV["SLURM_JOB_ID"]))
+addprocs_slurm(parse(Int, ENV["SLURM_NTASKS"]))
+println("We are all connected and ready.")
+for i in workers()
+    host, pid = fetch(@spawnat i (gethostname(), getpid()))
+    println(host, pid)
+end
 using Bijectors
 using ForwardDiff
 using LinearAlgebra
@@ -28,13 +36,14 @@ using DataStructures
 using Statistics
 using HypothesisTests
 using Plots
-include("../common/utils.jl")
-include("../common/init.jl")
-include("distributions.jl")
-include("loss.jl")
-include("evaluation.jl")
-include("init.jl")
-include("weight_calibration.jl")
+using Plots
+# include("../common/utils.jl")
+# include("../common/init.jl")
+# include("distributions.jl")
+# include("loss.jl")
+# include("evaluation.jl")
+# include("init.jl")
+# include("weight_calibration.jl")
 
 @everywhere begin
     using Distributed
@@ -67,21 +76,29 @@ include("weight_calibration.jl")
     using Statistics
     using HypothesisTests
     using Plots
-    include("src/common/utils.jl")
-    include("src/common/init.jl")
-    include("src/gaussian/init.jl")
-    include("src/gaussian/distributions.jl")
-    include("src/gaussian/evaluation.jl")
-    include("src/gaussian/loss.jl")
-    include("src/gaussian/weight_calibration.jl")
+    # include("src/common/utils.jl")
+    # include("src/common/init.jl")
+    # include("src/gaussian/init.jl")
+    # include("src/gaussian/distributions.jl")
+    # include("src/gaussian/evaluation.jl")
+    # include("src/gaussian/loss.jl")
+    # include("src/gaussian/weight_calibration.jl")
 end
 
-λs, K = [1.0, 1.25, 1.5, 1.75, 2.0], 100
-path, iterations = ".", 5
-distributed, sampler, no_shuffle, alg = false, "AHMC", false, "bisection"
-experiment_type = "gaussian"
+# λs, K = [1.0, 1.25, 1.5, 1.75, 2.0], 100
+# path, iterations = ".", 5
+# distributed, sampler, no_shuffle, alg = false, "AHMC", false, "bisection"
 
 function run_experiment()
+
+
+    args = parse_cl()
+    λs, K, algorithm = args["scales"], args["num_repeats"], args["algorithm"]
+    path, dataset, label, ε = args["path"], args["dataset"], args["label"], args["epsilon"]
+    iterations, folds, split = args["iterations"], args["folds"], args["split"]
+    use_ad, distributed, sampler, no_shuffle = args["use_ad"], args["distributed"], args["sampler"], args["no_shuffle"]
+    # experiment_type = args["experiment"]
+    experiment_type = "gaussian"
 
     t = Dates.format(now(), "HH_MM_SS__dd_mm_yyyy")
     out_path = "$(path)/src/$(experiment_type)/outputs/$(t)_$(sampler)"
@@ -98,7 +115,7 @@ function run_experiment()
     αₚ, βₚ, μₚ, σₚ = 3., 5., 1., 1.
     # real_ns = vcat([1, 5, 10, 50, 100, 150, 250, 400], collect(1:6) .^ 2 .* 11)
     # real_ns = [1, 5, 10, 50, 100, 150, 250, 400]
-    real_ns = [1, 5, 10, 25, 50, 100, 200, 300, 400]
+    real_ns = [1]
     metrics = [
         "ll",
         "kld",

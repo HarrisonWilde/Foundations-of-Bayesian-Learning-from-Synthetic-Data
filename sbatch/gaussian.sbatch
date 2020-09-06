@@ -19,7 +19,7 @@ export JULIA_CMDSTAN_HOME=/home/dcs/csrxgb/julia_stuff/cmdstan-2.23.0
 module purge
 module load GCC/8.3.0 GCCcore/9.2.0 Julia/1.4.1-linux-x86_64
 
-julia src/gaussian/run_golden.jl \
+julia ../src/gaussian/run_golden.jl \
     --scales 0.0 0.5 0.75 1.0 1.25 1.5 1.75 2.0 2.5 \
     --iterations 100 \
     --sampler AHMC \

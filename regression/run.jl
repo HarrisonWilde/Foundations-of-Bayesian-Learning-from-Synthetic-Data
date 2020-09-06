@@ -31,10 +31,10 @@ using MLJBase: auc
 using StanSample
 using CmdStan
 using DataStructures
-include("../common/utils.jl")
-include("../common/init.jl")
-include("distributions.jl")
-include("init.jl")
+# include("../common/utils.jl")
+# include("../common/init.jl")
+# include("distributions.jl")
+# include("init.jl")
 
 @everywhere begin
     using Distributed
@@ -61,16 +61,28 @@ include("init.jl")
     using StanSample
     using CmdStan
     using DataStructures
-    include("src/common/utils.jl")
-    include("src/common/init.jl")
-    include("src/gaussian/init.jl")
-    include("src/gaussian/distributions.jl")
+    # include("src/common/utils.jl")
+    # include("src/common/init.jl")
+    # include("src/gaussian/init.jl")
+    # include("src/gaussian/distributions.jl")
 end
 
 path, dataset, label, ε = ".", "gcse", "course", "6.0"
 iterations, folds, split = 1, 5, 1.0
 distributed, use_ad, sampler, no_shuffle = false, false, "Turing", false
 experiment_type = "regression"
+w = 0.5
+β = 0.5
+βw = 1.25
+real_αs = [0.0, 0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175, 0.2, 0.3, 0.4, 0.5, 0.75]
+synth_αs = [0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.075, 0.1, 0.2, 0.3, 0.4, 0.5, 0.75]
+n_samples, n_warmup = 5000, 1000
+nchains = 1
+target_acceptance_rate = 0.8
+metrics = ["rmse", "ll"]
+model_names = [
+    "beta", "weighted", "naive", "no_synth"
+]
 
 function run_experiment()
 
@@ -81,22 +93,12 @@ function run_experiment()
     println("Setting up experiment...")
     predictors = [:female]
     groups = [:school]
-    w = 0.5
-    β = 0.5
-    βw = 1.25
-    real_αs = [0.0, 0.025, 0.05, 0.075, 0.1, 0.125, 0.15, 0.175, 0.2, 0.3, 0.4, 0.5, 0.75]
-    synth_αs = [0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.075, 0.1, 0.2, 0.3, 0.4, 0.5, 0.75]
+
     αs = get_conditional_pairs(real_αs, synth_αs)
     num_αs = size(αs)[1]
     iter_steps = num_αs * folds
     total_steps = iter_steps * iterations
-    n_samples, n_warmup = 5000, 1000
-    nchains = 1
-    target_acceptance_rate = 0.8
-    metrics = ["rmse", "ll"]
-    model_names = [
-        "beta", "weighted", "naive", "no_synth"
-    ]
+
     name_metrics = join(["$(name)_$(metric)" for name in model_names for metric in metrics], ",")
     if (sampler == "CmdStan") | (sampler == "Stan")
         mkpath("$(path)/src/$(experiment_type)/tmp$(sampler)/")

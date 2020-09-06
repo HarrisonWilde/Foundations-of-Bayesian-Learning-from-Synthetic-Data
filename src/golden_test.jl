@@ -1,5 +1,6 @@
 using Statistics
 using HypothesisTests
+using Random
 
 invϕ = (√5 - 1) / 2
 invϕ² = (3 - √5) / 2

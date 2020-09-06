@@ -21,7 +21,7 @@ module purge
 module load GCC/8.3.0 GCCcore/9.2.0 Julia/1.4.1-linux-x86_64
 
 # --machine-file ${JULIA_MACHINEFILE} \
-julia src/logistic_regression/run.jl \
+julia ../src/logistic_regression/run.jl \
     --path /home/dcs/csrxgb/julia_stuff \
     --dataset uci_heart \
     --label target \
