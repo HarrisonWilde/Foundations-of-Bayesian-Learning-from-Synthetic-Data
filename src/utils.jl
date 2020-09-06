@@ -39,28 +39,24 @@ function dotmany(X, Θ, groups, nₚ)
 end
 
 
+function to_float(l)
+    return map(x -> parse(Float64, x), l)
+end
+
+
 function parse_cl()
     s = ArgParseSettings()
     @add_arg_table! s begin
         "--experiment_type"
             arg_type = String
             default = "gaussian"
+            required = true
         "--path"
             help = "specify the path to the top of the project"
             arg_type = String
-            required = true
+            default = "."
         "--show_progress"
             action = :store_true
-        "--dataset"
-            help = "specify the dataset to be used"
-            arg_type = String
-        "--label"
-            help = "specify the label to be used, must be present in dataset, obviously"
-            arg_type = String
-        "--epsilon"
-            help = "choose an epsilon value: the differential privacy constant"
-            arg_type = String
-            default = "6.0"
         "--iterations"
             help = "number of full iterations to run"
             arg_type = Int
@@ -95,56 +91,74 @@ function parse_cl()
         "--no_shuffle"
             help = "Disable row shuffling on load of data"
             action = :store_true
-        "--scales"
-            help = "List of scales to use for Laplace noise"
-            arg_type = Float64
+        "--betas", "-b"
             nargs = '*'
-        "--num_repeats"
-            arg_type = Int
-            default = 100
-        "--beta", "-b"
             arg_type = Float64
-            default = 0.5
+            default = [0.5]
         "--beta_weights"
-            nargs = '+'
+            nargs = '*'
             arg_type = Float64
-            default = 1.25
+            default = [1.25]
         "--calibrate_beta_weight"
             action = :store_true
         "--weights", "-w"
-            nargs = '+'
+            nargs = '*'
             arg_type = Float64
-            default = 0.5
+            default = [0.0, 0.5, 1.0]
         "--metrics"
+            nargs = '*'
             arg_type = String
-            nargs = '+'
         "--model_names"
+            nargs = '*'
             arg_type = String
-            nargs = '+'
         # (Logistic) Regression specific
+        "--dataset"
+            help = "specify the dataset to be used"
+            arg_type = String
+        "--label"
+            help = "specify the label to be used, must be present in dataset, obviously"
+            arg_type = String
+        "--epsilon"
+            help = "choose an epsilon value: the differential privacy constant"
+            arg_type = String
+            default = "6.0"
         "--real_alphas"
+            nargs = '*'
             arg_type = Float64
-            nargs = '+'
         "--synth_alphas"
+            nargs = '*'
             arg_type = Float64
-            nargs = '+'
         "--folds"
             help = "specify the number of CV folds to be carried out during training"
             arg_type = Int
             default = 5
         # Gaussian specific
+        "--mu"
+            arg_type = Float64
+            default = 0.0
+        "--sigma"
+            arg_type = Float64
+            default = 1.0
+        "--scales"
+            help = "List of scales to use for Laplace noise"
+            arg_type = Float64
+            nargs = '*'
         "--real_ns"
+            nargs = '*'
             arg_type = Int
-            nargs = '+'
         "--synth_ns"
+            nargs = '*'
             arg_type = Int
-            nargs = '+'
         "--n_unseen"
             arg_type = Int
             default = 500
         "--algorithm"
             arg_type = String
             default = "golden"
+        ### Golden Section specific
+        "--num_repeats"
+            arg_type = Int
+            default = 100
         # Priors
         "--mu_p"
             arg_type = Float64
@@ -169,6 +183,29 @@ function parse_cl()
 end
 
 
+function generate_model_configs(model_names, βs, βws, ws)
+
+    model_pairs = vcat(
+        [(
+            model = m,
+            weight = w,
+            β = -1
+        ) for m ∈ model_names for w ∈ ws if m == "weighted"],
+        [(
+            model = m,
+            weight = w,
+            β = b
+        ) for m ∈ model_names for w ∈ βws for b ∈ βs if m ∈ ["beta", "beta_all"]],
+        [(
+            model = m,
+            weight = -1,
+            β = -1,
+        ) for m ∈ model_names if m ∉ ["beta", "beta_all", "weighted"]],
+    )
+
+end
+
+
 function config_dict(experiment_type, args)
 
     if experiment_type in ["logistic_regression", "regression"]
@@ -183,8 +220,8 @@ function config_dict(experiment_type, args)
             synth_ns = args["synth_ns"],
             n_unseen = args["n_unseen"],
             λs = args["scales"],
-            num_repeats = args["num_repeats"],
-            models = args["model_names"],
+            K = args["num_repeats"],
+            algorithm = args["algorithm"],
             metrics = args["metrics"]
         )
     end
@@ -204,39 +241,51 @@ function load_data(name, label, ε)
     synth_data = hcat(DataFrame(intercept = ones(size(synth_data)[1])), synth_data)
 
     return labels, real_data, synth_data
+
 end
 
 
-function generate_all_steps(experiment_type, iterations, config)
+function generate_all_steps(experiment_type, algorithm, iterations, config, model_configs)
 
     if experiment_type in ["logistic_regression", "regression"]
-        S = Iterators.product(
-            iterations,
-            config[:real_alphas],
-            config[:synth_alphas],
-            config[:folds]
-        )
-    elseif experiment_type == "gaussian" & algorithm != "basic"
-        S = Iterators.product(
-            iterations,
-            config[:real_ns],
-            config[:synth_ns],
-            config[:n_unseen],
-            config[:λs],
-            config[:num_repeats],
-            config[:models],
-            config[:metrics]
-        )
+        # S = Iterators.product(
+        #     iterations,
+        #     config[:real_alphas],
+        #     config[:synth_alphas],
+        #     config[:folds],
+        #     model_configs
+        # )
+        S = [
+            (a, b, c, d, e)
+            for a ∈ iterations
+            for b ∈ config[:real_alphas]
+            for c ∈ config[:synth_alphas]
+            for d ∈ config[:folds]
+            for e ∈ model_configs
+        ]
     else
-        S = Iterators.product(
-            iterations,
-            config[:real_ns],
-            config[:synth_ns],
-            config[:n_unseen],
-            config[:λs],
-            config[:num_repeats],
-            config[:models]
-        )
+        if (experiment_type == "gaussian") & (algorithm != "basic")
+            S = [
+                (a, b, c, d, e, f, g)
+                for a ∈ iterations
+                for b ∈ config[:real_ns]
+                for c ∈ config[:synth_ns]
+                for d ∈ config[:n_unseen]
+                for e ∈ config[:λs]
+                for f ∈ model_configs
+                for g ∈ config[:metrics]
+            ]
+        else
+            S = [
+                (a, b, c, d, e, f)
+                for a ∈ iterations
+                for b ∈ config[:real_ns]
+                for c ∈ config[:synth_ns]
+                for d ∈ config[:n_unseen]
+                for e ∈ config[:λs]
+                for f ∈ model_configs
+            ]
+        end
     end
     return S
 

@@ -55,7 +55,7 @@ function evaluate_gaussian_samples(y, dgp, samples, method="Newton")
 
     post_pdf, post_cdf, inv_post_cdf = setup_posterior_predictive(samples)
     ll = log_loss(y, samples)
-    Dkl, _ = kld(post_pdf, dgp, samples)
+    Dkl, _ = kld(post_pdf, dgp)
     Dwass = wass_approx(dgp, samples)
     # @time Dwass2, _ = wassersteind(inv_post_cdf, post_cdf, dgp, samples, method)
     # @show Dwass1, Dwass2
@@ -122,7 +122,7 @@ end
 # integrate over limits +- 5 * std of DGP
 
 
-function kld(post_pdf, dgp, samples)
+function kld(post_pdf, dgp)
     f(x) = pdf(dgp, x) * log(pdf(dgp, x) / post_pdf(x))
     return quadgk(f, dgp.σ * -5, dgp.σ * 5)
 end
@@ -132,9 +132,9 @@ function log_loss(y, samples)
     N = size(samples)[1]
     avg = 0
     for (μ, σ²) in eachrow(samples)
-        avg += sum(pdf_N.(μ, √σ², y))
+        avg += sum(ℓpdf_N(μ, √σ², y)) / N
     end
-    return -log(avg / N)
+    return -avg
 end
 
 
@@ -146,9 +146,9 @@ function wass_approx(dgp, samples, n=1000000)
 end
 
 
-function wassersteind(inv_post_cdf, post_cdf, dgp, samples, method)
-    inv_dgp_cdf(x) = quantile(dgp, x)
-    f(x) = abs(inv_post_cdf(x, method) - inv_dgp_cdf(x))
-    Dwass, err = quadgk(f, 0, 1)
-    return Dwass, err
-end
+# function wassersteind(inv_post_cdf, dgp, method)
+#     inv_dgp_cdf(x) = quantile(dgp, x)
+#     f(x) = abs(inv_post_cdf(x, method) - inv_dgp_cdf(x))
+#     Dwass, err = quadgk(f, 0, 1)
+#     return Dwass, err
+# end

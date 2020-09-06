@@ -1,10 +1,10 @@
-function weight_calib(experiment_type, βw_default)
+function weight_calib(experiment_type, βw_default, X, y)
     
     try
         if experiment_type == "gaussian"
-            βw = gaussian_weight_calib()
+            # βw = gaussian_weight_calib()
         elseif experiment_type == "logistic_regression"
-            βw = logistic_weight_calib()
+            # βw = logistic_weight_calib()
         end
   
         if isnan(βw)

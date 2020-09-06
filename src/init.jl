@@ -86,21 +86,6 @@ function init_ahmc_gaussian_models(real_data, synth_data, w, βw, β, λ, αₚ,
     )
     ℓπ_w_unconstrained(θ_unconstrained) = (ℓπ_w ∘ b)(θ_unconstrained) + logabsdetjac(b, θ_unconstrained)
 
-    ℓπ(θ) = (
-        logpdf(InverseGamma(αₚ, βₚ), θ[2]) +
-        ℓpdf_N(μₚ, σₚ * √θ[2], θ[1]) +
-        sum(ℓpdf_N(θ[1], √θ[2], real_data)) +
-        sum(ℓpdf_N(θ[1], √θ[2], synth_data))
-    )
-    ℓπ_unconstrained(θ_unconstrained) = (ℓπ ∘ b)(θ_unconstrained) + logabsdetjac(b, θ_unconstrained)
-
-    ℓπ_ns(θ) = (
-        logpdf(InverseGamma(αₚ, βₚ), θ[2]) +
-        ℓpdf_N(μₚ, σₚ * √θ[2], θ[1]) +
-        sum(ℓpdf_N(θ[1], √θ[2], real_data))
-    )
-    ℓπ_ns_unconstrained(θ_unconstrained) = (ℓπ_ns ∘ b)(θ_unconstrained) + logabsdetjac(b, θ_unconstrained)
-
     ℓπ_βa(θ) = (
         logpdf(InverseGamma(αₚ, βₚ), θ[2]) +
         ℓpdf_N(μₚ, σₚ * √θ[2], θ[1]) +
@@ -120,8 +105,6 @@ function init_ahmc_gaussian_models(real_data, synth_data, w, βw, β, λ, αₚ,
     return b, OrderedDict([
         ("beta", ℓπ_β_unconstrained),
         ("weighted", ℓπ_w_unconstrained),
-        ("naive", ℓπ_unconstrained),
-        ("no_synth", ℓπ_ns_unconstrained),
         ("beta_all", ℓπ_βa_unconstrained),
         ("noise_aware", ℓπ_na_unconstrained)
     ])
@@ -195,8 +178,8 @@ function init_turing_gaussian_models(real_data, synth_data, w, βw, β, λ, α�
     return OrderedDict([
         ("beta", β_gaussian_model(real_data, synth_data, βw, β, αₚ, βₚ, μₚ, σₚ)),
         ("weighted", weighted_gaussian_model(real_data, synth_data, w, αₚ, βₚ, μₚ, σₚ)),
-        ("naive", naive_gaussian_model(real_data, synth_data, αₚ, βₚ, μₚ, σₚ)),
-        ("no_synth", no_synth_gaussian_model(real_data, αₚ, βₚ, μₚ, σₚ)),
+        # ("naive", naive_gaussian_model(real_data, synth_data, αₚ, βₚ, μₚ, σₚ)),
+        # ("no_synth", no_synth_gaussian_model(real_data, αₚ, βₚ, μₚ, σₚ)),
         ("beta_all", β_all_gaussian_model(real_data, synth_data, βw, β, αₚ, βₚ, μₚ, σₚ)),
         ("noise_aware", noise_aware_gaussian_model(real_data, synth_data, λ, αₚ, βₚ, μₚ, σₚ))
     ])
