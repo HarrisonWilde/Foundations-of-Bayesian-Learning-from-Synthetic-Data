@@ -51,10 +51,16 @@ function parse_cl()
             arg_type = String
             default = "gaussian"
             required = true
+        "--id"
+            arg_type = String
+            required = true
         "--path"
             help = "specify the path to the top of the project"
             arg_type = String
             default = "."
+        "--seed"
+            arg_type = Int
+            default = Int(round(rand() * 1e12))
         "--show_progress"
             action = :store_true
         "--iterations"

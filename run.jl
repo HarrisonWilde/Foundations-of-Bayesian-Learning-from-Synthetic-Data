@@ -4,6 +4,7 @@ using Distributed
 # @everywhere begin
 #     using Pkg; Pkg.activate("."); Pkg.instantiate()
 # end
+
 # addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])), o=string(ENV["SLURM_JOB_ID"]))
 addprocs_slurm(parse(Int, ENV["SLURM_NTASKS"]))
 println("We are all connected and ready.")
@@ -11,6 +12,7 @@ for i in workers()
     host, pid = fetch(@spawnat i (gethostname(), getpid()))
     println(host, pid)
 end
+# using Pkg; Pkg.activate("/home/dcs/csrxgb/synthetic/Project.toml")
 using AdvancedHMC
 using ArgParse
 using Bijectors
@@ -127,11 +129,13 @@ end
 function main()
 
     args = parse_cl()
-    experiment_type, path, metrics, algorithm = (
+    experiment_type, path, metrics, algorithm, base_seed, id = (
         args["experiment_type"],
         args["path"],
         args["metrics"],
-        args["algorithm"]
+        args["algorithm"],
+        args["seed"],
+        args["id"]
     )
     dataset = (
         name = args["dataset"],
@@ -176,14 +180,14 @@ function main()
         σ = args["sigma"]
     )
     config = config_dict(experiment_type, args)
-
+    Random.seed!(base_seed)
     @show args
 
     t = Dates.format(now(), "HH_MM_SS__dd_mm_yyyy")
-    out_path = "$(path)/$(experiment_type)/outputs/$(t)_$(mcmc[:sampler])"
-    plot_path = "$(path)/$(experiment_type)/plots/IN_RUN_$(t)_$(mcmc[:sampler])"
+    out_path = "$(path)/$(experiment_type)/outputs/$(id)_$(t)_$(mcmc[:sampler])"
+    # plot_path = "$(path)/$(experiment_type)/plots/IN_RUN_$(t)_$(mcmc[:sampler])"
     mkpath(out_path)
-    mkpath(plot_path)
+    # mkpath(plot_path)
 
     # Pre-load and compile Stan models
     if mcmc[:sampler] in ["CmdStan", "Stan"]
@@ -241,13 +245,13 @@ function main()
     if distributed
         @everywhere begin
             open("$($out_path)/$(myid())_out.csv", "w") do io
-                write(io, "iter,noise,model,weight,beta,real_n,synth_n,$($name_metrics)\n")
+                write(io, "seed,iter,noise,model,weight,beta,real_n,synth_n,$($name_metrics)\n")
             end
         end
     else
         begin
             open("$(out_path)/$(myid())_out.csv", "w") do io
-                write(io, "iter,noise,model,weight,beta,real_n,synth_n,$(name_metrics)\n")
+                write(io, "seed,iter,noise,model,weight,beta,real_n,synth_n,$(name_metrics)\n")
             end
         end
     end
@@ -274,7 +278,7 @@ function main()
             )
             @show c
 
-            Random.seed!(c[:i])
+            Random.seed!(base_seed + c[:i])
     
             real_data = all_real_data[c[:i], 1:c[:real_n]]
             synth_data = (
@@ -311,19 +315,18 @@ function main()
                     )
                     if rc == 0
                         chains = Array(chn)[:, 1:2]
-                        # @show mean(chains, dims=1)
                         ms = evaluate_samples(unseen_data, dgp, chains)
                     end
     
                 elseif mcmc[:sampler] == "AHMC"
     
                     # Define log posteriors and gradients of them
-                    b, models = init_ahmc_gaussian_models(
+                    @time b, models = init_ahmc_gaussian_models(
                         real_data, synth_data, c[:w], c[:w], c[:β], c[:λ], prior[:αₚ], prior[:βₚ], prior[:μₚ], prior[:σₚ]
                     )
                     model = models[c[:model]]
     
-                    chains = map(1:mcmc[:n_chains]) do i
+                    @time chains = map(1:mcmc[:n_chains]) do i
                         m = DiagEuclideanMetric(2)
                         initial_θ = rand(2)
                         hamiltonian, proposal, adaptor = setup_run(
@@ -338,28 +341,28 @@ function main()
                         )
                         chn
                     end
-                    chains = hcat(b.(vcat(chains...))...)'
+                    @time chains = hcat(b.(vcat(chains...))...)'
                     # @show mean(chains, dims=1)
-                    ms = evaluate_gaussian_samples(unseen_data, dgp, chains)
+                    @time ms = evaluate_gaussian_samples(unseen_data, dgp, chains)
     
                 elseif mcmc[:sampler] == "Turing"
     
-                    models = init_turing_gaussian_models(
+                    @time models = init_turing_gaussian_models(
                         real_data, synth_data, c[:w], c[:w], c[:β], c[:λ], prior[:αₚ], prior[:βₚ], prior[:μₚ], prior[:σₚ]
                     )
                     model = models[c[:model]]
     
-                    chains = map(1:mcmc[:n_chains]) do i
+                    @time chains = map(1:mcmc[:n_chains]) do i
                         chn = sample(model, Turing.NUTS(mcmc[:n_warmup], mcmc[:target_acceptance]), mcmc[:n_samples])
                     end
-                    ms = evaluate_gaussian_samples(unseen_data, dgp, Array(vcat(chains...)))
+                    @time ms = evaluate_gaussian_samples(unseen_data, dgp, Array(vcat(chains...)))
     
                 end
     
                 ll, kl, wass = ms["ll"], ms["kld"], ms["wass"]
     
-                open("$(out_path)/$(myid())_out.csv", "a") do io
-                    write(io, "$(c[:i]),$(c[:λ]),$(c[:model]),$(c[:w]),$(c[:β]),$(c[:real_n]),$(length(synth_data)),$(ll),$(kl),$(wass)\n")
+                @time open("$(out_path)/$(myid())_out.csv", "a") do io
+                    write(io, "$(base_seed+c[:i]),$(c[:i]),$(c[:λ]),$(c[:model]),$(c[:w]),$(c[:β]),$(c[:real_n]),$(length(synth_data)),$(ll),$(kl),$(wass)\n")
                 end
 
             else

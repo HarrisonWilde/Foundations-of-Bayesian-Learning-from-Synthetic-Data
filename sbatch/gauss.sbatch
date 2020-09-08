@@ -19,22 +19,24 @@ export JULIA_CMDSTAN_HOME=/home/dcs/csrxgb/cmdstan-2.24.1
 module purge
 module load GCC/8.3.0 Julia/1.5.1-linux-x86_64
 
+# julia --machine-file ${JULIA_MACHINEFILE} --project=@. run.jl \
 julia run.jl \
+    --id test1 \
     --experiment_type gaussian \
     --show_progress \
     --iterations 100 \
     --n_samples 10000 \
     --n_warmup 1000 \
     --n_chains 1 \
-    --sampler Turing \
-    --scales 0.5 1.5 2.0 2.5 \
-    --betas 0.125 0.25 0.375 0.5 0.625 0.75 0.875 \
-    --beta_weights 1.25 2.5 4 \
+    --sampler AHMC \
+    --scales 0.75 1.0 1.25 \
+    --betas 0.2 0.4 0.6 0.8 \
+    --beta_weights 1.25 2.5 \
     --weights 0.0 0.25 0.5 0.75 1.0 \
     --metrics ll kld wass \
     --model_names beta weighted noise_aware \
     --real_ns 5 10 25 50 100 \
-    --synth_ns 5 10 15 20 25 30 35 40 45 50 75 100 \
+    --synth_ns 0 5 10 15 20 25 30 40 50 75 100 200 \
     --n_unseen 100 \
     --algorithm basic \
     --mu 0.0 \
