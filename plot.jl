@@ -84,6 +84,7 @@ end
 function main()
 
     args = parse_cl()
+    print(split(args["path"], "/")[end][1:end-4])
     results = CSV.read(args["path"], copycols=true)
     @show args
     dropmissing!(results)
@@ -126,10 +127,11 @@ function main()
         for conf ∈ eachrow(uniques)
     ]
 
-    plot_path = replace(
+    plot_path = join([replace(
         join(split(args["path"], "/")[1:end-1], "/"),
         "outputs"=>"plots"
-    )
+    ), split(args["path"], "/")[end][1:end-4]], "/")
+    
     mkpath(plot_path)
 
     for (metric, conf, title) ∈ L
@@ -189,7 +191,6 @@ function main()
                 # label = [div for div in divergences],
                 xlabel = args["x_axis"],
                 ylabel = metric,
-                legendtitle = args["group_by"],
                 # yscale = (metric == "ll") ? :log10 : :identity
             )
             p = plot!(size=(1000, 700), legend=:outertopright)

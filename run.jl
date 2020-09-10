@@ -119,7 +119,6 @@ end
 #     "split" => 1.0,
 #     "use_ad" => false,
 #     "distributed" => true,
-#     "no_shuffle" => true,
 #     "target_acceptance" => 0.8,
 #     "mu" => 0.0,
 #     "sigma" => 2.0,
@@ -147,10 +146,9 @@ function main()
         args["folds"],
         args["split"]
     )
-    use_ad, distributed, no_shuffle, show_progress = (
+    use_ad, distributed, show_progress = (
         args["use_ad"],
         args["distributed"],
-        args["no_shuffle"],
         args["show_progress"]
     )
     mcmc = (
@@ -240,21 +238,9 @@ function main()
 
     model_configs = generate_model_configs(mcmc[:model_names], βs, βws, ws)
 
-    # Instantiate the output file aaccording to the passed MCMC config
+    # Instantiate the output file according to the passed MCMC config
     name_metrics = join(config[:metrics], ",")
-    if distributed
-        @everywhere begin
-            open("$($out_path)/$(myid())_out.csv", "w") do io
-                write(io, "seed,iter,noise,model,weight,beta,real_n,synth_n,$($name_metrics)\n")
-            end
-        end
-    else
-        begin
-            open("$(out_path)/$(myid())_out.csv", "w") do io
-                write(io, "seed,iter,noise,model,weight,beta,real_n,synth_n,$(name_metrics)\n")
-            end
-        end
-    end
+    init_csv_files(experiment_type, distributed, out_path, name_metrics)
 
     S = generate_all_steps(experiment_type, algorithm, iterations, config, model_configs)
     # @showprogress for s in S
@@ -262,6 +248,7 @@ function main()
     progress_pmap(1:size(S)[1], progress=p) do i
 
         s = S[i]
+        @show Dates.format(now(), "HH:MM:SS.ss")
 
         if experiment_type == "gaussian"
 
@@ -278,14 +265,16 @@ function main()
             )
             @show c
 
-            Random.seed!(base_seed + c[:i])
+            @time Random.seed!(base_seed + c[:i])
     
-            real_data = all_real_data[c[:i], 1:c[:real_n]]
-            synth_data = (
+            @show "Picking data"
+
+            @time real_data = all_real_data[c[:i], 1:c[:real_n]]
+            @time synth_data = (
                 all_synth_data_pre_noise[c[:i],:] +
                 rand(Laplace(0, c[:λ]), maximum(config[:synth_ns]))
             )[1:c[:synth_n]]
-            unseen_data = all_unseen_data[c[:i], :]
+            @time unseen_data = all_unseen_data[c[:i], :]
             
             if config[:algorithm] == "basic"
 
@@ -320,12 +309,16 @@ function main()
     
                 elseif mcmc[:sampler] == "AHMC"
     
+                    @show "AHMC setup"
+
                     # Define log posteriors and gradients of them
                     @time b, models = init_ahmc_gaussian_models(
                         real_data, synth_data, c[:w], c[:w], c[:β], c[:λ], prior[:αₚ], prior[:βₚ], prior[:μₚ], prior[:σₚ]
                     )
-                    model = models[c[:model]]
+                    @time model = models[c[:model]]
     
+                    @show "Sampling..."
+
                     @time chains = map(1:mcmc[:n_chains]) do i
                         m = DiagEuclideanMetric(2)
                         initial_θ = rand(2)
@@ -343,6 +336,9 @@ function main()
                     end
                     @time chains = hcat(b.(vcat(chains...))...)'
                     # @show mean(chains, dims=1)
+
+                    @show "Evaluating..."
+
                     @time ms = evaluate_gaussian_samples(unseen_data, dgp, chains)
     
                 elseif mcmc[:sampler] == "Turing"
@@ -358,9 +354,11 @@ function main()
                     @time ms = evaluate_gaussian_samples(unseen_data, dgp, Array(vcat(chains...)))
     
                 end
+
+                @time ll, kl, wass = ms["ll"], ms["kld"], ms["wass"]
     
-                ll, kl, wass = ms["ll"], ms["kld"], ms["wass"]
-    
+                @show "Writing to file below..."
+
                 @time open("$(out_path)/$(myid())_out.csv", "a") do io
                     write(io, "$(base_seed+c[:i]),$(c[:i]),$(c[:λ]),$(c[:model]),$(c[:w]),$(c[:β]),$(c[:real_n]),$(length(synth_data)),$(ll),$(kl),$(wass)\n")
                 end
@@ -616,8 +614,27 @@ function main()
             end
 
         elseif experiment_type == "logistic_regression"
-            # TODO
-            print("Not implemented")
+
+            c = (
+                i = s[1],
+                real_n = s[2],
+                synth_n = s[3],
+                n_unseen = s[4],
+                λ = s[5],
+                model = s[6][:model],
+                w = s[6][:weight],
+                β = s[6][:β],
+                metric = s[end]
+            )
+            @show c
+
+            Random.seed!(base_seed + c[:i])
+
+            X_real, y_real, X_synth, y_synth, X_valid, y_valid = fold_α(
+                real_data, synth_data, real_α, synth_α,
+                fold, folds, labels
+            )
+
         elseif experiment_type == "regression"
             # TODO
             print("Not implemented")

@@ -21,9 +21,8 @@ module load GCC/8.3.0 Julia/1.5.1-linux-x86_64
 
 # julia --machine-file ${JULIA_MACHINEFILE} --project=@. run.jl \
 julia run.jl \
-    --id test1 \
+    --id test2 \
     --experiment_type gaussian \
-    --show_progress \
     --iterations 100 \
     --n_samples 10000 \
     --n_warmup 1000 \
@@ -48,3 +47,4 @@ julia run.jl \
     --path /home/dcs/csrxgb/synthetic/ \
     --distributed
     # --calibrate_beta_weight \
+    # --show_progress \

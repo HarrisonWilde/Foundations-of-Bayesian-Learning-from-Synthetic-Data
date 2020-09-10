@@ -1,3 +1,29 @@
+
+function init_csv_files(experiment_type, distributed, out_path, name_metrics)
+        
+    if distributed
+        @everywhere begin
+            open("$($out_path)/$(myid())_out.csv", "w") do io
+                if $experiment_type == "gaussian"
+                    write(io, "seed,iter,noise,model,weight,beta,real_n,synth_n,$($name_metrics)\n")
+                elseif $experiment_type == "logistic_regression"
+                    write(io, "seed,iter,dataset,label,epsilon,model,weight,beta,real_alpha,synth_alpha,$($name_metrics)\n")
+                end
+            end
+        end
+    else
+        open("$(out_path)/$(myid())_out.csv", "w") do io
+            if experiment_type == "gaussian"
+                write(io, "seed,iter,noise,model,weight,beta,real_n,synth_n,$(name_metrics)\n")
+            elseif experiment_type == "logistic_regression"
+                write(io, "seed,iter,dataset,label,epsilon,model,weight,beta,real_alpha,synth_alpha,$(name_metrics)\n")
+            end
+        end
+    end
+
+end
+
+
 function init_stan_models(path, experiment_type, sampler, n_samples, n_warmup, n_chains, model_names, target_acceptance_rate; dist = true)
 
     tmpdir = dist ? "$(path)/tmp_$(experiment_type)_$(sampler)/" : mktempdir()

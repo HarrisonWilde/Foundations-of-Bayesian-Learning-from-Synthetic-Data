@@ -94,9 +94,6 @@ function parse_cl()
             help = "choose from AHMC, Turing and CmdStan"
             arg_type = String
             default = "Turing"
-        "--no_shuffle"
-            help = "Disable row shuffling on load of data"
-            action = :store_true
         "--betas", "-b"
             nargs = '*'
             arg_type = Float64
@@ -155,6 +152,9 @@ function parse_cl()
         "--synth_ns"
             nargs = '*'
             arg_type = Int
+        "--synth_n_range"
+            nargs = '*'
+            arg_type = Int
         "--n_unseen"
             arg_type = Int
             default = 500
@@ -189,6 +189,30 @@ function parse_cl()
 end
 
 
+function config_dict(experiment_type, args)
+
+    if experiment_type in ["logistic_regression", "regression"]
+        config = (
+            real_alphas = args["real_alphas"],
+            synth_alphas = args["synth_alphas"],
+            metrics = args["metrics"]
+        )
+    elseif experiment_type == "gaussian"
+        config = (
+            real_ns = args["real_ns"],
+            synth_ns = length(args["synth_n_range"]) == 3 ? collect(args["synth_n_range"][1]:args["synth_n_range"][2]:args["synth_n_range"][3]) : args["synth_ns"],
+            n_unseen = args["n_unseen"],
+            λs = args["scales"],
+            K = args["num_repeats"],
+            algorithm = args["algorithm"],
+            metrics = args["metrics"]
+        )
+    end
+    return config
+
+end
+
+
 function generate_model_configs(model_names, βs, βws, ws)
 
     model_pairs = vcat(
@@ -208,30 +232,6 @@ function generate_model_configs(model_names, βs, βws, ws)
             β = -1,
         ) for m ∈ model_names if m ∉ ["beta", "beta_all", "weighted"]],
     )
-
-end
-
-
-function config_dict(experiment_type, args)
-
-    if experiment_type in ["logistic_regression", "regression"]
-        config = (
-            real_alphas = args["real_alphas"],
-            synth_alphas = args["synth_alphas"],
-            folds = args["folds"]
-        )
-    elseif experiment_type == "gaussian"
-        config = (
-            real_ns = args["real_ns"],
-            synth_ns = args["synth_ns"],
-            n_unseen = args["n_unseen"],
-            λs = args["scales"],
-            K = args["num_repeats"],
-            algorithm = args["algorithm"],
-            metrics = args["metrics"]
-        )
-    end
-    return config
 
 end
 
@@ -262,12 +262,11 @@ function generate_all_steps(experiment_type, algorithm, iterations, config, mode
         #     model_configs
         # )
         S = [
-            (a, b, c, d, e)
+            (a, b, c, d)
             for a ∈ iterations
             for b ∈ config[:real_alphas]
             for c ∈ config[:synth_alphas]
-            for d ∈ config[:folds]
-            for e ∈ model_configs
+            for d ∈ model_configs
         ]
     else
         if (experiment_type == "gaussian") & (algorithm != "basic")
