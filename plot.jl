@@ -67,7 +67,7 @@ function concat(result)
 end
 
 # args = Dict(
-#     "path" => "from_cluster/gaussian/outputs/Pull1/out.csv",
+#     "path" => "from_cluster/gaussian/outputs/final_csvs/granular1.csv",
 #     "x_axis" => "synth_n",
 #     "group_by" => "model",
 #     "loop" => ["noise", "real_n"],
@@ -88,6 +88,9 @@ function main()
     results = CSV.read(args["path"], copycols=true)
     @show args
     dropmissing!(results)
+    unique_n_pairs = unique(results[[:real_n, :synth_n]])
+    exclude_real_ns = [n for n ∈ unique(results[:real_n]) if length(unique(filter(row -> row[:real_n] == n, results)[:synth_n])) <= 1]
+    results = filter(row -> row[:real_n] ∉ exclude_real_ns, results)
     # mapcols(col -> replace!(col, -1.0=>NaN), results)
 
     # Filter data according to flags

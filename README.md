@@ -36,6 +36,30 @@ It is likely that I will make the exact synthetic datasets available in some way
 
 Note that the `iterations` option is to facilitate the running of this code numerous times to account for noise in the MCMC process and stochasticity introduced through carrying out cross validation in the Bayesian setting, it is not required for general use of this code. Similarly, `distributed` allows for the code to run on a cluster using the SLURM workload manager, allowing for massive parallelisation of tasks amongst the code.
 
+## Plotting Results
+
+There is a relatively flexible framework for plotting the results of our experiments. That framework is includede in this repository in the interest of transparency and to hopefully encourage further exploration with different models and datasets. Some example plotting commands:
+
+- To plot what we call a "branch" plot illustrating model performance as synthetic data varies under various fixed real data amounts.
+
+```
+julia --project=@. plot.jl \
+--path "from_cluster/gaussian/outputs/final_csvs/grid1.csv" \
+--x_axis n \
+--loop noise weight beta model
+```
+
+- To plot log loss and KLD metrics against the amount of synthetic data across all model configurations
+
+```
+julia --project=@. plot.jl \
+--path "from_cluster/gaussian/outputs/final_csvs/grid1.csv" \
+--x_axis synth_n \
+--loop noise real_n \
+--metrics ll kld
+--group_by model
+```
+
 ## Known Issues
 
 There is a requirement that a user must edit `matplotlib`'s `font_manager.py` to get multiprocessing to work correctly in the Python code on Mac OS Catalina. This is an issue on Python's end, not with the code, so no fix is possible on my end until they act upon the issue raised. Change:

@@ -4,7 +4,7 @@ library(dplyr)
 library(tidyverse)
 
 
-path <- "from_cluster/gaussian/outputs/final_csvs/granular1.csv"
+path <- "from_cluster/gaussian/outputs/final_csvs/granular2.csv"
 metrics <- c("kld", "ll", "wass")
 out_path <- str_remove(str_replace(paste(str_split(path, "/")[[1]][-4], collapse="/"), "outputs", "plots"), ".csv")
 dir.create(out_path)
