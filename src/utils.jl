@@ -152,6 +152,9 @@ function parse_cl()
         "--synth_ns"
             nargs = '*'
             arg_type = Int
+        "--real_n_range"
+            nargs = '*'
+            arg_type = Int
         "--synth_n_range"
             nargs = '*'
             arg_type = Int
@@ -195,11 +198,12 @@ function config_dict(experiment_type, args)
         config = (
             real_alphas = args["real_alphas"],
             synth_alphas = args["synth_alphas"],
+            folds = args["folds"],
             metrics = args["metrics"]
         )
     elseif experiment_type == "gaussian"
         config = (
-            real_ns = args["real_ns"],
+            real_ns = length(args["real_n_range"]) == 3 ? collect(args["real_n_range"][1]:args["real_n_range"][2]:args["real_n_range"][3]) : args["real_ns"],
             synth_ns = length(args["synth_n_range"]) == 3 ? collect(args["synth_n_range"][1]:args["synth_n_range"][2]:args["synth_n_range"][3]) : args["synth_ns"],
             n_unseen = args["n_unseen"],
             λs = args["scales"],
@@ -262,11 +266,12 @@ function generate_all_steps(experiment_type, algorithm, iterations, config, mode
         #     model_configs
         # )
         S = [
-            (a, b, c, d)
+            (a, b, c, d, e)
             for a ∈ iterations
             for b ∈ config[:real_alphas]
             for c ∈ config[:synth_alphas]
-            for d ∈ model_configs
+            for d ∈ [i for i ∈ 0:(config[:folds]-1)]
+            for e ∈ model_configs
         ]
     else
         if (experiment_type == "gaussian") & (algorithm != "basic")

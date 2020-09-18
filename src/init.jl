@@ -7,7 +7,7 @@ function init_csv_files(experiment_type, distributed, out_path, name_metrics)
                 if $experiment_type == "gaussian"
                     write(io, "seed,iter,noise,model,weight,beta,real_n,synth_n,$($name_metrics)\n")
                 elseif $experiment_type == "logistic_regression"
-                    write(io, "seed,iter,dataset,label,epsilon,model,weight,beta,real_alpha,synth_alpha,$($name_metrics)\n")
+                    write(io, "seed,iter,fold,dataset,label,epsilon,model,weight,beta,real_alpha,synth_alpha,$($name_metrics)\n")
                 end
             end
         end
@@ -16,7 +16,7 @@ function init_csv_files(experiment_type, distributed, out_path, name_metrics)
             if experiment_type == "gaussian"
                 write(io, "seed,iter,noise,model,weight,beta,real_n,synth_n,$(name_metrics)\n")
             elseif experiment_type == "logistic_regression"
-                write(io, "seed,iter,dataset,label,epsilon,model,weight,beta,real_alpha,synth_alpha,$(name_metrics)\n")
+                write(io, "seed,iter,fold,dataset,label,epsilon,model,weight,beta,real_alpha,synth_alpha,$(name_metrics)\n")
             end
         end
     end
@@ -167,33 +167,9 @@ function init_ahmc_logistic_models(X_real, y_real, X_synth, y_synth, σ, w, βw,
         ∇ℓpdf_BL(yX_real, θ) +
         w * ∇ℓpdf_BL(yX_synth, θ)
     )
-
-    ℓπ(θ) = (
-        ℓpdf_MvNorm(σ, θ) +
-        sum(ℓpdf_BL.(yX_real * θ)) +
-        sum(ℓpdf_BL.(yX_synth * θ))
-    )
-    ∇ℓπ(θ) = (
-        ℓπ(θ),
-        ∇ℓpdf_MvNorm(σ, θ) +
-        ∇ℓpdf_BL(yX_real, θ) +
-        ∇ℓpdf_BL(yX_synth, θ)
-    )
-
-    ℓπ_ns(θ) = (
-        ℓpdf_MvNorm(σ, θ) +
-        sum(ℓpdf_BL.(yX_real * θ))
-    )
-    ∇ℓπ_ns(θ) = (
-        ℓπ_ns(θ),
-        ∇ℓpdf_MvNorm(σ, θ) +
-        ∇ℓpdf_BL(yX_real, θ)
-    )
     return OrderedDict([
         ("beta", log_posterior_gradient_pair(ℓπ_β, ∇ℓπ_β)),
-        ("weighted", log_posterior_gradient_pair(ℓπ_w, ∇ℓπ_w)),
-        ("naive", log_posterior_gradient_pair(ℓπ, ∇ℓπ)),
-        ("no_synth", log_posterior_gradient_pair(ℓπ_ns, ∇ℓπ_ns))
+        ("weighted", log_posterior_gradient_pair(ℓπ_w, ∇ℓπ_w))
     ])
 
 end
@@ -204,8 +180,6 @@ function init_turing_gaussian_models(real_data, synth_data, w, βw, β, λ, α�
     return OrderedDict([
         ("beta", β_gaussian_model(real_data, synth_data, βw, β, αₚ, βₚ, μₚ, σₚ)),
         ("weighted", weighted_gaussian_model(real_data, synth_data, w, αₚ, βₚ, μₚ, σₚ)),
-        # ("naive", naive_gaussian_model(real_data, synth_data, αₚ, βₚ, μₚ, σₚ)),
-        # ("no_synth", no_synth_gaussian_model(real_data, αₚ, βₚ, μₚ, σₚ)),
         ("beta_all", β_all_gaussian_model(real_data, synth_data, βw, β, αₚ, βₚ, μₚ, σₚ)),
         ("noise_aware", noise_aware_gaussian_model(real_data, synth_data, λ, αₚ, βₚ, μₚ, σₚ))
     ])
@@ -216,9 +190,7 @@ function init_turing_logistic_models(X_real, y_real, X_synth, y_synth, σ, w, β
 
     return OrderedDict([
         ("beta", β_logistic_model(X_real, X_synth, y_real, y_synth, θ_dim, σ, β, βw)),
-        ("weighted", weighted_logistic_model(X_real, X_synth, y_real, y_synth, θ_dim, σ, w)),
-        ("naive", naive_logistic_model(X_real, X_synth, y_real, y_synth, θ_dim, σ)),
-        ("no_synth", no_synth_logistic_model(X_real, y_real, θ_dim, σ))
+        ("weighted", weighted_logistic_model(X_real, X_synth, y_real, y_synth, θ_dim, σ, w))
     ])
 
 end
@@ -273,7 +245,7 @@ end
 """
 Define the mass matrix, make an initial guess at θ at the MLE using MLJ's LogiticRegression and calibrate βw
 """
-function init_run(λ, X_real, y_real, β; use_zero_init=false)
+function init_run(λ, X_real, y_real; use_zero_init=false)
 
     # initial guess at θ
     if use_zero_init
