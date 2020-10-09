@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --tasks-per-node=28
-#SBATCH --mem-per-cpu=4571
-#SBATCH --time=48:00:00
+#SBATCH --mem-per-cpu=4000
+#SBATCH --time=120:00:00
 #SBATCH -o slurm.%N.%j.out # STDOUT
 #SBATCH -e slurm.%N.%j.err # STDERR
 #SBATCH --mail-type=ALL
@@ -13,29 +13,27 @@
 # srun bash -c hostname > $JULIA_MACHINEFILE
 # sed -i 's/^[[:alnum:]]*/&-ib/g' $JULIA_MACHINEFILE
 
-export JULIA_PROJECT=/home/dcs/csrxgb/synthetic/Project.toml
+export JULIA_PROJECT=/home/harrywilde/synthetic/Project.toml
 export JULIA_CMDSTAN_HOME=/home/dcs/csrxgb/cmdstan-2.24.1
 
-module purge
-module load GCCcore/8.3.0 GCC/8.3.0 Julia/1.5.1-linux-x86_64
-
 # julia --machine-file ${JULIA_MACHINEFILE} --project=@. run.jl \
-julia run.jl \
-    --id neff1 \
+/home/harrywilde/julia-1.5.2/bin/julia run.jl \
+    --id neff_final \
     --experiment_type gaussian \
     --iterations 100 \
-    --n_samples 2500 \
+    --n_samples 4500 \
     --n_warmup 500 \
     --n_chains 1 \
     --sampler AHMC \
-    --scales 1.0 0.75 \
-    --betas 0.8 0.5 \
+    --scales 0.75 1.0 \
+    --betas 0.8 0.5 0.2 \
     --beta_weights 1.25 \
     --weights 1.0 0.5 0.0 \
     --metrics ll kld wass \
-    --model_names beta weighted noise_aware \
-    --real_n_range 1 1 200 \
-    --synth_ns 0 \
+    --model_names beta weighted noise_aware resampled \
+    --real_ns 2 4 6 8 10 13 16 19 22 25 30 35 40 50 75 100 \
+    --synth_ns 120 140 160 180 200 \
+    --synth_n_range 0 1 100 \
     --n_unseen 500 \
     --algorithm basic \
     --mu 0.0 \
@@ -44,7 +42,7 @@ julia run.jl \
     --sigma_p 30.0 \
     --alpha_p 2.0 \
     --beta_p 4.0 \
-    --path /home/dcs/csrxgb/synthetic/ \
+    --path /home/harrywilde/synthetic/ \
     --distributed
     # --calibrate_beta_weight \
     # --show_progress \

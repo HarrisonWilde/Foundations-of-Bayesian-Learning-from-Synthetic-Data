@@ -12,7 +12,8 @@ data {
     real<lower=0> w;
     real beta;
     real<lower=0> beta_w;
-    int flag;
+    int flag_real;
+    int flag_synth;
 
 }
 
@@ -24,6 +25,13 @@ parameters {
 
 }
 
+transformed parameters {
+
+    vector[b] logistic_xtheta;
+    logistic_xtheta = inv_logit(alpha + X_synth * coefs);
+
+}
+
 model {
 
     // Uninformative priors
@@ -31,20 +39,21 @@ model {
     coefs ~ normal(0, 50);
 
     // The likelihood
-    target += bernoulli_logit_glm_lpmf(y_real | X_real, alpha, coefs);
-    if (flag == 0) {
+    if (flag_real == 0) {
+        target += bernoulli_logit_glm_lpmf(y_real | X_real, alpha, coefs);
+    }
+    if (flag_synth == 0) {
         for (i in 1:b) {
             target += beta_w * (
-                (1 / beta) * exp(bernoulli_logit_glm_lpmf(y_synth | X_synth[i], alpha, coefs)) ^ (beta) -
-                (1 / (beta + 1)) * (
-                    inv_logit(alpha + X_synth[i] * coefs) ^ (beta + 1) +
-                    (1 - inv_logit(alpha + X_synth[i] * coefs)) ^ (beta + 1)
-                )
+                (1 / beta) * (logistic_xtheta[i] ^ y_synth[i] + (1 - logistic_xtheta[i]) ^ (1 - y_synth[i])) ^ (beta) -
+                (1 / (beta + 1)) * (logistic_xtheta[i] ^ (beta + 1) + (1 - logistic_xtheta[i]) ^ (beta + 1))
             );
         }
     }
 
 }
+
+
 //
 // generated quantities {
 //

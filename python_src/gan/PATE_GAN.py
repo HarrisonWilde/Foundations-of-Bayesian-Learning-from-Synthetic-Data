@@ -1,9 +1,3 @@
-'''
-Jinsung Yoon (0*/13/2018)
-PATEGAN
-'''
-
-# Packages
 import tensorflow.compat.v1 as tf
 import numpy as np
 import os
@@ -12,10 +6,10 @@ tf.disable_v2_behavior()
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
-# Function Start
 def PATE_GAN(X_train, Y_train, X_test, Y_test, epsilon, delta, niter, num_teachers, no_split):
 
     # Parameters
+
     # Batch size
     mb_size = 128
 
@@ -39,21 +33,16 @@ def PATE_GAN(X_train, Y_train, X_test, Y_test, epsilon, delta, niter, num_teache
 
     lamda = np.sqrt(2 * np.log(1.25 * (10 ^ (delta)))) / epsilon
 
-    # %% Data Preprocessing
+    # Data Preprocessing
     X_train = np.asarray(X_train)
 
-    # %% Data Normalization
+    # Data Normalization
     Min_Val = np.min(X_train, 0)
-
     X_train = X_train - Min_Val
-
     Max_Val = np.max(X_train, 0)
-
     X_train = X_train / (Max_Val + 1e-8)
 
-    # %% Algorithm Start
-
-    # %% Necessary Functions
+    # Algorithm Start
 
     # Xavier Initialization Definition
     def xavier_init(size):
@@ -68,8 +57,6 @@ def PATE_GAN(X_train, Y_train, X_test, Y_test, epsilon, delta, niter, num_teache
     # Sample from the real data
     def sample_X(m, n):
         return np.random.permutation(m)[:n]
-
-    # %% Placeholder
 
     # Feature
     X = tf.placeholder(tf.float32, shape=[None, X_dim])
@@ -93,7 +80,6 @@ def PATE_GAN(X_train, Y_train, X_test, Y_test, epsilon, delta, niter, num_teache
     theta_D = [D_W1, D_W2, D_W3, D_b1, D_b2, D_b3]
 
     # Generator
-
     G_W1 = tf.Variable(xavier_init([z_dim + C_dim, h_dim]))
     G_b1 = tf.Variable(tf.zeros(shape=[h_dim]))
 
@@ -107,6 +93,7 @@ def PATE_GAN(X_train, Y_train, X_test, Y_test, epsilon, delta, niter, num_teache
 
     # Functions
     def generator(z, y):
+
         inputs = tf.concat([z, y], axis=1)
         G_h1 = tf.nn.tanh(tf.matmul(inputs, G_W1) + G_b1)
         G_h2 = tf.nn.tanh(tf.matmul(G_h1, G_W2) + G_b2)
@@ -115,6 +102,7 @@ def PATE_GAN(X_train, Y_train, X_test, Y_test, epsilon, delta, niter, num_teache
         return G_log_prob
 
     def discriminator(x, y):
+
         inputs = tf.concat([x, y], axis=1)
         D_h1 = tf.nn.relu(tf.matmul(inputs, D_W1) + D_b1)
         D_h2 = tf.nn.relu(tf.matmul(D_h1, D_W2) + D_b2)
@@ -126,7 +114,6 @@ def PATE_GAN(X_train, Y_train, X_test, Y_test, epsilon, delta, niter, num_teache
     G_sample = generator(Z, Y)
     D_real = discriminator(X, Y)
     D_fake = discriminator(G_sample, Y)
-
     D_entire = tf.concat(axis=0, values=[D_real, D_fake])
 
     # Replacement of Clipping algorithm to Penalty term
@@ -167,15 +154,12 @@ def PATE_GAN(X_train, Y_train, X_test, Y_test, epsilon, delta, niter, num_teache
 
             M_real = np.ones([mb_size, ])
             M_fake = np.zeros([mb_size, ])
-
             M_entire = np.concatenate((M_real, M_fake), 0)
 
             Normal_Add = np.random.normal(loc=0.0, scale=lamda, size=mb_size * 2)
 
             M_entire = M_entire + Normal_Add
-
             M_entire = (M_entire > 0.5)
-
             M_mb = np.reshape(M_entire.astype(float), (2 * mb_size, 1))
 
             _, D_loss_curr = sess.run([D_solver, D_loss], feed_dict={X: X_mb, Z: Z_mb, M: M_mb, Y: Y_mb})

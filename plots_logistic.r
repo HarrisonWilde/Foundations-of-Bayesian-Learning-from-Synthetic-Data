@@ -11,15 +11,26 @@ format_metric <- function(str) {
         return("Wasserstein Distance")
     } else if (str == "ll") {
         return("Log Score")
+    } else if (str == "param_mse") {
+        return("Total Parameter Posterior Squared Distance")
+    } else if (str == "auc") {
+        return("AUROC")
     } else {
         return("No Formatting Given for this Metric")
     }
 }
 
+gg_color_hue <- function(n) {
+    hues = seq(15, 375, length = n + 1)
+    hcl(h = hues, l = 65, c = 100)[1:n]
+}
 
-path <- "from_cluster/gaussian/outputs/final_csvs/neff.csv"
-# path <- "gaussian/outputs/noise_demo.csv"
-metrics <- c("kld", "ll", "wass")
+
+path <- "from_cluster/logistic_regression/outputs/final_csvs/grid_framingham_eps0p01.csv"
+# path <- "from_cluster/gaussian/outputs/final_csvs/neff.csv"
+# path <- "gaussian/outputs/fn50.csv"
+# metrics <- c("kld", "ll", "wass")
+metrics <- c("auc", "ll", "param_mse")
 out_path <- str_remove(str_replace(paste(str_split(path, "/")[[1]][-4], collapse="/"), "outputs", "plots"), ".csv")
 dir.create(out_path)
 
@@ -34,109 +45,90 @@ data <- data %>%
     mutate(model_full = ifelse(model == "noise_aware", model, ifelse(model == "beta", paste0(model, "_", weight, "_", beta), paste0(model, "_", weight)))) %>% 
     select(-c(model, beta, weight))
 
-real_ns = c(2, 4, 6, 8, 10, 13, 16, 19, 22, 25, 30, 35, 40, 50, 75, 100)
+# real_ns = c(2, 4, 6, 8, 10, 13, 16, 19, 22, 25, 30, 35, 40, 50, 75, 100)
 
-data_without_reals <- data %>% filter(real_n %in% real_ns)
+# data_without_reals <- data %>% filter(real_n %in% real_ns)
 
-
-
-
-
-
-
-# unique_branches <- distinct(select(data_without_reals, c(noise, model_full)))
-
-# for (i in 1:nrow(unique_branches)) {
-#     ub <- unique_branches[i,]
-#     fdf_wr <- data_without_reals %>%
-#         filter(noise == ub[["noise"]], model_full == ub[["model_full"]])
-#     fdf <- data %>%
-#         filter(noise == ub[["noise"]], model_full == ub[["model_full"]], synth_n == 0)
-#     for (metric in metrics) {
-#         metric_sym <- sym(metric)
-#         p <- ggplot() +
-#             geom_smooth(data=fdf_wr, aes(x=real_n + synth_n, color=as.factor(real_n), y=!!metric_sym)) +
-#             geom_smooth(data=fdf, aes(x=real_n, y=!!metric_sym)) +
-#             labs(x="Total Samples", y=format_metric(metric))
-#         ggsave(paste0(out_path, "/branched___", metric, "__noise_", ub[["noise"]], "__model_full_", ub[["model_full"]], ".png"), p)
-#     }
-# }
 
 conf_interval <- 0.95
 
-branching_df <- data_without_reals %>%
-    group_by(noise, real_n, synth_n, model_full) %>%
+branching_df <- data %>%
+    group_by(real_alpha, synth_alpha, model_full) %>%
     summarise(
-        exp_ll = mean(ll), exp_wass = mean(wass), exp_kld = mean(kld),
-        ns = n(), se_ll = sd(ll) / sqrt(n()), se_wass = sd(wass) / sqrt(n()), se_kld = sd(kld) / sqrt(n()), 
+        exp_ll = mean(ll), exp_auc = mean(auc), exp_param_mse = mean(param_mse),
+        ns = n(), se_ll = sd(ll) / sqrt(n()), se_auc = sd(auc) / sqrt(n()), se_param_mse = sd(param_mse) / sqrt(n()), 
         .groups="drop"
     ) %>%
     mutate(
         ci_ll = qt(conf_interval / 2 + .5, ns - 1) * se_ll,
-        ci_wass = qt(conf_interval / 2 + .5, ns - 1) * se_wass,
-        ci_kld = qt(conf_interval / 2 + .5, ns - 1) * se_kld
+        ci_auc = qt(conf_interval / 2 + .5, ns - 1) * se_auc,
+        ci_param_mse = qt(conf_interval / 2 + .5, ns - 1) * se_param_mse
     )
 
-unique_branches <- distinct(select(branching_df, c(noise, model_full)))
+unique_branches <- distinct(select(branching_df, c(model_full)))
 
 for (i in 1:nrow(unique_branches)) {
 
     vars <- unique_branches[i,]
     plot_df <- branching_df %>%
         filter(
-            noise == vars[["noise"]],
             model_full == vars[["model_full"]]
-        )
+        ) %>%
+        mutate(real_factor = factor(real_alpha))
     plot_df_r <- branching_df %>%
         filter(
-            synth_n == 0,
-            noise == vars[["noise"]],
+            synth_alpha == 0,
             model_full == vars[["model_full"]]
         )
+    
+    # hues <- c(gg_color_hue(nrow(distinct(select(plot_df, real_alpha)))), "black")
+
     for (metric in metrics) {
         plot_df <- plot_df %>% mutate(
             exp_metric = !!sym(paste0("exp_", metric)),
-            ci_low_metric = !!sym(paste0("exp_", metric)) - !!(sym(paste0("se_", metric))),
-            ci_high_metric = !!sym(paste0("exp_", metric)) + !!(sym(paste0("se_", metric))),
+            ci_low_metric = !!sym(paste0("exp_", metric)) - !!(sym(paste0("ci_", metric))),
+            ci_high_metric = !!sym(paste0("exp_", metric)) + !!(sym(paste0("ci_", metric))),
         )
         plot_df_r <- plot_df_r %>% mutate(
             exp_metric = !!sym(paste0("exp_", metric)),
-            ci_low_metric = !!sym(paste0("exp_", metric)) - !!(sym(paste0("se_", metric))),
-            ci_high_metric = !!sym(paste0("exp_", metric)) + !!(sym(paste0("se_", metric))),
+            ci_low_metric = !!sym(paste0("exp_", metric)) - !!(sym(paste0("ci_", metric))),
+            ci_high_metric = !!sym(paste0("exp_", metric)) + !!(sym(paste0("ci_", metric))),
         )
         p <- ggplot() +
-            geom_errorbar(data=plot_df_r, aes(x=real_n, y=exp_metric, ymin=ci_low_metric, ymax=ci_high_metric), alpha=0.5) +
-            geom_errorbar(data=plot_df, aes(x=real_n + synth_n, y=exp_metric, ymin=ci_low_metric, ymax=ci_high_metric, color=as.factor(real_n)), alpha=0.5) +
-            geom_line(data=plot_df_r, aes(x=real_n, y=exp_metric)) +
-            geom_line(data=plot_df, aes(x=real_n + synth_n, y=exp_metric, color=as.factor(real_n))) +
-            # scale_y_log10() +
-            labs(x="Total Samples (Real N + Synth N)", y=format_metric(metric), color="Number of\nReal Samples")
-        ggsave(paste0(out_path, "/branched___", metric, "__noise_", vars[["noise"]], "__model_full_", vars[["model_full"]], ".png"), p, dpi=320, height=8, width=11)
+            geom_errorbar(data=plot_df_r, aes(x=100 * real_alpha, y=exp_metric, ymin=ci_low_metric, ymax=ci_high_metric), alpha=0.5) +
+            geom_errorbar(data=plot_df, aes(x=100 * (real_alpha + synth_alpha), y=exp_metric, ymin=ci_low_metric, ymax=ci_high_metric, color=reorder(factor(real_alpha * 100), sort(real_alpha))), alpha=0.5) +
+            geom_line(data=plot_df_r, aes(x=100 * real_alpha, y=exp_metric)) +
+            geom_line(data=plot_df, aes(x=100 * (real_alpha + synth_alpha), y=exp_metric, color=reorder(factor(real_alpha * 100), sort(real_alpha)))) +
+            labs(x="Total Dataset Utilisation (Real % + Synth %)", y=format_metric(metric), color="% of Real\nDataset Used") +
+            # scale_color_manual(values=hues) +
+            ggtitle(paste0("Real and Synthetic dataset utilisation mixes for ", vars[["model_full"]], " in terms of ", format_metric(metric)))
+
+        ggsave(paste0(out_path, "/branched___", metric, "__model_full_", vars[["model_full"]], ".png"), p)
     }
 
 }
 
-unique_branches <- distinct(select(branching_df, c(noise, real_n)))
+unique_branches <- distinct(select(branching_df, c(real_alpha)))
 
 for (i in 1:nrow(unique_branches)) {
 
     vars <- unique_branches[i,]
     plot_df <- branching_df %>%
         filter(
-            noise == vars[["noise"]],
-            real_n == vars[["real_n"]]
+            real_alpha == vars[["real_alpha"]]
         )
     for (metric in metrics) {
         plot_df <- plot_df %>% mutate(
             exp_metric = !!sym(paste0("exp_", metric)),
-            ci_low_metric = !!sym(paste0("exp_", metric)) - !!(sym(paste0("se_", metric))),
-            ci_high_metric = !!sym(paste0("exp_", metric)) + !!(sym(paste0("se_", metric))),
+            ci_low_metric = !!sym(paste0("exp_", metric)) - !!(sym(paste0("ci_", metric))),
+            ci_high_metric = !!sym(paste0("exp_", metric)) + !!(sym(paste0("ci_", metric))),
         )
         p <- ggplot() +
-            geom_errorbar(data=plot_df, aes(x=synth_n, y=exp_metric, ymin=ci_low_metric, ymax=ci_high_metric, color=as.factor(model_full)), alpha=0.5) +
-            geom_line(data=plot_df, aes(x=synth_n, y=exp_metric, color=as.factor(model_full))) +
-            labs(x="Number of Synthetic Samples", y=format_metric(metric))
-        ggsave(paste0(out_path, "/branched_fix_real___", metric, "__noise_", vars[["noise"]], "__real_n_", vars[["real_n"]], ".png"), p, dpi=320, height=8, width=11)
+            geom_errorbar(data=plot_df, aes(x=100 * synth_alpha, y=exp_metric, ymin=ci_low_metric, ymax=ci_high_metric, color=as.factor(model_full)), alpha=0.5) +
+            geom_line(data=plot_df, aes(x=100 * synth_alpha, y=exp_metric, color=as.factor(model_full))) +
+            labs(x="Synthetic Dataset % Used", y=format_metric(metric)) +
+            ggtitle(paste0("Model config comparisons for ", format_metric(metric), " with ", vars[["real_alpha"]] * 100, "% real dataset utilisation"))
+        ggsave(paste0(out_path, "/branched_fix_real___", metric, "__real_alpha_", vars[["real_alpha"]], ".png"), p)
     }
 
 }
@@ -213,7 +205,7 @@ for (i in 1:nrow(unique_plotting_data)) {
             gather(order, metric, 2:3)
         p <- ggplot(pd, aes(x=real_n, y=metric)) + 
             geom_line(aes(color=order)) +
-            labs(x="Number of Real Samples", y=format_metric(vals[3])) +
+            labs(x="Real Number of Samples", y=vals[3]) +
             ggtitle(as.character(vals))
         ggsave(paste0(out_path, "/exp_min__model_", vals[1], "__noise_", vals[2], "__metric_", vals[3], ".png"), p)
         
@@ -224,7 +216,7 @@ for (i in 1:nrow(unique_plotting_data)) {
             gather(order, metric, 2:3)
         p <- ggplot(pd, aes(x=real_n, y=metric)) + 
             geom_line(aes(color=order)) +
-            labs(x="Number of Real Samples", y="Number of Synthetic Samples") +
+            labs(x="Real Number of Samples", y=vals[3]) +
             ggtitle(as.character(vals))
         ggsave(paste0(out_path, "/exp_min_n__model_", vals[1], "__noise_", vals[2], "__metric_", vals[3], ".png"), p)
 
@@ -261,13 +253,6 @@ for (i in 1:nrow(distinct(select(spag_data, c(model_full, real_n, noise))))) {
     }
 
 }
-
-
-
-# Bootstrap NEFF plots
-
-n <- 100
-B <- 50
 
 
 
@@ -315,83 +300,3 @@ for (i in 1:nrow(distinct(select(min_exp_data, noise)))) {
     }
 }
 
-
-
-
-
-
-
-
-
-
-mean_df <- data %>%
-    group_by(noise, model, alpha, weight, real_n, synth_n) %>%
-    summarise(
-        ll = mean(ll),
-        kld = mean(kld),
-        wass = mean(wass),
-        .groups="drop"
-    )
-
-plotting_df <- mean_df %>%
-    group_by(noise, model, real_n, synth_n) %>%
-    summarise(
-        ll_val = min(ll),
-        kld_val = min(kld),
-        wass_val = min(wass),
-        ll = alpha[which.min(ll)],
-        kld = alpha[which.min(ll)],
-        wass = alpha[which.min(ll)],
-        .groups="drop"
-    )
-
-
-groups <- distinct(select(plotting_df, c(noise, model, real_n)))
-
-for (i in 1:nrow(groups)) {
-    row <- groups[i,]
-    plot_df_1 <- plotting_df %>%
-        filter(noise == row[["noise"]], model == row[["model"]], real_n == row[["real_n"]])
-    plot_df_2 <- mean_df %>%
-        mutate(synth_n = as.factor(synth_n)) %>%
-        filter(noise == row[["noise"]], model == row[["model"]], real_n == row[["real_n"]])
-    for (metric in metrics) {
-        p <- ggplot(plot_df_1, aes_string(x="synth_n", y=metric)) +
-            geom_smooth() +
-            geom_jitter(aes_string(color=paste0(metric, "_val"))) + ylab("Alpha")
-        ggsave(paste0(out_path, "/alpha__real_n_", row[["real_n"]], "__noise_", row[["noise"]], "__metric_", metric, ".png"), p)
-        p <- ggplot(plot_df_2, aes_string(x="alpha", y=metric, colour="synth_n")) + geom_line()
-        ggsave(paste0(out_path, "/cross_sectional__real_n_", row[["real_n"]], "__noise_", row[["noise"]], "__metric_", metric, ".png"), p)
-    }
-}
-
-
-
-
-
-
-
-# EPSILON DEMONSTRATIONS PLOTS
-
-grouped_data <- data %>% 
-    group_by(epsilon, real_n, synth_n) %>%
-    summarise(ll = mean(ll), kld = mean(kld), wass = mean(wass))
-
-real_baseline_100 <- grouped_data %>% filter(real_n == 100, synth_n == 0)
-real_baseline_10 <- grouped_data %>% filter(real_n == 10, synth_n == 0)
-synth_total_100 <- grouped_data %>% filter(synth_n == 100, real_n == 0)
-synth_total_10 <- grouped_data %>% filter(synth_n == 10, real_n == 0)
-synth_best <- grouped_data %>% filter(real_n == 0, synth_n > 0) %>% group_by(epsilon) %>% summarise(ll = min(ll), kld = min(kld), wass = min(wass))
-
-breaks <- 10^(-2:3)
-minor_breaks <- rep(1:9, 6)*(10^rep(-2:3, each=9))
-
-ggplot() +
-    geom_line(data = real_baseline_100, aes(x=epsilon, y=ll, color="N = 100", linetype="Real")) +
-    geom_line(data = real_baseline_10, aes(x=epsilon, y=ll, color="N = 10", linetype="Real")) +
-    geom_line(data = synth_total_100, aes(x=epsilon, y=ll, color="N = 100", linetype="Synthetic")) +
-    geom_line(data = synth_total_10, aes(x=epsilon, y=ll, color="N = 10", linetype="Synthetic")) +
-    geom_line(data = synth_best, aes(x=epsilon, y=ll, color="N = Optimal", linetype="Synthetic")) +
-    scale_x_log10(breaks = breaks, minor_breaks = minor_breaks) +
-    scale_y_log10(breaks = breaks, minor_breaks = minor_breaks) +
-    annotation_logticks()

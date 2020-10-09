@@ -21,31 +21,31 @@ module load GCC/8.3.0 Julia/1.5.1-linux-x86_64
 
 # julia --machine-file ${JULIA_MACHINEFILE} --project=@. run.jl \
 julia run.jl \
-    --id granular2 \
+    --id neff_final \
     --experiment_type gaussian \
-    --iterations 200 \
-    --n_samples 10000 \
-    --n_warmup 1000 \
+    --iterations 100 \
+    --n_samples 4500 \
+    --n_warmup 500 \
     --n_chains 1 \
     --sampler AHMC \
     --scales 0.75 1.0 \
-    --betas 0.8 0.6 \
+    --betas 0.8 0.5 0.2 \
     --beta_weights 1.25 \
     --weights 1.0 0.5 0.0 \
     --metrics ll kld wass \
-    --model_names beta weighted noise_aware \
-    --real_ns 5 10 15 20 25 50 100 \
-    --synth_n_range 0 2 120 \
-    --n_unseen 100 \
+    --model_names beta weighted noise_aware resampled \
+    --real_ns 2 4 6 8 10 13 16 19 22 25 30 35 40 50 75 100 \
+    --synth_ns 120 140 160 180 200 \
+    --synth_n_range 0 1 100 \
+    --n_unseen 500 \
     --algorithm basic \
     --mu 0.0 \
     --sigma 1.0 \
-    --mu_p 1.0 \
-    --sigma_p 10.0 \
+    --mu_p 3.0 \
+    --sigma_p 30.0 \
     --alpha_p 2.0 \
     --beta_p 4.0 \
     --path /home/dcs/csrxgb/synthetic/ \
     --distributed
-    # --synth_ns 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 20 25 30 40 50 75 100 200 \
     # --calibrate_beta_weight \
     # --show_progress \

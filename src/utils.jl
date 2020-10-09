@@ -128,7 +128,13 @@ function parse_cl()
         "--real_alphas"
             nargs = '*'
             arg_type = Float64
+        "--real_alpha_range"
+            nargs = '*'
+            arg_type = Float64
         "--synth_alphas"
+            nargs = '*'
+            arg_type = Float64
+        "--synth_alpha_range"
             nargs = '*'
             arg_type = Float64
         "--folds"
@@ -164,6 +170,12 @@ function parse_cl()
         "--algorithm"
             arg_type = String
             default = "golden"
+        "--alphas"
+            arg_type = Float64
+            nargs = '*'
+        "--fn"
+            arg_type = Int
+            default = 0
         ### Golden Section specific
         "--num_repeats"
             arg_type = Int
@@ -196,18 +208,17 @@ function config_dict(experiment_type, args)
 
     if experiment_type in ["logistic_regression", "regression"]
         config = (
-            real_alphas = args["real_alphas"],
-            synth_alphas = args["synth_alphas"],
+            real_alphas = length(args["real_alpha_range"]) == 3 ? vcat(collect(args["real_alpha_range"][1]:args["real_alpha_range"][2]:args["real_alpha_range"][3]), args["real_alphas"]) : args["real_alphas"],
+            synth_alphas = length(args["synth_alpha_range"]) == 3 ? vcat(collect(args["synth_alpha_range"][1]:args["synth_alpha_range"][2]:args["synth_alpha_range"][3]), args["synth_alphas"]) : args["synth_alphas"],
             folds = args["folds"],
             metrics = args["metrics"]
         )
     elseif experiment_type == "gaussian"
         config = (
-            real_ns = length(args["real_n_range"]) == 3 ? collect(args["real_n_range"][1]:args["real_n_range"][2]:args["real_n_range"][3]) : args["real_ns"],
-            synth_ns = length(args["synth_n_range"]) == 3 ? collect(args["synth_n_range"][1]:args["synth_n_range"][2]:args["synth_n_range"][3]) : args["synth_ns"],
+            real_ns = length(args["real_n_range"]) == 3 ? vcat(collect(args["real_n_range"][1]:args["real_n_range"][2]:args["real_n_range"][3]), args["real_ns"]) : args["real_ns"],
+            synth_ns = length(args["synth_n_range"]) == 3 ? vcat(collect(args["synth_n_range"][1]:args["synth_n_range"][2]:args["synth_n_range"][3]), args["synth_ns"]) : args["synth_ns"],
             n_unseen = args["n_unseen"],
             λs = args["scales"],
-            K = args["num_repeats"],
             algorithm = args["algorithm"],
             metrics = args["metrics"]
         )
@@ -217,25 +228,27 @@ function config_dict(experiment_type, args)
 end
 
 
-function generate_model_configs(model_names, βs, βws, ws)
+function generate_model_configs(model_names, βs, βws, ws, αs)
 
-    model_pairs = vcat(
-        [(
-            model = m,
-            weight = w,
-            β = -1
-        ) for m ∈ model_names for w ∈ ws if m == "weighted"],
-        [(
-            model = m,
-            weight = w,
-            β = b
-        ) for m ∈ model_names for w ∈ βws for b ∈ βs if m ∈ ["beta", "beta_all"]],
-        [(
-            model = m,
-            weight = -1,
-            β = -1,
-        ) for m ∈ model_names if m ∉ ["beta", "beta_all", "weighted"]],
-    )
+    if length(αs) > 0
+        weighted_model_pairs = [(
+            model = m, weight = w, β = -1
+        ) for m ∈ model_names for w ∈ αs if m == "weighted"]
+    else
+        weighted_model_pairs = [(
+            model = m, weight = w, β = -1
+        ) for m ∈ model_names for w ∈ ws if m == "weighted"]
+    end
+    beta_model_pairs = [(
+        model = m, weight = w, β = b
+    ) for m ∈ model_names for w ∈ βws for b ∈ βs if m ∈ ["beta", "beta_all"]]
+    resampled_model_pairs = [(
+        model = m, weight = 1., β = -1
+    ) for m ∈ model_names if m == "resampled"]
+    other_model_pairs = [(
+        model = m, weight = -1, β = -1,
+    ) for m ∈ model_names if m ∉ ["beta", "beta_all", "weighted", "resampled"]]
+    model_pairs = vcat(weighted_model_pairs, beta_model_pairs, resampled_model_pairs, other_model_pairs)
 
 end
 
@@ -251,6 +264,23 @@ function load_data(name, label, ε)
     synth_data = hcat(DataFrame(intercept = ones(size(synth_data)[1])), synth_data)
 
     return labels, real_data, synth_data
+
+end
+
+
+function standardise_out(data)
+
+    for name in names(data)
+
+        if all(isequal(first(data[name])), data[name]) || (minimum(data[name]) >= 0 && maximum(data[name]) <= 1)
+            continue
+        end
+        data[name] = float(data[name])
+        data[name] .-= mean(data[name])
+        data[name] ./= std(data[name])
+
+    end
+    data
 
 end
 

@@ -1,22 +1,31 @@
 
 function init_csv_files(experiment_type, distributed, out_path, name_metrics)
         
-    if distributed
-        @everywhere begin
-            open("$($out_path)/$(myid())_out.csv", "w") do io
-                if $experiment_type == "gaussian"
-                    write(io, "seed,iter,noise,model,weight,beta,real_n,synth_n,$($name_metrics)\n")
-                elseif $experiment_type == "logistic_regression"
-                    write(io, "seed,iter,fold,dataset,label,epsilon,model,weight,beta,real_alpha,synth_alpha,$($name_metrics)\n")
-                end
-            end
-        end
-    else
-        open("$(out_path)/$(myid())_out.csv", "w") do io
-            if experiment_type == "gaussian"
-                write(io, "seed,iter,noise,model,weight,beta,real_n,synth_n,$(name_metrics)\n")
-            elseif experiment_type == "logistic_regression"
-                write(io, "seed,iter,fold,dataset,label,epsilon,model,weight,beta,real_alpha,synth_alpha,$(name_metrics)\n")
+    # if distributed
+    #     @everywhere begin
+    #         open("$($out_path)/$(myid())_out.csv", "w") do io
+    #             if $experiment_type == "gaussian"
+    #                 write(io, "seed,iter,noise,model,alpha,weight,beta,real_n,synth_n,$($name_metrics)\n")
+    #             elseif $experiment_type == "logistic_regression"
+    #                 write(io, "seed,iter,fold,dataset,label,epsilon,model,weight,beta,real_alpha,synth_alpha,$($name_metrics)\n")
+    #             end
+    #         end
+    #     end
+    # else
+    #     open("$(out_path)/$(myid())_out.csv", "w") do io
+    #         if experiment_type == "gaussian"
+    #             write(io, "seed,iter,noise,model,alpha,weight,beta,real_n,synth_n,$(name_metrics)\n")
+    #         elseif experiment_type == "logistic_regression"
+    #             write(io, "seed,iter,fold,dataset,label,epsilon,model,weight,beta,real_alpha,synth_alpha,$(name_metrics)\n")
+    #         end
+    #     end
+    # end
+    @everywhere begin
+        open("$($out_path)/$(myid())_out.csv", "w") do io
+            if $experiment_type == "gaussian"
+                write(io, "seed,iter,sigma,mu,noise,model,alpha,weight,beta,real_n,synth_n,$($name_metrics),epsilon\n")
+            elseif $experiment_type == "logistic_regression"
+                write(io, "seed,iter,fold,dataset,label,epsilon,model,weight,beta,real_alpha,synth_alpha,$($name_metrics)\n")
             end
         end
     end
@@ -24,19 +33,22 @@ function init_csv_files(experiment_type, distributed, out_path, name_metrics)
 end
 
 
-function init_stan_models(path, experiment_type, sampler, n_samples, n_warmup, n_chains, model_names, target_acceptance_rate; dist = true)
+function init_stan_models(path, experiment_type, sampler, n_samples, n_warmup, n_chains, target_acceptance_rate, model_names; dist = true)
 
-    tmpdir = dist ? "$(path)/tmp_$(experiment_type)_$(sampler)/" : mktempdir()
+    if dist && !(isdir("$(path)/tmp/$(ENV["SLURM_JOB_ID"])"))
+        mkpath("$(path)/tmp/$(ENV["SLURM_JOB_ID"])")
+    end
+    tmpdir = dist ? "$(path)/tmp/$(ENV["SLURM_JOB_ID"])/$(myid())/" : mktempdir()
     if sampler == "Stan"
-        models = [(
+        stan_models = [(
             "$(name)_$(myid())",
             SampleModel(
                 "$(name)_$(myid())",
                 open(
                     f -> read(f, String),
-                    "src/stan_models/$(name)_$(experiment_type).stan"
+                    "stan_models/$(name)_$(experiment_type).stan"
                 ),
-                n_chains = n_chains,
+                n_chains;
                 tmpdir = tmpdir,
                 method = StanSample.Sample(
                     num_samples = n_samples - n_warmup,
@@ -46,7 +58,7 @@ function init_stan_models(path, experiment_type, sampler, n_samples, n_warmup, n
             )
         ) for name in model_names]
     elseif sampler == "CmdStan"
-        models = [(
+        stan_models = [(
             "$(name)_$(myid())",
             Stanmodel(
                 CmdStan.Sample(
@@ -58,14 +70,14 @@ function init_stan_models(path, experiment_type, sampler, n_samples, n_warmup, n
                 nchains = n_chains,
                 model = open(
                     f -> read(f, String),
-                    "src/stan_models/$(name)_$(experiment_type).stan"
+                    "stan_models/$(name)_$(experiment_type).stan"
                 ),
                 tmpdir = tmpdir,
                 output_format = :mcmcchains
             )
         ) for name in model_names]
     end
-    return OrderedDict(models)
+    return OrderedDict(stan_models)
 
 end
 

@@ -255,7 +255,8 @@ def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, no
             delta,
             niter,
             num_teachers,
-            no_split)
+            no_split
+        )
 
         cols = features
         cols.extend(targets)

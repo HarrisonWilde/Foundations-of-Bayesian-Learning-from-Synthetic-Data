@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --nodes=1
+#SBATCH --nodes=12
 #SBATCH --tasks-per-node=28
 #SBATCH --mem-per-cpu=4571
 #SBATCH --time=48:00:00
@@ -7,6 +7,7 @@
 #SBATCH -e slurm.%N.%j.err # STDERR
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=h.wilde@warwick.ac.uk
+
 
 # Create the machine file for Julia
 # JULIA_MACHINEFILE=machinefile-${SLURM_JOB_ID}
@@ -21,29 +22,27 @@ module load GCCcore/8.3.0 GCC/8.3.0 Julia/1.5.1-linux-x86_64
 
 # julia --machine-file ${JULIA_MACHINEFILE} --project=@. run.jl \
 julia run.jl \
-    --id neff1 \
-    --experiment_type gaussian \
-    --iterations 100 \
-    --n_samples 2500 \
+    --id moonshot \
+    --experiment_type logistic_regression \
+    --iterations 20 \
+    --n_samples 4500 \
     --n_warmup 500 \
     --n_chains 1 \
-    --sampler AHMC \
-    --scales 1.0 0.75 \
-    --betas 0.8 0.5 \
-    --beta_weights 1.25 \
-    --weights 1.0 0.5 0.0 \
-    --metrics ll kld wass \
-    --model_names beta weighted noise_aware \
-    --real_n_range 1 1 200 \
-    --synth_ns 0 \
-    --n_unseen 500 \
+    --sampler CmdStan \
+    --betas 0.25 0.5 0.75 \
+    --beta_weights 1.25 2.5 \
+    --weights 0.0 0.5 1.0 \
+    --metrics auc ll bf param_mse \
+    --model_names beta weighted \
+    --real_alphas 0.025 0.05 0.1 0.25 0.5 1.0 \
+    --synth_alphas 0.0 0.01 0.02 0.03 0.04 0.05 0.075 0.1 0.15 0.2 0.4 0.6 1.0 \
     --algorithm basic \
-    --mu 0.0 \
-    --sigma 1.0 \
-    --mu_p 3.0 \
     --sigma_p 30.0 \
-    --alpha_p 2.0 \
-    --beta_p 4.0 \
+    --dataset uci_heart \
+    --epsilon 6.0 \
+    --label target \
+    --folds 5 \
+    --split 1.0 \
     --path /home/dcs/csrxgb/synthetic/ \
     --distributed
     # --calibrate_beta_weight \
