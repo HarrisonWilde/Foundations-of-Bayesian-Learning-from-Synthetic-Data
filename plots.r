@@ -217,24 +217,7 @@ for (noise in noises) {
 
 
 
-# unique_branches <- distinct(select(data_without_reals, c(noise, model_full)))
-
-# for (i in 1:nrow(unique_branches)) {
-#     ub <- unique_branches[i,]
-#     fdf_wr <- data_without_reals %>%
-#         filter(noise == ub[["noise"]], model_full == ub[["model_full"]])
-#     fdf <- data %>%
-#         filter(noise == ub[["noise"]], model_full == ub[["model_full"]], synth_n == 0)
-#     for (metric in metrics) {
-#         metric_sym <- sym(metric)
-#         p <- ggplot() +
-#             geom_smooth(data=fdf_wr, aes(x=real_n + synth_n, color=as.factor(real_n), y=!!metric_sym)) +
-#             geom_smooth(data=fdf, aes(x=real_n, y=!!metric_sym)) +
-#             labs(x="Total Samples", y=format_metric(metric))
-#         ggsave(paste0(out_path, "/branched___", metric, "__noise_", ub[["noise"]], "__model_full_", ub[["model_full"]], ".png"), p)
-#     }
-# }
-
+# BRANCHING PLOTS
 
 branching_df <- data_without_reals %>%
     group_by(noise, real_n, synth_n, model_full) %>%
