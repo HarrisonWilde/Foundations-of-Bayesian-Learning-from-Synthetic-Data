@@ -1,10 +1,11 @@
-function evaluate_logistic_samples(X, y, samples, c; plot_roc=false)
+function evaluate_logistic_samples(X, y, samples, c, θ_real; plot_roc=false)
     ps = probabilities(X, samples)
     if plot_roc
         plot_roc_curve(y, ps)
     end
     yX = y .* X
-    return roc_auc(y, ps, c), log_loss(yX, samples), marginal_likelihood_estimate(yX, samples)
+    mse, mses = parameter_mse(samples, θ_real)
+    return roc_auc(y, ps, c), log_loss_logistic(yX, samples), marginal_likelihood_estimate(yX, samples), mse, mses
 end
 
 
@@ -29,7 +30,7 @@ function probabilities(X, samples)
 end
 
 
-function log_loss(yX, samples)
+function log_loss_logistic(yX, samples)
     N = size(samples)[1]
     avg = 0
     for θ in eachrow(samples)
@@ -48,6 +49,15 @@ function marginal_likelihood_estimate(yX, samples)
     end
     return avg ^ -1
     # mean(map(θ -> sum(pdf_bernoulli_logit.(X_test * θ, y_test)), samples))
+end
+
+
+function parameter_mse(samples, θ_real)
+
+    # mse1 = sum(mean(map(s -> (s - θ_real) .^ 2, eachrow(samples)) .^ 2))
+    mses = [(θ_real[i] - mean(samples[:,i])) ^ 2 for i in 1:length(θ_real)]
+    return sum(mses), mses
+
 end
 
 

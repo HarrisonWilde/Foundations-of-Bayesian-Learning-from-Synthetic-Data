@@ -132,9 +132,13 @@ end
     σ² ~ InverseGamma(αₚ, βₚ)
     μ ~ Distributions.Normal(μₚ, σₚ * √σ²)
 
-    ∫term = int_term(σ², β)
-    y_real .~ Distributions.Normal(μ, √σ²)
-    y_synth .~ βNormal(μ, √σ², βw, β, ∫term)
+	∫term = int_term(σ², β)
+	if length(y_real) > 0
+		y_real .~ Distributions.Normal(μ, √σ²)
+	end
+	if length(y_synth) > 0
+		y_synth .~ βNormal(μ, √σ², βw, β, ∫term)
+	end
 
 end
 
@@ -143,8 +147,12 @@ end
     σ² ~ InverseGamma(αₚ, βₚ)
     μ ~ Distributions.Normal(μₚ, σₚ * √σ²)
 
-    y_real .~ Distributions.Normal(μ, √σ²)
-    y_synth .~ wNormal(μ, √σ², w)
+	if length(y_real) > 0
+		y_real .~ Distributions.Normal(μ, √σ²)
+	end
+	if length(y_synth) > 0
+		y_synth .~ wNormal(μ, √σ², w)
+	end
 
 end
 

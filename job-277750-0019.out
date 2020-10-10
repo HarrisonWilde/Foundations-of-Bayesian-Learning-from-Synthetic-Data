@@ -1,0 +1,629 @@
+julia_worker:9147#10.1.24.20
+Dates.format(now(), "HH:MM:SS.ss") = "12:02:21.501"
+c = (i = 1, real_n = 5, synth_n = 0, n_unseen = 100, λ = 1.0, model = "beta", w = 2.5, β = 0.6, metric = (model = "beta", weight = 2.5, β = 0.6))
+  0.020512 seconds (15.60 k allocations: 841.241 KiB)
+"Picking data" = "Picking data"
+  0.042499 seconds (52.49 k allocations: 2.631 MiB)
+  0.222183 seconds (372.75 k allocations: 18.832 MiB)
+  0.000104 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.231208 seconds (217.93 k allocations: 11.437 MiB)
+  0.020359 seconds (13.95 k allocations: 731.484 KiB)
+"Sampling..." = "Sampling..."
+  5.678914 seconds (11.17 M allocations: 677.066 MiB, 5.04% gc time)
+  0.403794 seconds (779.60 k allocations: 41.839 MiB, 13.02% gc time)
+"Evaluating..." = "Evaluating..."
+  2.041188 seconds (7.22 M allocations: 273.920 MiB, 3.23% gc time)
+  0.017585 seconds (12.68 k allocations: 669.043 KiB)
+"Writing to file below..." = "Writing to file below..."
+  0.174752 seconds (40.50 k allocations: 1.948 MiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:02:41.189"
+c = (i = 1, real_n = 5, synth_n = 5, n_unseen = 100, λ = 0.75, model = "beta", w = 2.5, β = 0.8, metric = (model = "beta", weight = 2.5, β = 0.8))
+  0.000037 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000004 seconds (4 allocations: 352 bytes)
+  0.000039 seconds (11 allocations: 5.797 KiB)
+  0.000005 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000030 seconds (39 allocations: 3.219 KiB)
+  0.000003 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  1.070796 seconds (4.25 M allocations: 309.228 MiB, 12.20% gc time)
+  0.004565 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.396598 seconds (3.96 M allocations: 106.896 MiB, 25.16% gc time)
+  0.000003 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000585 seconds (57 allocations: 5.656 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:02:53.943"
+c = (i = 1, real_n = 5, synth_n = 5, n_unseen = 100, λ = 1.25, model = "beta", w = 2.5, β = 0.4, metric = (model = "beta", weight = 2.5, β = 0.4))
+  0.000059 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000003 seconds (4 allocations: 352 bytes)
+  0.000036 seconds (11 allocations: 5.797 KiB)
+  0.000013 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000022 seconds (39 allocations: 3.219 KiB)
+  0.000002 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.648799 seconds (3.74 M allocations: 297.009 MiB, 21.53% gc time)
+  0.005026 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.311780 seconds (3.96 M allocations: 106.898 MiB)
+  0.000003 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000142 seconds (57 allocations: 5.656 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:03:06.465"
+c = (i = 1, real_n = 5, synth_n = 10, n_unseen = 100, λ = 1.0, model = "beta", w = 1.25, β = 0.6, metric = (model = "beta", weight = 1.25, β = 0.6))
+  0.000042 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000003 seconds (4 allocations: 352 bytes)
+  0.000040 seconds (11 allocations: 5.828 KiB)
+  0.000005 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000025 seconds (39 allocations: 3.219 KiB)
+  0.000002 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.979739 seconds (4.79 M allocations: 391.689 MiB, 16.12% gc time)
+  0.005047 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.382833 seconds (3.96 M allocations: 106.896 MiB, 18.56% gc time)
+  0.000004 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000142 seconds (57 allocations: 5.656 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:03:19.075"
+c = (i = 1, real_n = 5, synth_n = 15, n_unseen = 100, λ = 0.75, model = "beta", w = 1.25, β = 0.4, metric = (model = "beta", weight = 1.25, β = 0.4))
+  0.000042 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000009 seconds (4 allocations: 352 bytes)
+  0.000061 seconds (11 allocations: 5.875 KiB)
+  0.000010 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000037 seconds (39 allocations: 3.219 KiB)
+  0.000004 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  2.052234 seconds (8.41 M allocations: 708.698 MiB, 15.24% gc time)
+  0.005084 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.303706 seconds (3.96 M allocations: 106.894 MiB)
+  0.000005 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000150 seconds (57 allocations: 5.656 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:03:32.936"
+c = (i = 1, real_n = 5, synth_n = 20, n_unseen = 100, λ = 0.75, model = "weighted", w = 0.0, β = -1, metric = (model = "weighted", weight = 0.0, β = -1))
+  0.005070 seconds (475 allocations: 31.712 KiB)
+"Picking data" = "Picking data"
+  0.000005 seconds (4 allocations: 352 bytes)
+  0.000029 seconds (11 allocations: 5.906 KiB)
+  0.000004 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.055550 seconds (42.39 k allocations: 2.286 MiB)
+  0.000003 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  2.021966 seconds (5.89 M allocations: 428.444 MiB, 9.95% gc time)
+  0.005049 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.304493 seconds (3.96 M allocations: 106.896 MiB)
+  0.000005 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000139 seconds (56 allocations: 5.297 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:03:46.737"
+c = (i = 1, real_n = 5, synth_n = 20, n_unseen = 100, λ = 1.25, model = "weighted", w = 0.25, β = -1, metric = (model = "weighted", weight = 0.25, β = -1))
+  0.000040 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000005 seconds (4 allocations: 352 bytes)
+  0.000035 seconds (11 allocations: 5.906 KiB)
+  0.000004 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000026 seconds (38 allocations: 3.203 KiB)
+  0.000002 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.470014 seconds (3.80 M allocations: 317.752 MiB, 17.26% gc time)
+  0.006048 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.380659 seconds (3.96 M allocations: 106.894 MiB, 23.67% gc time)
+  0.000004 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000135 seconds (56 allocations: 5.297 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:03:59.19"
+c = (i = 1, real_n = 5, synth_n = 25, n_unseen = 100, λ = 0.75, model = "noise_aware", w = -1, β = -1, metric = (model = "noise_aware", weight = -1, β = -1))
+  0.005200 seconds (475 allocations: 31.712 KiB)
+"Picking data" = "Picking data"
+  0.000005 seconds (4 allocations: 352 bytes)
+  0.000030 seconds (11 allocations: 5.953 KiB)
+  0.000004 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.062521 seconds (45.72 k allocations: 2.505 MiB)
+  0.000003 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  2.120644 seconds (5.29 M allocations: 375.671 MiB, 9.54% gc time)
+  0.004445 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.295224 seconds (3.96 M allocations: 106.899 MiB)
+  0.000008 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000124 seconds (55 allocations: 4.953 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:04:13.14"
+c = (i = 1, real_n = 5, synth_n = 30, n_unseen = 100, λ = 0.75, model = "weighted", w = 0.75, β = -1, metric = (model = "weighted", weight = 0.75, β = -1))
+  0.000039 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000004 seconds (4 allocations: 352 bytes)
+  0.000037 seconds (11 allocations: 6.000 KiB)
+  0.000005 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000036 seconds (38 allocations: 3.203 KiB)
+  0.000002 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.421287 seconds (3.13 M allocations: 270.677 MiB, 20.74% gc time)
+  0.004468 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.294133 seconds (3.96 M allocations: 106.895 MiB)
+  0.000007 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000152 seconds (56 allocations: 5.297 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:04:24.70"
+c = (i = 1, real_n = 5, synth_n = 30, n_unseen = 100, λ = 1.25, model = "weighted", w = 0.5, β = -1, metric = (model = "weighted", weight = 0.5, β = -1))
+  0.000041 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000003 seconds (4 allocations: 352 bytes)
+  0.000057 seconds (11 allocations: 6.000 KiB)
+  0.000006 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000043 seconds (38 allocations: 3.203 KiB)
+  0.000002 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.499544 seconds (3.65 M allocations: 318.368 MiB, 18.27% gc time)
+  0.004488 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.401305 seconds (3.96 M allocations: 106.896 MiB, 24.14% gc time)
+  0.000004 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000100 seconds (56 allocations: 5.297 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:04:36.568"
+c = (i = 1, real_n = 5, synth_n = 40, n_unseen = 100, λ = 1.0, model = "weighted", w = 0.5, β = -1, metric = (model = "weighted", weight = 0.5, β = -1))
+  0.000036 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000004 seconds (4 allocations: 352 bytes)
+  0.000038 seconds (11 allocations: 6.062 KiB)
+  0.000005 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000036 seconds (38 allocations: 3.203 KiB)
+  0.000002 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.530383 seconds (3.76 M allocations: 343.450 MiB, 19.54% gc time)
+  0.006438 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.398567 seconds (3.96 M allocations: 106.898 MiB, 24.93% gc time)
+  0.000005 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000132 seconds (56 allocations: 5.297 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:04:48.467"
+c = (i = 1, real_n = 5, synth_n = 40, n_unseen = 100, λ = 1.25, model = "beta", w = 2.5, β = 0.6, metric = (model = "beta", weight = 2.5, β = 0.6))
+  0.000049 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000003 seconds (4 allocations: 352 bytes)
+  0.000059 seconds (11 allocations: 6.062 KiB)
+  0.000006 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000052 seconds (39 allocations: 3.219 KiB)
+  0.000004 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  1.655847 seconds (3.78 M allocations: 350.504 MiB, 11.81% gc time)
+  0.006191 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.302924 seconds (3.96 M allocations: 106.895 MiB)
+  0.000004 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000136 seconds (57 allocations: 5.656 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:05:00.875"
+c = (i = 1, real_n = 5, synth_n = 50, n_unseen = 100, λ = 1.0, model = "noise_aware", w = -1, β = -1, metric = (model = "noise_aware", weight = -1, β = -1))
+  0.000044 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000004 seconds (4 allocations: 352 bytes)
+  0.000040 seconds (11 allocations: 6.156 KiB)
+  0.000005 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000031 seconds (36 allocations: 3.172 KiB)
+  0.000003 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.971462 seconds (3.32 M allocations: 313.449 MiB, 21.88% gc time)
+  0.005599 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.301979 seconds (3.96 M allocations: 106.900 MiB)
+  0.000004 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000131 seconds (55 allocations: 4.953 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:05:12.774"
+c = (i = 1, real_n = 5, synth_n = 75, n_unseen = 100, λ = 0.75, model = "beta", w = 2.5, β = 0.8, metric = (model = "beta", weight = 2.5, β = 0.8))
+  0.000040 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000007 seconds (4 allocations: 352 bytes)
+  0.000039 seconds (11 allocations: 6.391 KiB)
+  0.000005 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000027 seconds (39 allocations: 3.219 KiB)
+  0.000003 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  2.523510 seconds (3.81 M allocations: 407.063 MiB, 7.98% gc time)
+  0.004603 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.285912 seconds (3.96 M allocations: 106.897 MiB)
+  0.000004 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000136 seconds (57 allocations: 5.656 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:05:25.508"
+c = (i = 1, real_n = 5, synth_n = 100, n_unseen = 100, λ = 0.75, model = "weighted", w = 0.5, β = -1, metric = (model = "weighted", weight = 0.5, β = -1))
+  0.000037 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000003 seconds (4 allocations: 352 bytes)
+  0.000035 seconds (11 allocations: 6.547 KiB)
+  0.000004 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000028 seconds (38 allocations: 3.203 KiB)
+  0.000003 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.824573 seconds (5.64 M allocations: 644.865 MiB, 20.51% gc time)
+  0.006310 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.386397 seconds (3.96 M allocations: 106.895 MiB, 21.19% gc time)
+  0.000004 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000133 seconds (56 allocations: 5.297 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:05:35.83"
+c = (i = 1, real_n = 5, synth_n = 100, n_unseen = 100, λ = 1.0, model = "beta", w = 2.5, β = 0.8, metric = (model = "beta", weight = 2.5, β = 0.8))
+  0.000042 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000005 seconds (4 allocations: 352 bytes)
+  0.000039 seconds (11 allocations: 6.547 KiB)
+  0.000005 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000032 seconds (39 allocations: 3.219 KiB)
+  0.000002 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  4.052714 seconds (4.84 M allocations: 558.640 MiB, 5.19% gc time)
+  0.005654 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.398908 seconds (3.96 M allocations: 106.896 MiB, 25.06% gc time)
+  0.000005 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000162 seconds (57 allocations: 5.656 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:05:48.035"
+c = (i = 1, real_n = 5, synth_n = 200, n_unseen = 100, λ = 1.0, model = "weighted", w = 1.0, β = -1, metric = (model = "weighted", weight = 1.0, β = -1))
+  0.000060 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000008 seconds (4 allocations: 352 bytes)
+  0.000069 seconds (11 allocations: 7.438 KiB)
+  0.000012 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000082 seconds (38 allocations: 3.203 KiB)
+  0.000004 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.847213 seconds (3.92 M allocations: 583.887 MiB, 31.28% gc time)
+  0.004321 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.412867 seconds (3.96 M allocations: 106.897 MiB, 25.92% gc time)
+  0.000004 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000152 seconds (56 allocations: 5.297 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:05:57.027"
+c = (i = 1, real_n = 5, synth_n = 200, n_unseen = 100, λ = 1.25, model = "beta", w = 2.5, β = 0.4, metric = (model = "beta", weight = 2.5, β = 0.4))
+  0.000049 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000019 seconds (4 allocations: 352 bytes)
+  0.000089 seconds (11 allocations: 7.438 KiB)
+  0.000017 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000099 seconds (39 allocations: 3.219 KiB)
+  0.000007 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  5.884749 seconds (3.50 M allocations: 522.846 MiB, 7.80% gc time)
+  0.004867 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.330862 seconds (3.96 M allocations: 106.896 MiB)
+  0.000018 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000176 seconds (57 allocations: 5.656 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:06:13.858"
+c = (i = 1, real_n = 10, synth_n = 0, n_unseen = 100, λ = 1.25, model = "beta", w = 1.25, β = 0.4, metric = (model = "beta", weight = 1.25, β = 0.4))
+  0.000021 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000004 seconds (4 allocations: 384 bytes)
+  0.000036 seconds (11 allocations: 5.750 KiB)
+  0.000005 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000050 seconds (39 allocations: 3.219 KiB)
+  0.000005 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.510296 seconds (3.86 M allocations: 307.185 MiB, 22.73% gc time)
+  0.006456 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.304259 seconds (3.96 M allocations: 106.895 MiB)
+  0.000004 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000146 seconds (57 allocations: 5.656 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:06:25.329"
+c = (i = 1, real_n = 10, synth_n = 5, n_unseen = 100, λ = 1.0, model = "beta", w = 1.25, β = 0.4, metric = (model = "beta", weight = 1.25, β = 0.4))
+  0.000071 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000017 seconds (4 allocations: 384 bytes)
+  0.000089 seconds (11 allocations: 5.797 KiB)
+  0.000019 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000078 seconds (39 allocations: 3.219 KiB)
+  0.000006 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.728117 seconds (3.73 M allocations: 303.932 MiB, 22.72% gc time)
+  0.009819 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.443974 seconds (3.96 M allocations: 106.899 MiB, 30.29% gc time)
+  0.000005 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000151 seconds (57 allocations: 5.656 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:06:37.15"
+c = (i = 1, real_n = 10, synth_n = 10, n_unseen = 100, λ = 0.75, model = "beta", w = 1.25, β = 0.2, metric = (model = "beta", weight = 1.25, β = 0.2))
+  0.000045 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000004 seconds (4 allocations: 384 bytes)
+  0.000062 seconds (11 allocations: 5.828 KiB)
+  0.000005 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000052 seconds (39 allocations: 3.219 KiB)
+  0.000006 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.801273 seconds (3.96 M allocations: 330.455 MiB, 13.78% gc time)
+  0.006773 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.303647 seconds (3.96 M allocations: 106.897 MiB)
+  0.000004 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000145 seconds (57 allocations: 5.656 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:06:49.002"
+c = (i = 1, real_n = 10, synth_n = 10, n_unseen = 100, λ = 1.25, model = "beta", w = 1.25, β = 0.2, metric = (model = "beta", weight = 1.25, β = 0.2))
+  0.000058 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000007 seconds (4 allocations: 384 bytes)
+  0.000124 seconds (11 allocations: 5.828 KiB)
+  0.000043 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000037 seconds (39 allocations: 3.219 KiB)
+  0.000003 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.675472 seconds (3.00 M allocations: 247.995 MiB, 21.30% gc time)
+  0.004728 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.287085 seconds (3.96 M allocations: 106.898 MiB)
+  0.000005 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000148 seconds (57 allocations: 5.656 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:06:59.612"
+c = (i = 1, real_n = 10, synth_n = 15, n_unseen = 100, λ = 1.0, model = "beta", w = 1.25, β = 0.2, metric = (model = "beta", weight = 1.25, β = 0.2))
+  0.000033 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000008 seconds (4 allocations: 384 bytes)
+  0.000039 seconds (11 allocations: 5.875 KiB)
+  0.000021 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000032 seconds (39 allocations: 3.219 KiB)
+  0.000002 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.746545 seconds (2.85 M allocations: 239.068 MiB, 18.85% gc time)
+  0.010519 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.499995 seconds (3.96 M allocations: 106.894 MiB, 23.25% gc time)
+  0.000008 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000138 seconds (57 allocations: 5.656 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:07:10.901"
+c = (i = 1, real_n = 10, synth_n = 20, n_unseen = 100, λ = 0.75, model = "weighted", w = 1.0, β = -1, metric = (model = "weighted", weight = 1.0, β = -1))
+  0.000049 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000009 seconds (4 allocations: 384 bytes)
+  0.000104 seconds (11 allocations: 5.906 KiB)
+  0.000010 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000050 seconds (38 allocations: 3.203 KiB)
+  0.000006 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.543453 seconds (3.72 M allocations: 317.976 MiB, 24.09% gc time)
+  0.005399 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.302874 seconds (3.96 M allocations: 106.899 MiB)
+  0.000006 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000134 seconds (56 allocations: 5.297 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:07:21.857"
+c = (i = 1, real_n = 10, synth_n = 20, n_unseen = 100, λ = 1.25, model = "weighted", w = 1.0, β = -1, metric = (model = "weighted", weight = 1.0, β = -1))
+  0.000046 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000006 seconds (4 allocations: 384 bytes)
+  0.000084 seconds (11 allocations: 5.906 KiB)
+  0.000007 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000078 seconds (38 allocations: 3.203 KiB)
+  0.000009 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.589256 seconds (3.56 M allocations: 303.923 MiB, 23.87% gc time)
+  0.006279 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.316942 seconds (3.96 M allocations: 106.893 MiB)
+  0.000005 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000164 seconds (56 allocations: 5.297 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:07:32.962"
+c = (i = 1, real_n = 10, synth_n = 25, n_unseen = 100, λ = 1.0, model = "weighted", w = 0.75, β = -1, metric = (model = "weighted", weight = 0.75, β = -1))
+  0.000046 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000006 seconds (4 allocations: 384 bytes)
+  0.000060 seconds (11 allocations: 5.953 KiB)
+  0.000008 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000059 seconds (38 allocations: 3.203 KiB)
+  0.000009 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.372456 seconds (3.13 M allocations: 272.698 MiB)
+  0.006468 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.437652 seconds (3.96 M allocations: 106.896 MiB, 30.19% gc time)
+  0.000008 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000159 seconds (56 allocations: 5.297 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:07:43.868"
+c = (i = 1, real_n = 10, synth_n = 30, n_unseen = 100, λ = 0.75, model = "weighted", w = 0.5, β = -1, metric = (model = "weighted", weight = 0.5, β = -1))
+  0.000059 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000009 seconds (4 allocations: 384 bytes)
+  0.000095 seconds (11 allocations: 6.000 KiB)
+  0.000012 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000109 seconds (38 allocations: 3.203 KiB)
+  0.000007 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.632065 seconds (3.64 M allocations: 323.654 MiB, 29.41% gc time)
+  0.006381 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.432957 seconds (3.96 M allocations: 106.895 MiB, 29.19% gc time)
+  0.000005 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000160 seconds (56 allocations: 5.297 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:07:55.26"
+c = (i = 1, real_n = 10, synth_n = 30, n_unseen = 100, λ = 1.25, model = "weighted", w = 0.75, β = -1, metric = (model = "weighted", weight = 0.75, β = -1))
+  0.000064 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000010 seconds (4 allocations: 384 bytes)
+  0.000080 seconds (11 allocations: 6.000 KiB)
+  0.000013 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000094 seconds (38 allocations: 3.203 KiB)
+  0.000006 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.640368 seconds (3.82 M allocations: 340.658 MiB, 28.73% gc time)
+  0.006512 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.297104 seconds (3.96 M allocations: 106.895 MiB)
+  0.000008 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000141 seconds (56 allocations: 5.297 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:08:06.968"
+c = (i = 1, real_n = 10, synth_n = 40, n_unseen = 100, λ = 1.0, model = "weighted", w = 0.75, β = -1, metric = (model = "weighted", weight = 0.75, β = -1))
+  0.000043 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000004 seconds (4 allocations: 384 bytes)
+  0.000049 seconds (11 allocations: 6.062 KiB)
+  0.000005 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000052 seconds (38 allocations: 3.203 KiB)
+  0.000004 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.955636 seconds (6.79 M allocations: 640.306 MiB, 24.22% gc time)
+  0.005134 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.307605 seconds (3.96 M allocations: 106.894 MiB)
+  0.000007 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000152 seconds (56 allocations: 5.297 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:08:17.699"
+c = (i = 1, real_n = 10, synth_n = 50, n_unseen = 100, λ = 0.75, model = "weighted", w = 0.5, β = -1, metric = (model = "weighted", weight = 0.5, β = -1))
+  0.000046 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000003 seconds (4 allocations: 384 bytes)
+  0.000042 seconds (11 allocations: 6.156 KiB)
+  0.000005 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000032 seconds (38 allocations: 3.203 KiB)
+  0.000002 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.862778 seconds (4.08 M allocations: 397.622 MiB, 44.58% gc time)
+  0.006450 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.294404 seconds (3.96 M allocations: 106.894 MiB)
+  0.000009 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000123 seconds (56 allocations: 5.297 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:08:28.372"
+c = (i = 1, real_n = 10, synth_n = 50, n_unseen = 100, λ = 1.25, model = "weighted", w = 0.25, β = -1, metric = (model = "weighted", weight = 0.25, β = -1))
+  0.000041 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000003 seconds (4 allocations: 384 bytes)
+  0.000060 seconds (11 allocations: 6.156 KiB)
+  0.000006 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000050 seconds (38 allocations: 3.203 KiB)
+  0.000005 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.623019 seconds (4.52 M allocations: 439.845 MiB, 20.65% gc time)
+  0.004500 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.312761 seconds (3.96 M allocations: 106.898 MiB, 7.42% gc time)
+  0.000004 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000134 seconds (56 allocations: 5.297 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:08:38.896"
+c = (i = 1, real_n = 10, synth_n = 75, n_unseen = 100, λ = 0.75, model = "beta", w = 2.5, β = 0.6, metric = (model = "beta", weight = 2.5, β = 0.6))
+  0.000067 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000010 seconds (4 allocations: 384 bytes)
+  0.000109 seconds (11 allocations: 6.391 KiB)
+  0.000042 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000033 seconds (39 allocations: 3.219 KiB)
+  0.000002 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  2.612014 seconds (4.02 M allocations: 437.536 MiB, 6.07% gc time)
+  0.004314 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.334411 seconds (3.96 M allocations: 106.900 MiB, 13.72% gc time)
+  0.000005 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000351 seconds (57 allocations: 5.656 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:08:51.278"
+c = (i = 1, real_n = 10, synth_n = 100, n_unseen = 100, λ = 0.75, model = "weighted", w = 1.0, β = -1, metric = (model = "weighted", weight = 1.0, β = -1))
+  0.000041 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000006 seconds (4 allocations: 384 bytes)
+  0.000070 seconds (11 allocations: 6.547 KiB)
+  0.000005 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000056 seconds (38 allocations: 3.203 KiB)
+  0.000004 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.580168 seconds (3.58 M allocations: 410.681 MiB, 22.09% gc time)
+  0.029745 seconds (45.02 k allocations: 4.601 MiB, 82.94% gc time)
+"Evaluating..." = "Evaluating..."
+  0.302727 seconds (3.96 M allocations: 106.898 MiB)
+  0.000005 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000147 seconds (56 allocations: 5.297 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:09:01.85"
+c = (i = 1, real_n = 10, synth_n = 100, n_unseen = 100, λ = 1.25, model = "weighted", w = 0.0, β = -1, metric = (model = "weighted", weight = 0.0, β = -1))
+  0.000057 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000003 seconds (4 allocations: 384 bytes)
+  0.000042 seconds (11 allocations: 6.547 KiB)
+  0.000005 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000033 seconds (38 allocations: 3.203 KiB)
+  0.000004 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  0.652977 seconds (3.86 M allocations: 445.348 MiB, 26.96% gc time)
+  0.004178 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.330708 seconds (3.96 M allocations: 106.895 MiB, 9.01% gc time)
+  0.000007 seconds (3 allocations: 48 bytes)
+"Writing to file below..." = "Writing to file below..."
+  0.000159 seconds (56 allocations: 5.297 KiB)
+Dates.format(now(), "HH:MM:SS.ss") = "12:09:11.882"
+c = (i = 1, real_n = 10, synth_n = 200, n_unseen = 100, λ = 0.75, model = "beta", w = 1.25, β = 0.4, metric = (model = "beta", weight = 1.25, β = 0.4))
+  0.000030 seconds (5 allocations: 240 bytes)
+"Picking data" = "Picking data"
+  0.000005 seconds (4 allocations: 384 bytes)
+  0.000049 seconds (11 allocations: 7.438 KiB)
+  0.000004 seconds (3 allocations: 1008 bytes)
+"AHMC setup" = "AHMC setup"
+  0.000057 seconds (39 allocations: 3.219 KiB)
+  0.000004 seconds (1 allocation: 96 bytes)
+"Sampling..." = "Sampling..."
+  5.697060 seconds (3.56 M allocations: 538.613 MiB, 10.38% gc time)
+  0.004450 seconds (45.02 k allocations: 4.601 MiB)
+"Evaluating..." = "Evaluating..."
+  0.329333 seconds (3.96 M allocations: 106.897 MiB, 11.57% gc time)
+  

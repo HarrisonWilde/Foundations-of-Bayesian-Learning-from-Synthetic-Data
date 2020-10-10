@@ -51,10 +51,16 @@ function parse_cl()
             arg_type = String
             default = "gaussian"
             required = true
+        "--id"
+            arg_type = String
+            required = true
         "--path"
             help = "specify the path to the top of the project"
             arg_type = String
             default = "."
+        "--seed"
+            arg_type = Int
+            default = Int(round(rand() * 1e12))
         "--show_progress"
             action = :store_true
         "--iterations"
@@ -88,9 +94,6 @@ function parse_cl()
             help = "choose from AHMC, Turing and CmdStan"
             arg_type = String
             default = "Turing"
-        "--no_shuffle"
-            help = "Disable row shuffling on load of data"
-            action = :store_true
         "--betas", "-b"
             nargs = '*'
             arg_type = Float64
@@ -125,7 +128,13 @@ function parse_cl()
         "--real_alphas"
             nargs = '*'
             arg_type = Float64
+        "--real_alpha_range"
+            nargs = '*'
+            arg_type = Float64
         "--synth_alphas"
+            nargs = '*'
+            arg_type = Float64
+        "--synth_alpha_range"
             nargs = '*'
             arg_type = Float64
         "--folds"
@@ -149,12 +158,24 @@ function parse_cl()
         "--synth_ns"
             nargs = '*'
             arg_type = Int
+        "--real_n_range"
+            nargs = '*'
+            arg_type = Int
+        "--synth_n_range"
+            nargs = '*'
+            arg_type = Int
         "--n_unseen"
             arg_type = Int
             default = 500
         "--algorithm"
             arg_type = String
             default = "golden"
+        "--alphas"
+            arg_type = Float64
+            nargs = '*'
+        "--fn"
+            arg_type = Int
+            default = 0
         ### Golden Section specific
         "--num_repeats"
             arg_type = Int
@@ -183,49 +204,51 @@ function parse_cl()
 end
 
 
-function generate_model_configs(model_names, βs, βws, ws)
-
-    model_pairs = vcat(
-        [(
-            model = m,
-            weight = w,
-            β = -1
-        ) for m ∈ model_names for w ∈ ws if m == "weighted"],
-        [(
-            model = m,
-            weight = w,
-            β = b
-        ) for m ∈ model_names for w ∈ βws for b ∈ βs if m ∈ ["beta", "beta_all"]],
-        [(
-            model = m,
-            weight = -1,
-            β = -1,
-        ) for m ∈ model_names if m ∉ ["beta", "beta_all", "weighted"]],
-    )
-
-end
-
-
 function config_dict(experiment_type, args)
 
     if experiment_type in ["logistic_regression", "regression"]
         config = (
-            real_alphas = args["real_alphas"],
-            synth_alphas = args["synth_alphas"],
-            folds = args["folds"]
+            real_alphas = length(args["real_alpha_range"]) == 3 ? vcat(collect(args["real_alpha_range"][1]:args["real_alpha_range"][2]:args["real_alpha_range"][3]), args["real_alphas"]) : args["real_alphas"],
+            synth_alphas = length(args["synth_alpha_range"]) == 3 ? vcat(collect(args["synth_alpha_range"][1]:args["synth_alpha_range"][2]:args["synth_alpha_range"][3]), args["synth_alphas"]) : args["synth_alphas"],
+            folds = args["folds"],
+            metrics = args["metrics"]
         )
     elseif experiment_type == "gaussian"
         config = (
-            real_ns = args["real_ns"],
-            synth_ns = args["synth_ns"],
+            real_ns = length(args["real_n_range"]) == 3 ? vcat(collect(args["real_n_range"][1]:args["real_n_range"][2]:args["real_n_range"][3]), args["real_ns"]) : args["real_ns"],
+            synth_ns = length(args["synth_n_range"]) == 3 ? vcat(collect(args["synth_n_range"][1]:args["synth_n_range"][2]:args["synth_n_range"][3]), args["synth_ns"]) : args["synth_ns"],
             n_unseen = args["n_unseen"],
             λs = args["scales"],
-            K = args["num_repeats"],
             algorithm = args["algorithm"],
             metrics = args["metrics"]
         )
     end
     return config
+
+end
+
+
+function generate_model_configs(model_names, βs, βws, ws, αs)
+
+    if length(αs) > 0
+        weighted_model_pairs = [(
+            model = m, weight = w, β = -1
+        ) for m ∈ model_names for w ∈ αs if m == "weighted"]
+    else
+        weighted_model_pairs = [(
+            model = m, weight = w, β = -1
+        ) for m ∈ model_names for w ∈ ws if m == "weighted"]
+    end
+    beta_model_pairs = [(
+        model = m, weight = w, β = b
+    ) for m ∈ model_names for w ∈ βws for b ∈ βs if m ∈ ["beta", "beta_all"]]
+    resampled_model_pairs = [(
+        model = m, weight = 1., β = -1
+    ) for m ∈ model_names if m == "resampled"]
+    other_model_pairs = [(
+        model = m, weight = -1, β = -1,
+    ) for m ∈ model_names if m ∉ ["beta", "beta_all", "weighted", "resampled"]]
+    model_pairs = vcat(weighted_model_pairs, beta_model_pairs, resampled_model_pairs, other_model_pairs)
 
 end
 
@@ -245,6 +268,23 @@ function load_data(name, label, ε)
 end
 
 
+function standardise_out(data)
+
+    for name in names(data)
+
+        if all(isequal(first(data[name])), data[name]) || (minimum(data[name]) >= 0 && maximum(data[name]) <= 1)
+            continue
+        end
+        data[name] = float(data[name])
+        data[name] .-= mean(data[name])
+        data[name] ./= std(data[name])
+
+    end
+    data
+
+end
+
+
 function generate_all_steps(experiment_type, algorithm, iterations, config, model_configs)
 
     if experiment_type in ["logistic_regression", "regression"]
@@ -260,7 +300,7 @@ function generate_all_steps(experiment_type, algorithm, iterations, config, mode
             for a ∈ iterations
             for b ∈ config[:real_alphas]
             for c ∈ config[:synth_alphas]
-            for d ∈ config[:folds]
+            for d ∈ [i for i ∈ 0:(config[:folds]-1)]
             for e ∈ model_configs
         ]
     else

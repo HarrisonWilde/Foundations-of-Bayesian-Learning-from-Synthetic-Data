@@ -1,16 +1,19 @@
 using ClusterManagers
 using Distributed
-# addprocs(4)
+# addprocs(6)
 # @everywhere begin
 #     using Pkg; Pkg.activate("."); Pkg.instantiate()
 # end
+
 # addprocs(SlurmManager(parse(Int, ENV["SLURM_NTASKS"])), o=string(ENV["SLURM_JOB_ID"]))
+# addprocs_slurm(parse(Int, ENV["SLURM_NTASKS"]), enable_threaded_blas=false, topology=:master_worker)
 addprocs_slurm(parse(Int, ENV["SLURM_NTASKS"]))
 println("We are all connected and ready.")
 for i in workers()
     host, pid = fetch(@spawnat i (gethostname(), getpid()))
     println(host, pid)
 end
+
 using AdvancedHMC
 using ArgParse
 using Bijectors
@@ -38,7 +41,7 @@ using Roots
 using SpecialFunctions
 using StanSample
 using Statistics
-using StatsFuns: invsqrt2π, log2π, sqrt2
+using StatsFuns: invsqrt2π, log2π, sqrt2, log1pexp
 using Turing
 using Zygote
 include("src/distributions.jl")
@@ -76,7 +79,7 @@ include("src/weight_calibration.jl")
     using SpecialFunctions
     using StanSample
     using Statistics
-    using StatsFuns: invsqrt2π, log2π, sqrt2
+    using StatsFuns: invsqrt2π, log2π, sqrt2, log1pexp
     using Turing
     using Zygote
     include("src/distributions.jl")
@@ -87,27 +90,30 @@ include("src/weight_calibration.jl")
     include("src/weight_calibration.jl")
 end
 
+# @everywhere Turing.turnprogress(false)
 # args = Dict(
 #     "experiment_type" => "gaussian",
 #     "show_progress" => true,
 #     "iterations" => 100,
 #     "n_samples" => 10000,
-#     "n_warmup" => 1000,
+#     "n_warmup" => 0,
 #     "n_chains" => 1,
 #     "sampler" => "Turing",
-#     "scales" => [0.5, 1.5, 2.5],
-#     "betas" => [0.25, 0.5, 0.75],
-#     "beta_weights" => [1.25, 2.5, 4],
+#     "scales" => [0.006, 0.06, 0.6, 1.0, 6.0, 60.0, 600.0],
+#     "betas" => [0.75],
+#     "beta_weights" => [1.25],
 #     "calibrate_beta_weight" => false,
-#     "weights" => [0.0, 0.25, 0.5, 0.75, 1.0],
+#     "weights" => [1.0],
 #     "metrics" => ["ll", "kld", "wass"],
-#     "model_names" => ["beta", "weighted", "noise_aware"],
-#     "real_ns" => [10, 25, 50, 100],
-#     "synth_ns" => [5, 10, 15, 20, 30, 40, 50],
+#     "model_names" => ["weighted"],
+#     "real_ns" => [0],
+#     "real_n_range" => [],
+#     "synth_ns" => [],
+#     "synth_n_range" => [0, 1, 100],
 #     "n_unseen" => 100,
 #     "algorithm" => "basic",
-#     "mu_p" => 1.0,
-#     "sigma_p" => 1.0,
+#     "mu_p" => 3.0,
+#     "sigma_p" => 30.0,
 #     "alpha_p" => 2.0,
 #     "beta_p" => 4.0,
 #     "nu_p" => -1,
@@ -116,23 +122,115 @@ end
 #     "folds" => 5,
 #     "split" => 1.0,
 #     "use_ad" => false,
-#     "distributed" => true,
-#     "no_shuffle" => true,
+#     "distributed" => false,
+#     "target_acceptance" => 0.8,
+#     "mu" => 0.0,
+#     "sigma" => 1.0,
+#     "id" => "noise_demo",
+#     "seed" => 1,
+#     "alphas" => [],
+#     "fn" => 0
+# )
+
+# args = Dict(
+#     "experiment_type" => "logistic_regression",
+#     "show_progress" => true,
+#     "iterations" => 100,
+#     "n_samples" => 1000,
+#     "n_warmup" => 100,
+#     "n_chains" => 1,
+#     "sampler" => "CmdStan",
+#     "betas" => [0.25, 0.5, 0.75],
+#     "beta_weights" => [1.25, 2.5],
+#     "calibrate_beta_weight" => false,
+#     "weights" => [0.0, 0.5, 1.0],
+#     "metrics" => ["auc", "ll", "bf", "param_mse"],
+#     "model_names" => ["beta", "weighted"],
+#     "real_alphas" => [0.025, 0.05, 0.1, 0.2, 0.4, 0.6, 1.0],
+#     "synth_alphas" => [0.0, 0.05, 0.1, 0.5, 1.0],
+#     "synth_alpha_range" => [],
+#     "real_alpha_range" => [],
+#     "mu_p" => 1.0,
+#     "algorithm" => "basic",
+#     "seed" => 1,
+#     "id" => "inline_test",
+#     "sigma_p" => 50.0,
+#     "alpha_p" => 2.0,
+#     "beta_p" => 4.0,
+#     "nu_p" => -1,
+#     "Sigma_p" => -1,
+#     "path" => ".",
+#     "folds" => 5,
+#     "split" => 1.0,
+#     "use_ad" => false,
+#     "distributed" => false,
 #     "target_acceptance" => 0.8,
 #     "mu" => 0.0,
 #     "sigma" => 2.0,
-#     "num_repeats" => 10
+#     "num_repeats" => 10,
+#     "dataset" => "framingham",
+#     "epsilon" => "6.0",
+#     "label" => "TenYearCHD",
+#     "folds" => 5,
+#     "alphas" => []
+# )
+
+# @everywhere Turing.turnprogress(false)
+# args = Dict(
+#     "experiment_type" => "gaussian",
+#     "show_progress" => true,
+#     "iterations" => 100,
+#     "n_samples" => 5000,
+#     "n_warmup" => 1000,
+#     "n_chains" => 1,
+#     "sampler" => "Turing",
+#     "scales" => [0.00001, 0.75],
+#     "betas" => [0.25, 0.5, 0.75],
+#     "beta_weights" => [1.25, 2.5],
+#     "calibrate_beta_weight" => false,
+#     "weights" => [],
+#     "alphas" => [65, 70, 75, 80, 90, 100],
+#     "metrics" => ["ll", "kld", "wass"],
+#     "model_names" => ["weighted"],
+#     "real_ns" => [15],
+#     "real_n_range" => [],
+#     "synth_ns" => [0, 5, 10, 15, 30, 45, 60, 90, 120, 180, 250, 400, 600, 1000],
+#     "synth_n_range" => [],
+#     "n_unseen" => 500,
+#     "algorithm" => "basic",
+#     "mu_p" => 3.0,
+#     "sigma_p" => 30.0,
+#     "alpha_p" => 2.0,
+#     "beta_p" => 4.0,
+#     "nu_p" => -1,
+#     "Sigma_p" => -1,
+#     "path" => ".",
+#     "folds" => 5,
+#     "split" => 1.0,
+#     "use_ad" => false,
+#     "distributed" => false,
+#     "target_acceptance" => 0.8,
+#     "mu" => 0.0,
+#     "sigma" => 2.0,
+#     "num_repeats" => 10,
+#     "id" => "fn15",
+#     "seed" => 1,
+#     "fn" => 15
 # )
 
 function main()
 
     args = parse_cl()
-    experiment_type, path, metrics, algorithm = (
+    experiment_type, base_path, metrics, algorithm, base_seed, id = (
         args["experiment_type"],
         args["path"],
         args["metrics"],
-        args["algorithm"]
+        args["algorithm"],
+        args["seed"],
+        args["id"]
     )
+    αs = args["alphas"]
+    Fₙ = args["fn"]
     dataset = (
         name = args["dataset"],
         label = args["label"],
@@ -143,10 +241,9 @@ function main()
         args["folds"],
         args["split"]
     )
-    use_ad, distributed, no_shuffle, show_progress = (
+    use_ad, distributed, show_progress = (
         args["use_ad"],
         args["distributed"],
-        args["no_shuffle"],
         args["show_progress"]
     )
     mcmc = (
@@ -175,22 +272,28 @@ function main()
         μ = args["mu"],
         σ = args["sigma"]
     )
+    sens = 6 * dgp[:σ]
     config = config_dict(experiment_type, args)
 
+    Random.seed!(base_seed)
     @show args
 
     t = Dates.format(now(), "HH_MM_SS__dd_mm_yyyy")
-    out_path = "$(path)/$(experiment_type)/outputs/$(t)_$(mcmc[:sampler])"
-    plot_path = "$(path)/$(experiment_type)/plots/IN_RUN_$(t)_$(mcmc[:sampler])"
+    if distributed
+        out_path = "$(base_path)/$(experiment_type)/outputs/$(id)_$(ENV["SLURM_JOB_ID"])_$(t)_$(mcmc[:sampler])"
+    else
+        out_path = "$(base_path)/$(experiment_type)/outputs/$(id)_$(t)_$(mcmc[:sampler])"
+    end
+    # plot_path = "$(base_path)/$(experiment_type)/plots/IN_RUN_$(t)_$(mcmc[:sampler])"
     mkpath(out_path)
-    mkpath(plot_path)
+    # mkpath(plot_path)
 
     # Pre-load and compile Stan models
     if mcmc[:sampler] in ["CmdStan", "Stan"]
-        mkpath("$(path)/$(experiment_type)/tmp$(mcmc[:sampler])/")
-        models = Dict(
+        # mkpath("$(base_path)/$(experiment_type)/tmp$(mcmc[:sampler])/")
+        stan_models = Dict(
             pmap(1:nworkers()) do i
-                (myid() => init_stan_models(path, experiment_type, mcmc...; dist = distributed))
+                (myid() => init_stan_models(base_path, experiment_type, mcmc...; dist = distributed))
             end
         )
     end
@@ -199,17 +302,24 @@ function main()
     if experiment_type == "gaussian"
         println("Generating data...")
         dgp = Distributions.Normal(dgp[:μ], dgp[:σ])
+        if Fₙ > 0
+            empirical_dgp = rand(dgp, Fₙ)
+            all_synth_data_pre_noise = rand(empirical_dgp, (maximum(iterations), maximum(config[:synth_ns])))
+        else
+            all_synth_data_pre_noise = rand(dgp, (maximum(iterations), maximum(config[:synth_ns])))
+        end
         all_real_data = rand(dgp, (maximum(iterations), maximum(config[:real_ns])))
-        all_synth_data_pre_noise = rand(dgp, (maximum(iterations), maximum(config[:synth_ns])))
         all_unseen_data = rand(dgp, (maximum(iterations), config[:n_unseen]))
     else
         labels, unshuffled_real_data, unshuffled_synth_data = load_data(dataset...)
         
         if experiment_type == "logistic_regression"
             θ_dim = size(unshuffled_real_data)[2] - 1
+            unshuffled_real_data = standardise_out(unshuffled_real_data)
+            unshuffled_synth_data = standardise_out(unshuffled_synth_data)
             unshuffled_real_data[:, labels[1]] = (2 .* unshuffled_real_data[:, labels[1]]) .- 1
             unshuffled_synth_data[:, labels[1]] = (2 .* unshuffled_synth_data[:, labels[1]]) .- 1
-            c = classes(categorical(unshuffled_real_data[:, labels[1]])[1])
+            data_levels = classes(categorical(unshuffled_real_data[:, labels[1]])[1])
         elseif experiment_type == "regression"
             θ_dim = length(predictors) + 1
             unshuffled_real_data[!, :course] = (unshuffled_real_data[!, :course] .- mean(unshuffled_real_data[!, :course])) / std(unshuffled_real_data[!, :course])
@@ -219,7 +329,7 @@ function main()
 
     # βw calibration
     @show length(βws)
-    βw_default = 1.2
+    βw_default = 1.25
     if calibrate_βw
         # βws = weight_calib(
         #     experiment_type,
@@ -234,23 +344,26 @@ function main()
     end
     @show βws
 
-    model_configs = generate_model_configs(mcmc[:model_names], βs, βws, ws)
-
-    # Instantiate the output file aaccording to the passed MCMC config
-    name_metrics = join(config[:metrics], ",")
-    if distributed
-        @everywhere begin
-            open("$($out_path)/$(myid())_out.csv", "w") do io
-                write(io, "iter,noise,model,weight,beta,real_n,synth_n,$($name_metrics)\n")
-            end
-        end
-    else
-        begin
-            open("$(out_path)/$(myid())_out.csv", "w") do io
-                write(io, "iter,noise,model,weight,beta,real_n,synth_n,$(name_metrics)\n")
-            end
-        end
+    # Work out the baseline best case model parameters to compare against using all of the real data
+    if experiment_type == "logistic_regression"
+        lr = LogisticRegression(1.0, fit_intercept = false)
+        θ_real = MLJLinearModels.fit(
+            lr,
+            Matrix(unshuffled_real_data[:, Not(dataset[:label])]),
+            Array(unshuffled_real_data[:, dataset[:label]]);
+            solver = MLJLinearModels.LBFGS()
+        )
     end
+
+    model_configs = generate_model_configs(mcmc[:model_names], βs, βws, ws, αs)
+
+    # Instantiate the output file according to the passed MCMC config
+    if "param_mse" in config[:metrics]
+        name_metrics = join(vcat(config[:metrics], ["param_mse_$(p)" for p in names(unshuffled_real_data)]), ",")
+    else
+        name_metrics = join(config[:metrics], ",")
+    end
+    init_csv_files(experiment_type, distributed, out_path, name_metrics)
 
     S = generate_all_steps(experiment_type, algorithm, iterations, config, model_configs)
     # @showprogress for s in S
@@ -267,20 +380,24 @@ function main()
                 synth_n = s[3],
                 n_unseen = s[4],
                 λ = s[5],
-                model = s[6][:model],
-                w = s[6][:weight],
+                model = s[6][:model] == "resampled" ? "weighted" : s[6][:model],
+                w = length(αs) > 0 ? s[6][:weight] / s[3] : s[6][:weight],
                 β = s[6][:β],
                 metric = s[end]
             )
-            @show c
+            @show s
 
-            Random.seed!(c[:i])
-    
+            Random.seed!(base_seed + c[:i])
+
             real_data = all_real_data[c[:i], 1:c[:real_n]]
-            synth_data = (
-                all_synth_data_pre_noise[c[:i],:] +
-                rand(Laplace(0, c[:λ]), maximum(config[:synth_ns]))
-            )[1:c[:synth_n]]
+            if s[6][:model] == "resampled"
+                synth_data = rand(real_data, c[:synth_n])
+            else
+                synth_data = (
+                    all_synth_data_pre_noise[c[:i], :] +
+                    rand(Laplace(0, c[:λ]), maximum(config[:synth_ns]))
+                )[1:c[:synth_n]]
+            end
             unseen_data = all_unseen_data[c[:i], :]
             
             if config[:algorithm] == "basic"
@@ -311,7 +428,6 @@ function main()
                     )
                     if rc == 0
                         chains = Array(chn)[:, 1:2]
-                        # @show mean(chains, dims=1)
                         ms = evaluate_samples(unseen_data, dgp, chains)
                     end
     
@@ -322,7 +438,7 @@ function main()
                         real_data, synth_data, c[:w], c[:w], c[:β], c[:λ], prior[:αₚ], prior[:βₚ], prior[:μₚ], prior[:σₚ]
                     )
                     model = models[c[:model]]
-    
+
                     chains = map(1:mcmc[:n_chains]) do i
                         m = DiagEuclideanMetric(2)
                         initial_θ = rand(2)
@@ -340,6 +456,7 @@ function main()
                     end
                     chains = hcat(b.(vcat(chains...))...)'
                     # @show mean(chains, dims=1)
+
                     ms = evaluate_gaussian_samples(unseen_data, dgp, chains)
     
                 elseif mcmc[:sampler] == "Turing"
@@ -355,11 +472,11 @@ function main()
                     ms = evaluate_gaussian_samples(unseen_data, dgp, Array(vcat(chains...)))
     
                 end
-    
+
                 ll, kl, wass = ms["ll"], ms["kld"], ms["wass"]
     
                 open("$(out_path)/$(myid())_out.csv", "a") do io
-                    write(io, "$(c[:i]),$(c[:λ]),$(c[:model]),$(c[:w]),$(c[:β]),$(c[:real_n]),$(length(synth_data)),$(ll),$(kl),$(wass)\n")
+                    write(io, "$(base_seed+c[:i]),$(c[:i]),$(dgp.σ),$(dgp.μ),$(c[:λ]),$(s[:6][:model]),$(length(αs) > 0 ? s[6][:weight] : -1),$(c[:w]),$(c[:β]),$(c[:real_n]),$(length(synth_data)),$(ll),$(kl),$(wass),$(sens / c[:λ])\n")
                 end
 
             else
@@ -613,8 +730,162 @@ function main()
             end
 
         elseif experiment_type == "logistic_regression"
-            # TODO
-            print("Not implemented")
+
+            c = (
+                i = s[1],
+                real_α = s[2],
+                synth_α = s[3],
+                fold = s[4],
+                model = s[5][:model] == "resampled" ? "weighted" : s[5][:model],
+                w = s[5][:weight],
+                β = s[5][:β]
+            )
+            @show c
+
+            Random.seed!(base_seed + c[:i])
+            real_data = unshuffled_real_data[shuffle(axes(unshuffled_real_data, 1)), :]
+            synth_data = unshuffled_synth_data[shuffle(axes(unshuffled_synth_data, 1)), :]
+
+            X_real, y_real, X_synth, y_synth, X_valid, y_valid = fold_α(
+                real_data, synth_data, c[:real_α], c[:synth_α],
+                c[:fold], config[:folds], labels
+            )
+
+            if s[5][:model] == "resampled"
+                idx = rand(collect(1:size(X_real)[1]), length(y_synth))
+                X_synth = X_real[idx, :]
+                y_synth = y_real[idx]
+            end
+
+            # First parameter here is regularisation on the LogisticRegression, choose what to do with it
+            initial_θ = init_run(
+                1.0, X_real, y_real
+            )
+
+            if mcmc[:sampler] == "CmdStan"
+
+                data = Dict(
+                    "f" => θ_dim - 1,
+                    "a" => size(X_real)[1] == 0 ? 1 : size(X_real)[1],
+                    "X_real" => size(X_real)[1] == 0 ? zeros(1, size(X_real)[2])[:, 2:end] : X_real[:, 2:end],
+                    "y_real" => size(X_real)[1] == 0 ? [1] : Int.((y_real .+ 1) ./ 2),
+                    "b" => size(X_synth)[1] == 0 ? 1 : size(X_synth)[1],
+                    "X_synth" => size(X_synth)[1] == 0 ? zeros(1, size(X_synth)[2])[:, 2:end] : X_synth[:, 2:end],
+                    "y_synth" => size(X_synth)[1] == 0 ? [1] : Int.((y_synth .+ 1) ./ 2),
+                    "w" => c[:w],
+                    "beta" => c[:β],
+                    "beta_w" => c[:w],
+                    "flag_real" => size(X_real)[1] == 0 ? 1 : 0,
+                    "flag_synth" => size(X_synth)[1] == 0 ? 1 : 0
+                )
+                # init = Dict(
+                #     "alpha" => initial_θ[1],
+                #     "coefs" => initial_θ[2:end]
+                # )
+                init = Dict(
+                    "alpha" => 0.0,
+                    "coefs" => zeros(θ_dim - 1)
+                )
+                model = stan_models[myid()]["$(c[:model])_$(myid())"]
+
+                try
+                    @time _, chn, _ = stan(
+                        model,
+                        data;
+                        init=init
+                    )
+                    chains = Array(chn)[:, 1:θ_dim]
+                    auc_score, ll, bf, param_mse, param_mses = evaluate_logistic_samples(X_valid, y_valid, chains, data_levels, θ_real)
+                catch
+                    auc_score, ll, bf, param_mse, param_mses = NaN, NaN, NaN, NaN, [NaN for i in 1:θ_dim]
+                end
+    
+            elseif mcmc[:sampler] == "Stan"
+
+                # Unsure if this works but want to eventually transition to using Stan
+                data = Dict(
+                    "f" => θ_dim - 1,
+                    "a" => size(X_real)[1] == 0 ? 1 : size(X_real)[1],
+                    "X_real" => size(X_real)[1] == 0 ? zeros(1, size(X_real)[2])[:, 2:end] : X_real[:, 2:end],
+                    "y_real" => size(X_real)[1] == 0 ? [1] : Int.((y_real .+ 1) ./ 2),
+                    "b" => size(X_synth)[1] == 0 ? 1 : size(X_synth)[1],
+                    "X_synth" => size(X_synth)[1] == 0 ? zeros(1, size(X_synth)[2])[:, 2:end] : X_synth[:, 2:end],
+                    "y_synth" => size(X_synth)[1] == 0 ? [1] : Int.((y_synth .+ 1) ./ 2),
+                    "w" => c[:w],
+                    "beta" => c[:β],
+                    "beta_w" => c[:w],
+                    "flag_real" => size(X_real)[1] == 0 ? 1 : 0,
+                    "flag_synth" => size(X_synth)[1] == 0 ? 1 : 0
+                )
+                init = Dict(
+                    "alpha" => initial_θ[1],
+                    "coefs" => initial_θ[2:end]
+                )
+                model = stan_models[myid()]["$(c[:model])_$(myid())"]
+
+                rc = stan_sample(
+                    model;
+                    init=init,
+                    data=data,
+                )
+                if success(rc)
+                    samples = mean(read_samples(model)[:, 1:θ_dim, :], dims=3)[:, :, 1]
+                    auc_score, ll, bf, param_mse, param_mses = evaluate_logistic_samples(X_valid, y_valid, samples, c)
+                else
+                    auc_score, ll, bf, param_mse, param_mses = NaN, NaN, NaN, NaN, [NaN for i in 1:θ_dim]
+                end
+    
+            elseif mcmc[:sampler] == "AHMC"
+    
+                # Define log posteriors and gradients of them
+                ahmc_models = init_ahmc_logistic_models(
+                    X_real, y_real, X_synth, y_synth, prior[:σₚ], c[:w], c[:w], c[:β], initial_θ
+                )
+                model = ahmc_models[c[:model]]
+
+                chains = map(1:mcmc[:n_chains]) do i
+                    metric = DiagEuclideanMetric(θ_dim)
+                    hamiltonian, proposal, adaptor = setup_run(
+                        model.ℓπ,
+                        metric,
+                        initial_θ;
+                        ∂ℓπ∂θ = model.∇ℓπ,
+                        target_acceptance_rate = mcmc[:target_acceptance]
+                    )
+                    chn, _ = sample(
+                        hamiltonian, proposal, initial_θ, mcmc[:n_samples], adaptor, mcmc[:n_warmup];
+                        drop_warmup=true, progress=show_progress, verbose=show_progress
+                    )
+                    chn
+                end
+        
+                chains = hcat(vcat(chains...)...)'
+                auc_score, ll, bf, param_mse, param_mses = evaluate_logistic_samples(X_valid, y_valid, chains, data_levels, θ_real)
+    
+            elseif mcmc[:sampler] == "Turing"
+    
+                turing_models = init_turing_logistic_models(
+                    X_real, y_real, X_synth, y_synth, prior[:σₚ], c[:w], c[:w], c[:β]
+                )
+                model = turing_models[c[:model]]
+        
+                @time chains = map(1:mcmc[:n_chains]) do i
+                    varinfo = Turing.VarInfo(model)
+                    model(varinfo, Turing.SampleFromPrior(), Turing.PriorContext((θ = initial_θ,)))
+                    init_θ = varinfo[Turing.SampleFromPrior()]
+                    chn = sample(model, Turing.NUTS(mcmc[:n_warmup], mcmc[:target_acceptance]), mcmc[:n_samples], init_theta = init_θ)
+                    chn
+                end
+
+                chains = Array(vcat(chains...))
+                auc_score, ll, bf, param_mse, param_mses = evaluate_logistic_samples(X_valid, y_valid, chains, data_levels, θ_real)
+        
+            end
+    
+            open("$(out_path)/$(myid())_out.csv", "a") do io
+                write(io, """$(base_seed+c[:i]),$(c[:i]),$(c[:fold]),$(dataset[:name]),$(dataset[:label]),$(dataset[:ϵ]),$(s[5][:model]),$(c[:w]),$(c[:β]),$(c[:real_α]),$(c[:synth_α]),$(auc_score),$(ll),$(bf),$(param_mse),$(join(param_mses,","))\n""")
+            end
+
         elseif experiment_type == "regression"
             # TODO
             print("Not implemented")

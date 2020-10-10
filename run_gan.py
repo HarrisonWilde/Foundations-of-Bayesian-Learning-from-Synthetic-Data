@@ -187,6 +187,8 @@ def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, no
         df = df.drop(columns=["Unnamed: 0"], axis=1)
     elif name == "kag_cervical_cancer":
         df = df.fillna(df.mean())
+    elif name == "framingham":
+        df = df.fillna(df.mean())
     elif name == "kag_creditcard":
         df = df.drop(columns=["Time"], axis=1)
     elif name == "gcse":
@@ -253,7 +255,8 @@ def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, no
             delta,
             niter,
             num_teachers,
-            no_split)
+            no_split
+        )
 
         cols = features
         cols.extend(targets)
