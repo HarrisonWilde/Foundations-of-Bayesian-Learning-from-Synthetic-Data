@@ -26,10 +26,8 @@ gg_color_hue <- function(n) {
 }
 
 
-path <- "from_cluster/logistic_regression/outputs/final_csvs/grid_framingham_eps0p01.csv"
-# path <- "from_cluster/gaussian/outputs/final_csvs/neff.csv"
-# path <- "gaussian/outputs/fn50.csv"
-# metrics <- c("kld", "ll", "wass")
+path <- "from_cluster/logistic_regression/outputs/final_csvs/heart.csv"
+# path <- "from_cluster/logistic_regression/outputs/final_csvs/grid_framingham_eps0p01.csv"
 metrics <- c("auc", "ll", "param_mse")
 out_path <- str_remove(str_replace(paste(str_split(path, "/")[[1]][-4], collapse="/"), "outputs", "plots"), ".csv")
 dir.create(out_path)

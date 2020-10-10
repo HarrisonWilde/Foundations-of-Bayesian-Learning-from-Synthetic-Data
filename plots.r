@@ -28,6 +28,7 @@ data <- drop_na(import(path, setclass="tibble", fill=TRUE), iter)
 
 
 
+conf_interval <- 0.95
 
 
 data <- data %>%
@@ -62,7 +63,6 @@ data_without_reals <- data %>% filter(real_n %in% real_ns)
 #     }
 # }
 
-conf_interval <- 0.95
 
 branching_df <- data_without_reals %>%
     group_by(noise, real_n, synth_n, model_full) %>%
@@ -264,54 +264,105 @@ for (i in 1:nrow(distinct(select(spag_data, c(model_full, real_n, noise))))) {
 
 
 
-# Bootstrap NEFF plots
+# Bootstrap n effective plots
 
-n <- 100
-B <- 50
+N <- 200
+B <- 100
 
-
-
-# ADDITIONAL N PLOTS
 
 real_avgs <- data %>% 
     filter(synth_n == 0) %>% 
     group_by(real_n) %>% 
-    summarise(real_ll = mean(ll), real_kld = mean(kld), real_wass = mean(wass))
+    summarise(
+        matched_ll = mean(ll), matched_wass = mean(wass), matched_kld = mean(kld)
+    ) %>%
+    mutate(n_eff_ll = real_n, n_eff_kld = real_n, n_eff_wass = real_n) %>%
+    select(-real_n)
 
-new_cols <- matrix(NA, nrow=nrow(min_exp_data), ncol=length(metrics))
-for (i in 1:nrow(min_exp_data)) {
-    row = min_exp_data[i,]
-    add_row = c()
-    for (metric in metrics) {
-        val <- row[[paste0("min_exp_", metric)]]
-        ordered <- real_avgs %>% arrange(abs(!!sym(paste0("real_", metric)) - val)) %>% select(real_n)
-        add_row = c(add_row, ordered[1,][[1]])
+min_data <- data_without_reals %>%
+    arrange(synth_n) %>%
+    group_by(real_n, seed, model_full, noise) %>%
+    summarise(
+        min_ll = min(ll),
+        min_kld = min(kld), 
+        min_wass = min(wass), 
+        min_synth_n_ll = synth_n[which.min(ll)], 
+        min_synth_n_kld = synth_n[which.min(kld)], 
+        min_synth_n_wass = synth_n[which.min(wass)], 
+        .groups="drop"
+    )
+
+disty <- function(x, y) abs(x - y)
+idx <- sapply(min_data$min_ll, function(x) which.min( disty(x, real_avgs$matched_ll)))
+neff_df <- bind_cols(min_data, select(real_avgs, c(matched_ll, n_eff_ll))[idx,1:2,drop=FALSE])
+idx <- sapply(min_data$min_kld, function(x) which.min( disty(x, real_avgs$matched_kld)))
+neff_df <- bind_cols(neff_df, select(real_avgs, c(matched_kld, n_eff_kld))[idx,1:2,drop=FALSE])
+idx <- sapply(min_data$min_wass, function(x) which.min( disty(x, real_avgs$matched_wass)))
+neff_df <- bind_cols(neff_df, select(real_avgs, c(matched_wass, n_eff_wass))[idx,1:2,drop=FALSE])
+
+real_ns <- neff_df %>% pull(real_n) %>% unique()
+neff_df <- neff_df %>% mutate(
+    n_eff_ll = n_eff_ll - real_n,
+    n_eff_kld = n_eff_kld - real_n,
+    n_eff_wass = n_eff_wass - real_n
+)
+data_list <- list()
+
+for (j in 1:length(real_ns)) {
+    n <- real_ns[j]
+    working_df <- neff_df %>% filter(real_n == n) %>% arrange(model_full, noise)
+    left_side <- working_df %>% select(model_full, noise) %>% distinct()
+    dims <- left_side %>% count() %>% pull()
+    matrices <- array(0, c(dims, 3, B))
+    for (i in 1:B) {
+        matrices[,,i] <- working_df %>%
+            group_by(model_full, noise) %>%
+            sample_n(100) %>%
+            arrange(model_full, noise) %>%
+            summarise(b_n_eff_ll = mean(n_eff_ll), b_n_eff_kld = mean(n_eff_kld), b_n_eff_wass = mean(n_eff_wass), .groups="drop") %>%
+            select(b_n_eff_ll, b_n_eff_kld, b_n_eff_wass) %>%
+            as.matrix()
     }
-    new_cols[i,] = add_row
+    means <- apply(matrices, 1:2, mean)
+    var <- array(0, c(dims, 3))
+    for (i in 1:B) {
+        var <- var + (matrices[,,i] - means) ^ 2
+    }
+    ses <- (var / B) ^ 0.5
+    step <- bind_cols(
+        left_side,
+        bind_cols(
+            tibble(real_n = rep(n, dims)),
+            bind_cols(
+                tibble(n_eff_ll = means[,1], n_eff_kld = means[,2], n_eff_wass = means[,3]),
+                tibble(n_eff_ll_se = ses[,1], n_eff_kld_se = ses[,2], n_eff_wass_se = ses[,3])
+            )
+        )
+    )
+    data_list[[j]] <- step
 }
 
-n_add_col_names <- c()
-for (metric in metrics) {
-    n_add_col_names <- c(n_add_col_names, paste0("n_add_", metric))
-}
-colnames(new_cols) <- n_add_col_names
-n_add_data <- cbind(min_exp_data, new_cols)
+n_eff_plot_df <- do.call(rbind, data_list)
+noises <- n_eff_plot_df %>% pull(noise) %>% unique()
 
-
-
-# FIX THIS
-
-n_add_data <- n_add_data %>% mutate(n_eff_kld = n_add_kld - real_n, n_eff_ll = n_add_ll - real_n, n_eff_wass = n_add_wass - real_n)
-
-# for (metric in metrics) {
-#     n_add_data <- n_add_data %>% mutate(!!paste0("n_eff_", metric) = !!paste0("n_add_", metric) - real_n)
-# }
-
-for (i in 1:nrow(distinct(select(min_exp_data, noise)))) {
-    noise <- distinct(select(min_exp_data, noise))[i,][[1]]
+for (noise in noises) {
     for (metric in metrics) {
-        p <- ggplot(n_add_data %>% filter(!!noise == noise), aes_string(x="real_n", y=paste0("n_eff_", metric), color="model_full")) + geom_line()
-        ggsave(paste0(out_path, "/n_add__noise_", noise, "__metric_", metric, ".png"), p)
+        n_eff_plot_df <- n_eff_plot_df %>% mutate(
+            exp_metric = !!sym(paste0("n_eff_", metric)),
+            ci_low_metric = !!sym(paste0("n_eff_", metric)) - !!(sym(paste0("n_eff_", metric, "_se"))),
+            ci_high_metric = !!sym(paste0("n_eff_", metric)) + !!(sym(paste0("n_eff_", metric, "_se"))),
+        )
+        p <- ggplot(
+            n_eff_plot_df %>% filter(!!noise == noise),
+            aes(x=real_n, y=exp_metric, color=model_full)
+        ) +
+        geom_errorbar(
+            aes(ymin=ci_low_metric, ymax=ci_high_metric),
+            alpha = 0.5
+        ) +
+        geom_line() +
+        labs(x = "Number of Real Samples", y = "Effective Real Samples to Gain Using Synthetic Data", color = "Model Type")
+        ggsave(paste0(out_path, "/n_eff__noise_", noise, "__metric_", metric, ".png"), p)
     }
 }
 

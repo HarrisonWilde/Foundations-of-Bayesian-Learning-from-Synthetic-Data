@@ -27,8 +27,6 @@ parameters {
 
 model {
 
-    real val;
-
     // Uninformative priors
     alpha ~ normal(0, 50);
     coefs ~ normal(0, 50);

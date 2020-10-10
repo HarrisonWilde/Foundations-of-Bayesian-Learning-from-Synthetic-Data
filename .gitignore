@@ -17,3 +17,4 @@ tgan_original/
 *.npy
 cmdstan-2.24.1/
 *.tar
+tmp/

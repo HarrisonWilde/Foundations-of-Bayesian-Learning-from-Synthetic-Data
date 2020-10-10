@@ -148,6 +148,8 @@ end
 #     "model_names" => ["beta", "weighted"],
 #     "real_alphas" => [0.025, 0.05, 0.1, 0.2, 0.4, 0.6, 1.0],
 #     "synth_alphas" => [0.0, 0.05, 0.1, 0.5, 1.0],
+#     "synth_alpha_range" => [],
+#     "real_alpha_range" => [],
 #     "mu_p" => 1.0,
 #     "algorithm" => "basic",
 #     "seed" => 1,
@@ -734,7 +736,7 @@ function main()
                 real_α = s[2],
                 synth_α = s[3],
                 fold = s[4],
-                model = s[5][:model],
+                model = s[5][:model] == "resampled" ? "weighted" : s[5][:model],
                 w = s[5][:weight],
                 β = s[5][:β]
             )
@@ -748,6 +750,13 @@ function main()
                 real_data, synth_data, c[:real_α], c[:synth_α],
                 c[:fold], config[:folds], labels
             )
+
+            if s[5][:model] == "resampled"
+                idx = rand(collect(1:size(X_real)[1]), length(y_synth))
+                X_synth = X_real[idx, :]
+                y_synth = y_real[idx]
+            end
+
             # First parameter here is regularisation on the LogisticRegression, choose what to do with it
             initial_θ = init_run(
                 1.0, X_real, y_real
@@ -757,9 +766,9 @@ function main()
 
                 data = Dict(
                     "f" => θ_dim - 1,
-                    "a" => size(X_real)[1],
-                    "X_real" => X_real[:, 2:end],
-                    "y_real" => Int.((y_real .+ 1) ./ 2),
+                    "a" => size(X_real)[1] == 0 ? 1 : size(X_real)[1],
+                    "X_real" => size(X_real)[1] == 0 ? zeros(1, size(X_real)[2])[:, 2:end] : X_real[:, 2:end],
+                    "y_real" => size(X_real)[1] == 0 ? [1] : Int.((y_real .+ 1) ./ 2),
                     "b" => size(X_synth)[1] == 0 ? 1 : size(X_synth)[1],
                     "X_synth" => size(X_synth)[1] == 0 ? zeros(1, size(X_synth)[2])[:, 2:end] : X_synth[:, 2:end],
                     "y_synth" => size(X_synth)[1] == 0 ? [1] : Int.((y_synth .+ 1) ./ 2),
@@ -788,7 +797,7 @@ function main()
                     chains = Array(chn)[:, 1:θ_dim]
                     auc_score, ll, bf, param_mse, param_mses = evaluate_logistic_samples(X_valid, y_valid, chains, data_levels, θ_real)
                 catch
-                    auc_score, ll, bf, param_mse, param_mses = NaN, NaN, NaN, NaN, [NaN for i in 1:θ_real]
+                    auc_score, ll, bf, param_mse, param_mses = NaN, NaN, NaN, NaN, [NaN for i in 1:θ_dim]
                 end
     
             elseif mcmc[:sampler] == "Stan"
@@ -796,9 +805,9 @@ function main()
                 # Unsure if this works but want to eventually transition to using Stan
                 data = Dict(
                     "f" => θ_dim - 1,
-                    "a" => size(X_real)[1],
-                    "X_real" => X_real[:, 2:end],
-                    "y_real" => Int.((y_real .+ 1) ./ 2),
+                    "a" => size(X_real)[1] == 0 ? 1 : size(X_real)[1],
+                    "X_real" => size(X_real)[1] == 0 ? zeros(1, size(X_real)[2])[:, 2:end] : X_real[:, 2:end],
+                    "y_real" => size(X_real)[1] == 0 ? [1] : Int.((y_real .+ 1) ./ 2),
                     "b" => size(X_synth)[1] == 0 ? 1 : size(X_synth)[1],
                     "X_synth" => size(X_synth)[1] == 0 ? zeros(1, size(X_synth)[2])[:, 2:end] : X_synth[:, 2:end],
                     "y_synth" => size(X_synth)[1] == 0 ? [1] : Int.((y_synth .+ 1) ./ 2),
@@ -823,7 +832,7 @@ function main()
                     samples = mean(read_samples(model)[:, 1:θ_dim, :], dims=3)[:, :, 1]
                     auc_score, ll, bf, param_mse, param_mses = evaluate_logistic_samples(X_valid, y_valid, samples, c)
                 else
-                    auc_score, ll, bf, param_mse, param_mses = NaN, NaN, NaN, NaN, [NaN for i in 1:θ_real]
+                    auc_score, ll, bf, param_mse, param_mses = NaN, NaN, NaN, NaN, [NaN for i in 1:θ_dim]
                 end
     
             elseif mcmc[:sampler] == "AHMC"
@@ -874,7 +883,7 @@ function main()
             end
     
             open("$(out_path)/$(myid())_out.csv", "a") do io
-                write(io, """$(base_seed+c[:i]),$(c[:i]),$(c[:fold]),$(dataset[:name]),$(dataset[:label]),$(dataset[:ϵ]),$(c[:model]),$(c[:w]),$(c[:β]),$(c[:real_α]),$(c[:synth_α]),$(auc_score),$(ll),$(bf),$(param_mse),$(join(param_mses,","))\n""")
+                write(io, """$(base_seed+c[:i]),$(c[:i]),$(c[:fold]),$(dataset[:name]),$(dataset[:label]),$(dataset[:ϵ]),$(s[5][:model]),$(c[:w]),$(c[:β]),$(c[:real_α]),$(c[:synth_α]),$(auc_score),$(ll),$(bf),$(param_mse),$(join(param_mses,","))\n""")
             end
 
         elseif experiment_type == "regression"
