@@ -33,11 +33,20 @@ function init_csv_files(experiment_type, distributed, out_path, name_metrics)
 end
 
 
-function init_stan_models(path, experiment_type, sampler, n_samples, n_warmup, n_chains, target_acceptance_rate, model_names; dist = true)
+function init_stan_models(path, experiment_type, sampler, n_samples, n_warmup, n_chains, target_acceptance_rate, namez; dist = true)
 
     if dist && !(isdir("$(path)/tmp/$(ENV["SLURM_JOB_ID"])"))
         mkpath("$(path)/tmp/$(ENV["SLURM_JOB_ID"])")
     end
+
+    if ("weighted" ∉ namez) & ("resampled" ∈ namez)
+        model_names = vcat(filter(e -> e != "resampled", namez), ["weighted"])
+    elseif "resampled" ∈ namez
+        model_names = filter(e -> e != "resampled", namez)
+    else
+        model_names = namez
+    end
+
     tmpdir = dist ? "$(path)/tmp/$(ENV["SLURM_JOB_ID"])/$(myid())/" : mktempdir()
     if sampler == "Stan"
         stan_models = [(

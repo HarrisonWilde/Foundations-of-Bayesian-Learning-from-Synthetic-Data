@@ -32,7 +32,7 @@ metrics <- c("auc", "ll", "param_mse")
 out_path <- str_remove(str_replace(paste(str_split(path, "/")[[1]][-4], collapse="/"), "outputs", "plots"), ".csv")
 dir.create(out_path)
 
-data <- drop_na(import(path, setclass="tibble", fill=TRUE), iter)
+data <- drop_na(import(path, setclass="tibble", fill=TRUE), auc)
 
 
 
@@ -252,49 +252,4 @@ for (i in 1:nrow(distinct(select(spag_data, c(model_full, real_n, noise))))) {
 
 }
 
-
-
-# ADDITIONAL N PLOTS
-
-real_avgs <- data %>% 
-    filter(synth_n == 0) %>% 
-    group_by(real_n) %>% 
-    summarise(real_ll = mean(ll), real_kld = mean(kld), real_wass = mean(wass))
-
-new_cols <- matrix(NA, nrow=nrow(min_exp_data), ncol=length(metrics))
-for (i in 1:nrow(min_exp_data)) {
-    row = min_exp_data[i,]
-    add_row = c()
-    for (metric in metrics) {
-        val <- row[[paste0("min_exp_", metric)]]
-        ordered <- real_avgs %>% arrange(abs(!!sym(paste0("real_", metric)) - val)) %>% select(real_n)
-        add_row = c(add_row, ordered[1,][[1]])
-    }
-    new_cols[i,] = add_row
-}
-
-n_add_col_names <- c()
-for (metric in metrics) {
-    n_add_col_names <- c(n_add_col_names, paste0("n_add_", metric))
-}
-colnames(new_cols) <- n_add_col_names
-n_add_data <- cbind(min_exp_data, new_cols)
-
-
-
-# FIX THIS
-
-n_add_data <- n_add_data %>% mutate(n_eff_kld = n_add_kld - real_n, n_eff_ll = n_add_ll - real_n, n_eff_wass = n_add_wass - real_n)
-
-# for (metric in metrics) {
-#     n_add_data <- n_add_data %>% mutate(!!paste0("n_eff_", metric) = !!paste0("n_add_", metric) - real_n)
-# }
-
-for (i in 1:nrow(distinct(select(min_exp_data, noise)))) {
-    noise <- distinct(select(min_exp_data, noise))[i,][[1]]
-    for (metric in metrics) {
-        p <- ggplot(n_add_data %>% filter(!!noise == noise), aes_string(x="real_n", y=paste0("n_eff_", metric), color="model_full")) + geom_line()
-        ggsave(paste0(out_path, "/n_add__noise_", noise, "__metric_", metric, ".png"), p)
-    }
-}
 

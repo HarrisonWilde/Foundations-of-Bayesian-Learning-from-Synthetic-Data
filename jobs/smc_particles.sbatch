@@ -24,9 +24,9 @@ julia run.jl \
     --beta_weights 1.25 2.5 \
     --weights 0.0 0.5 1.0 \
     --metrics auc ll bf param_mse \
-    --model_names beta weighted \
-    --real_alphas 0.025 0.05 0.1 0.25 0.5 1.0 \
-    --synth_alphas 0.0 0.01 0.02 0.03 0.04 0.05 0.075 0.1 0.15 0.2 0.4 0.6 1.0 \
+    --model_names beta weighted resampled \
+    --real_alphas 0.025 0.05 0.1 0.15 0.2 0.25 0.5 1.0 \
+    --synth_alphas 0.0 0.01 0.02 0.03 0.04 0.05 0.075 0.1 0.125 0.15 0.2 0.4 0.6 1.0 \
     --algorithm basic \
     --sigma_p 30.0 \
     --dataset uci_heart \
