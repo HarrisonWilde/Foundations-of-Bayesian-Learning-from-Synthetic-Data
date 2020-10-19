@@ -8,7 +8,7 @@ See the Julia `Manifest.toml` and `Project.toml` for a full list of dependencies
 
 To use the `CmdStan` sampler option, a [working installation of CmdStan is required](https://mc-stan.org/users/interfaces/cmdstan), preferably version 2.23.0 but any later version should also work in lieu of breaking changes.
 
-To generate your own synthetic data using the same mechanism as us, we provide `run_gan.py` for the running of the PATE-GAN (paper [here](https://openreview.net/pdf?id=S1zk9iRqF7), source code [here](https://bitbucket.org/mvdschaar/mlforhealthlabpub/src/4fb84b06c83b7ed80b681c9b7d91e66c78495378/alg/pategan/)). Very little was changed in the workings of the GAN itself, we simply provide an interface for running it and a means to discretise some of its outputs. TensorFlow, Pandas and Numpy are required alongside a recent Python version to run this code (tested on 3.7.6).
+To generate your own synthetic data using the same mechanism as us, we provide `run_gan.py` for the running of the PATE-GAN (paper [here](https://openreview.net/pdf?id=S1zk9iRqF7), source code [here](https://bitbucket.org/mvdschaar/mlforhealthlabpub/src/4fb84b06c83b7ed80b681c9b7d91e66c78495378/alg/pategan/)). Very little was changed in the workings of the GAN itself, we simply provide an interface for running it and a means to discretise some of its outputs as well as some specific alterations to clean up the datasets we used. TensorFlow, Pandas and Numpy are required alongside a recent Python version to run this code (tested on 3.7.6).
 
 ## Usage and Reproducing the Results in Our Paper
 
@@ -26,7 +26,7 @@ julia src/logistic_regression/run.jl \
     --distributed
 ```
 
-To reproduce the UCI Heart logistic regression results shown in the paper. Prior to this the synthetic data must be generated using the PATE-GAN mentioned in the paper, this can be done by executing:
+To reproduce the UCI Heart logistic regression results shown in the paper. Prior to this, the synthetic data must be generated using the PATE-GAN mentioned in the paper, this can be done by executing:
 
 ```
 python run_gan.py -i uci_heart --targets target --no_split --iter 10000 --teachers 75
@@ -40,7 +40,7 @@ Note that the `iterations` option is to facilitate the running of this code nume
 
 There is a relatively flexible framework for plotting the results of our experiments. That framework is includede in this repository in the interest of transparency and to hopefully encourage further exploration with different models and datasets. Some example plotting commands:
 
-- To plot what we call a "branch" plot illustrating model performance as synthetic data varies under various fixed real data amounts.
+- To plot what we call a "branching" plot illustrating model performance as synthetic data varies under various fixed real data amounts.
 
 ```
 julia --project=@. plot.jl \
