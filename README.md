@@ -2,13 +2,17 @@
 
 *All of the code is written by Harrison Wilde with help from Jack Jewson on the Stan models and general advice from Sebastian Vollmer.*
 
+## Paper Abstract
+
+There is significant growth and interest in the use of synthetic data as an enabler for machine learning in environments where the release of real data is restricted due to privacy or availability constraints. Despite a large number of methods for synthetic data generation, there are comparatively few results on the statistical properties of models learnt on synthetic data, and fewer still for situations where a researcher wishes to augment real data with another party's synthesised data. We use a Bayesian paradigm to characterise the updating of model parameters when learning in these settings, demonstrating that caution should be taken when applying conventional learning algorithms without appropriate consideration of the synthetic data generating process and learning task. Recent results from general Bayesian updating support a novel and robust approach to Bayesian synthetic-learning founded on decision theory that outperforms standard approaches across repeated experiments on supervised learning and inference problems.
+
 ## Dependencies
 
 See the Julia `Manifest.toml` and `Project.toml` for a full list of dependencies to run files found in `src`, you can run `Pkg.activate(".")` or start Julia with the `--project=@.` option at the top of this repo to first activate the project file. Then run `Pkg.instantiate()` to install all of the dependencies. The Python code is somewhat deprecated in favour of Julia which is much more powerful and performant in the tasks laid out; I will provide a full list of dependencies for the Python code at some point, or on request, though they are fairly standard.
 
 To use the `CmdStan` sampler option, a [working installation of CmdStan is required](https://mc-stan.org/users/interfaces/cmdstan), preferably version 2.23.0 but any later version should also work in lieu of breaking changes.
 
-To generate your own synthetic data using the same mechanism as us, we provide `run_gan.py` for the running of the PATE-GAN (paper [here](https://openreview.net/pdf?id=S1zk9iRqF7), source code [here](https://bitbucket.org/mvdschaar/mlforhealthlabpub/src/4fb84b06c83b7ed80b681c9b7d91e66c78495378/alg/pategan/)). Very little was changed in the workings of the GAN itself, we simply provide an interface for running it and a means to discretise some of its outputs as well as some specific alterations to clean up the datasets we used. TensorFlow, Pandas and Numpy are required alongside a recent Python version to run this code (tested on 3.7.6).
+To generate your own synthetic data using the same mechanism as us, we provide `run_gan.py` for the running of the PATE-GAN \[1\] (paper [here](https://openreview.net/pdf?id=S1zk9iRqF7), source code [here](https://bitbucket.org/mvdschaar/mlforhealthlabpub/src/4fb84b06c83b7ed80b681c9b7d91e66c78495378/alg/pategan/)). Very little was changed in the workings of the GAN itself, we simply provide an interface for running it and a means to discretise some of its outputs as well as some specific alterations to clean up the datasets we used. TensorFlow, Pandas and Numpy are required alongside a recent Python version to run this code (tested on 3.7.6).
 
 ## Usage and Reproducing the Results in Our Paper
 
@@ -76,8 +80,18 @@ if hasattr(os, "register_at_fork"):
 
 ## Acknowledgements
 
-I'd like to extend special thanks to the great groups of people managing the [Turing Language](https://github.com/TuringLang), [StanJulia](https://github.com/StanJulia) and [MLJ](https://github.com/alan-turing-institute/MLJ.jl) for being so helpful. Especially to Thibaut Lienart, Hong Ge, David Widmann, Mohamed Tarek, Cameron Pfiffer, Robert Goedman, Tor Fjelde, Martin Trapp who all spared their time in helping with questions, bugs, performance issues or other pain points throughout. Additional thanks to the Stan and Julia communities in general for enabling such excellent environments for research.
+I'd like to extend special thanks to the great groups of people managing the [Turing Language](https://github.com/TuringLang) \[2\], [StanJulia](https://github.com/StanJulia) \[3\] and [MLJ](https://github.com/alan-turing-institute/MLJ.jl) \[4\] for being so helpful. Especially to Thibaut Lienart, Hong Ge, David Widmann, Mohamed Tarek, Cameron Pfiffer, Robert Goedman, Tor Fjelde, Martin Trapp who all spared their time in helping with questions, bugs, performance issues or other pain points throughout. Additional thanks to the Stan and Julia communities in general for enabling such excellent environments for research.
 
 ## Citing this work
 
 <Reference to follow>
+    
+## References
+
+\[1\] Jordon, James, Jinsung Yoon, and Mihaela van der Schaar. "PATE-GAN: Generating synthetic data with differential privacy guarantees." International Conference on Learning Representations. 2018.
+
+\[2\] Ge, Hong, Kai Xu, and Zoubin Ghahramani. "Turing: A language for flexible probabilistic inference." (2018).
+
+\[3\] Carpenter, Bob, et al. "Stan: A probabilistic programming language." Journal of statistical software 76.1 (2017).
+
+\[4\] Blaom, Anthony D., et al. "MLJ: A Julia package for composable Machine Learning." arXiv preprint arXiv:2007.12285 (2020).
