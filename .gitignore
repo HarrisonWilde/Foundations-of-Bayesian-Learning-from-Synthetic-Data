@@ -19,3 +19,4 @@ cmdstan-2.24.1/
 *.tar
 tmp/
 utils/
+papers/
