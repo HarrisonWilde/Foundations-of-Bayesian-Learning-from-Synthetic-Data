@@ -67,13 +67,25 @@ function evaluate_gaussian_samples(y, dgp, samples, method="Newton")
     ll = log_loss(y, samples)
     Dkl, _ = kld(post_pdf, dgp)
     Dwass = wass_approx(dgp, samples)
+    total_mse, mses = param_mse(dgp, samples)
     # @time Dwass2, _ = wassersteind(inv_post_cdf, post_cdf, dgp, samples, method)
     # @show Dwass1, Dwass2
     return Dict(
         "ll" => ll,
         "kld" => Dkl,
-        "wass" => Dwass
+        "wass" => Dwass,
+        "total_mse" => total_mse,
+        "mses" => mses
     )
+end
+
+
+function param_mse(dgp, samples)
+
+    mse_μ = (dgp.μ - mean(samples[:, 1])) ^ 2
+    mse_σ = (dgp.σ - mean(samples[:, 2])) ^ 2
+    return mse_μ + mse_σ, [mse_μ, mse_σ]
+
 end
 
 

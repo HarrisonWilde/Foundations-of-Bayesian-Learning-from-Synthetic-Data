@@ -1,6 +1,6 @@
 using ClusterManagers
 using Distributed
-# addprocs(6)
+# addprocs(30)
 # @everywhere begin
 #     using Pkg; Pkg.activate("."); Pkg.instantiate()
 # end
@@ -95,22 +95,22 @@ end
 #     "experiment_type" => "gaussian",
 #     "show_progress" => true,
 #     "iterations" => 100,
-#     "n_samples" => 10000,
-#     "n_warmup" => 0,
+#     "n_samples" => 4500,
+#     "n_warmup" => 500,
 #     "n_chains" => 1,
 #     "sampler" => "Turing",
-#     "scales" => [0.006, 0.06, 0.6, 1.0, 6.0, 60.0, 600.0],
+#     "scales" => [0.75, 1.0],
 #     "betas" => [0.75],
 #     "beta_weights" => [1.25],
 #     "calibrate_beta_weight" => false,
 #     "weights" => [1.0],
-#     "metrics" => ["ll", "kld", "wass"],
+#     "metrics" => ["ll", "kld", "wass", "param_mse"],
 #     "model_names" => ["weighted"],
-#     "real_ns" => [0],
-#     "real_n_range" => [],
+#     "real_ns" => [1, 4, 7, 10],
+#     "real_n_range" => [15, 5, 100],
 #     "synth_ns" => [],
 #     "synth_n_range" => [0, 1, 100],
-#     "n_unseen" => 100,
+#     "n_unseen" => 500,
 #     "algorithm" => "basic",
 #     "mu_p" => 3.0,
 #     "sigma_p" => 30.0,
@@ -126,7 +126,7 @@ end
 #     "target_acceptance" => 0.8,
 #     "mu" => 0.0,
 #     "sigma" => 1.0,
-#     "id" => "noise_demo",
+#     "id" => "gauss_demo_thing",
 #     "seed" => 1,
 #     "alphas" => [],
 #     "fn" => 0
@@ -282,7 +282,7 @@ function main()
     if distributed
         out_path = "$(base_path)/$(experiment_type)/outputs/$(id)_$(ENV["SLURM_JOB_ID"])_$(t)_$(mcmc[:sampler])"
     else
-        out_path = "$(base_path)/$(experiment_type)/outputs/$(id)_$(t)_$(mcmc[:sampler])"
+        out_path = "$(base_path)/outputs/$(experiment_type)/outputs/$(id)_$(t)_$(mcmc[:sampler])"
     end
     # plot_path = "$(base_path)/$(experiment_type)/plots/IN_RUN_$(t)_$(mcmc[:sampler])"
     mkpath(out_path)
@@ -358,7 +358,9 @@ function main()
     model_configs = generate_model_configs(mcmc[:model_names], βs, βws, ws, αs)
 
     # Instantiate the output file according to the passed MCMC config
-    if "param_mse" in config[:metrics]
+    if (experiment_type == "gaussian") & ("param_mse" in config[:metrics])
+        name_metrics = join(vcat(config[:metrics], ["param_mse_mu", "param_mse_sigma"]), ",")
+    elseif "param_mse" in config[:metrics]
         name_metrics = join(vcat(config[:metrics], ["param_mse_$(p)" for p in names(unshuffled_real_data)]), ",")
     else
         name_metrics = join(config[:metrics], ",")
@@ -473,10 +475,10 @@ function main()
     
                 end
 
-                ll, kl, wass = ms["ll"], ms["kld"], ms["wass"]
+                ll, kl, wass, total_mse, param_mses = ms["ll"], ms["kld"], ms["wass"], ms["total_mse"], ms["mses"]
     
                 open("$(out_path)/$(myid())_out.csv", "a") do io
-                    write(io, "$(base_seed+c[:i]),$(c[:i]),$(dgp.σ),$(dgp.μ),$(c[:λ]),$(s[:6][:model]),$(length(αs) > 0 ? s[6][:weight] : -1),$(c[:w]),$(c[:β]),$(c[:real_n]),$(length(synth_data)),$(ll),$(kl),$(wass),$(sens / c[:λ])\n")
+                    write(io, """$(base_seed+c[:i]),$(c[:i]),$(dgp.σ),$(dgp.μ),$(c[:λ]),$(s[:6][:model]),$(length(αs) > 0 ? s[6][:weight] : -1),$(c[:w]),$(c[:β]),$(c[:real_n]),$(length(synth_data)),$(ll),$(kl),$(wass),$(total_mse),$(join(param_mses,",")),$(sens / c[:λ])\n""")
                 end
 
             else
