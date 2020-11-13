@@ -6,7 +6,7 @@ tf.disable_v2_behavior()
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
-def PATE_GAN(n, X_train, Y_train, X_test, Y_test, epsilon, delta, niter, num_teachers, no_split):
+def PATE_GAN(X_train, Y_train, X_test, Y_test, epsilon, delta, niter, num_teachers, no_split):
 
     # Parameters
 
@@ -176,46 +176,24 @@ def PATE_GAN(n, X_train, Y_train, X_test, Y_test, epsilon, delta, niter, num_tea
         _, G_loss_curr = sess.run([G_solver, G_loss], feed_dict={Z: Z_mb, Y: Y_mb})
         p.set_description(str(G_loss_curr))
 
-    if n > 1:
+    # Output Generation
+    New_X_train = sess.run([G_sample], feed_dict={Z: sample_Z(len(X_train[:, 0]), z_dim), Y: np.reshape(Y_train, [len(Y_train), 1])})
+    New_X_train = New_X_train[0]
 
-        return create_generator(n, sess, Max_Val, Min_Val, G_sample, X_train, Y_train, z_dim)
+    # Renormalization
+    New_X_train = New_X_train * (Max_Val + 1e-8)
+    New_X_train = New_X_train + Min_Val
 
-    else:        
-
-        # Output Generation
-        New_X_train = sess.run([G_sample], feed_dict={Z: sample_Z(len(X_train[:, 0]), z_dim), Y: np.reshape(Y_train, [len(Y_train), 1])})
-        New_X_train = New_X_train[0]
-
-        # Renormalization
-        New_X_train = New_X_train * (Max_Val + 1e-8)
-        New_X_train = New_X_train + Min_Val
-
-        if no_split:
-            return New_X_train, Y_train
-            
-        else:
-            # Testing
-            New_X_test = sess.run([G_sample], feed_dict={Z: sample_Z(len(X_test[:, 0]), z_dim), Y: np.reshape(Y_test, [len(Y_test), 1])})
-            New_X_test = New_X_test[0]
-
-            # Renormalization
-            New_X_test = New_X_test * (Max_Val + 1e-8)
-            New_X_test = New_X_test + Min_Val
-
-            return New_X_train, Y_train, New_X_test, Y_test
-
-
-def create_generator(n, sess, Max_Val, Min_Val, G_sample, X_train, Y_train, z_dim):
-
-    for i in range(0, n):
+    if no_split:
+        return New_X_train, Y_train
         
-        # Output Generation
-        New_X_train = sess.run([G_sample], feed_dict={Z: sample_Z(len(X_train[:, 0]), z_dim), Y: np.reshape(Y_train, [len(Y_train), 1])})
-        New_X_train = New_X_train[0]
+    else:
+        # Testing
+        New_X_test = sess.run([G_sample], feed_dict={Z: sample_Z(len(X_test[:, 0]), z_dim), Y: np.reshape(Y_test, [len(Y_test), 1])})
+        New_X_test = New_X_test[0]
 
         # Renormalization
-        New_X_train = New_X_train * (Max_Val + 1e-8)
-        New_X_train = New_X_train + Min_Val
+        New_X_test = New_X_test * (Max_Val + 1e-8)
+        New_X_test = New_X_test + Min_Val
 
-        yield New_X_train, Y_train
-
+        return New_X_train, Y_train, New_X_test, Y_test
