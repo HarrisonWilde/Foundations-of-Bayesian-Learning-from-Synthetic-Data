@@ -8,6 +8,7 @@ sampling.txt
 *.csv
 pategan_original/
 tgan_original/
+python_src/
 *.data
 *.info
 *.names

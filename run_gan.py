@@ -1,13 +1,21 @@
 import numpy as np
-from python_src.gan.PATE_GAN import PATE_GAN
+from pategan.pategan import pategan
+from dpgan.dpgan import dpgan
 import argparse
 import pandas as pd
+import pathlib
 
 
 # gpu_frac = 0.5
 # config = tf.ConfigProto()
 # config.gpu_options.per_process_gpu_memory_fraction = gpu_frac
 # set_session(tf.Session(config=config))
+
+gans = {
+    'dpgan': dpgan,
+    'pategan': pategan,
+}
+
 
 def from_dummies(
     data,
@@ -141,39 +149,7 @@ def from_dummies(
     return out
 
 
-def tt_split(df, ratio=0.7):
-
-    idx = np.random.permutation(len(df))
-    train_idx = idx[:int(ratio * len(df))]
-    test_idx = idx[int(ratio * len(df)):]
-    df_train = df.iloc[train_idx, :]
-    df_test = df.iloc[test_idx, :]
-    return df_train, df_test
-
-
-def init_arg():
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-p", "--path_to_data", default="data/", help="Path to data folder.")
-    parser.add_argument("-i", "--dataset_name", default="creditcard", help="Name of dataset to load (csv file).")
-    parser.add_argument("-tts", "--split", type=float, default=0.5)
-    parser.add_argument("--no_split", "-ns", action="store_true", help="Disable test train split mode")
-    parser.add_argument("--iter", type=int, default=20000)
-    parser.add_argument("--epsilon", type=float, default=6.)
-    parser.add_argument("--delta", type=int, default=5)
-    parser.add_argument("--teachers", type=int, default=50)
-    parser.add_argument("--targets", nargs='+', help="Name of response var when using csv as input.")
-    parser.add_argument("--separator", default=',', help="Separator for the input csv file.")
-    return parser.parse_args()
-
-
-def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, no_split, b):
-
-    if b is not None:
-        b.set_description_str(f'Training PATE-GAN with {num_teachers} teachers, {niter} iterations, delta = {delta}...')
-
-    assert path is not None
-    assert targets is not None
+def load_data(path, name):
 
     # Dataset specific pre-processing
     if name == "kag_cervical_cancer":
@@ -191,20 +167,62 @@ def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, no
         df = df.fillna(df.mean())
     elif name == "kag_creditcard":
         df = df.drop(columns=["Time"], axis=1)
-    elif name == "gcse":
-        students = df["student"]
-        df.drop("student", axis=1, inplace=True)
-        df = pd.get_dummies(df, columns=["school"])
+    
+    return df
+
+
+def tt_split(df, ratio=0.7):
+
+    idx = np.random.permutation(len(df))
+    train_idx = idx[:int(ratio * len(df))]
+    test_idx = idx[int(ratio * len(df)):]
+    df_train = df.iloc[train_idx, :]
+    df_test = df.iloc[test_idx, :]
+    return df_train, df_test
+
+
+def init_arg():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-p", "--path_to_data", default="data/", help="Path to data folder.")
+    parser.add_argument("-i", "--dataset_name", default="creditcard", help="Name of dataset to load (csv file).")
+    parser.add_argument("-tts", "--split", type=float, default=0.5)
+    parser.add_argument("--no_split", "-ns", action="store_true", help="Disable test train split mode")
+    parser.add_argument("--iter", type=int, default=500)
+    parser.add_argument("--epsilon", type=float, default=6.)
+    parser.add_argument("--delta", type=float, default=1e-5)
+    parser.add_argument("--lamda", type=float, default=0.005)
+    parser.add_argument("--teachers", type=int, default=50)
+    parser.add_argument("--targets", nargs='+', help="Name of response var when using csv as input")
+    parser.add_argument("--separator", default=',', help="Separator for the input csv file")
+    parser.add_argument('--gan_type', default='pategan', choices=gans.keys())
+    parser.add_argument("--seed", type=int, default=np.random.randint(1e7), help="Define random seed")
+    parser.add_argument("--batch_size", type=int, default=500, help="Define batch size for GAN training")
+    return parser.parse_args()
+
+
+def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, no_split, seed, batch_size, gan_type, lamda, b):
+
+    if b is not None:
+        b.set_description_str(f'Training {gan_type} with {num_teachers} teachers, {niter} iterations, delta = {delta}...')
+
+    assert path is not None
+    assert targets is not None
+
+    df = load_data(path, name)
 
     features = list(df.columns)
     for lbl in targets:
         assert lbl in features
         features.remove(lbl)
 
-    if no_split:
-        out_name = f"{name}_{''.join(targets)}_eps{str(epsilon)}"
+    out_path = path + "outputs/" + gan_type
+    pathlib.Path(out_path).mkdir(parents=True, exist_ok=True) 
 
-        x_new, y_new = PATE_GAN(
+    if no_split:
+        out_name = f"{name}_{''.join(targets)}_eps{str(epsilon)}_seed{str(seed)}"
+
+        X_new, y_new = gans[args.gan_type](
             df[features].values,
             df[targets].values,
             None,
@@ -213,7 +231,10 @@ def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, no
             delta,
             niter,
             num_teachers,
-            no_split
+            batch_size,
+            no_split,
+            lamda,
+            seed
         )
 
         cols = features
@@ -221,32 +242,24 @@ def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, no
 
         df_new = pd.DataFrame(
             np.hstack(
-                [x_new,
+                [X_new,
                  y_new.reshape(len(y_new), -1)]),
             columns=cols)
 
-        if name == "gcse":
-            df["school"] = df.filter(regex=(r"school_")).idxmax(axis=1).str.replace("school_", "")
-            df.drop(list(df.filter(regex='school_')), axis=1, inplace=True)
-            df["student"] = students
-            df_new["school"] = df_new.filter(regex=(r"school_")).idxmax(axis=1).str.replace("school_", "")
-            df_new.drop(list(df_new.filter(regex='school_')), axis=1, inplace=True)
-            df_new["student"] = df_new.groupby(["school"]).cumcount() + 1
-
-        df.to_csv(f'{path}splits/{out_name}_real.csv', index=False)
-        df_new.to_csv(f'{path}splits/{out_name}_synth.csv', index=False)
+        df.to_csv(f'{out_path}/{out_name}_real.csv', index=False)
+        df_new.to_csv(f'{out_path}/{out_name}_synth.csv', index=False)
 
         if b is not None:
-            b.set_description_str('PATE-GAN training and generation complete.')
+            b.set_description_str('{gan_type} training and generation complete.')
 
         return df, df_new
 
     else:
-        out_name = f"{name}_{''.join(targets)}_split{str(split)}_eps{str(epsilon)}"
+        out_name = f"{name}_{''.join(targets)}_split{str(split)}_eps{str(epsilon)}_seed{str(seed)}"
 
         df_train, df_test = tt_split(df, split)
 
-        x_train_new, y_train_new, x_test_new, y_test_new = PATE_GAN(
+        X_train_new, y_train_new, X_test_new, y_test_new = gans[args.gan_type](
             df_train[features].values,
             df_train[targets].values,
             df_test[features].values,
@@ -255,7 +268,10 @@ def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, no
             delta,
             niter,
             num_teachers,
-            no_split
+            batch_size,
+            no_split,
+            lamda,
+            seed
         )
 
         cols = features
@@ -263,23 +279,23 @@ def run(path, name, targets, sep, num_teachers, niter, epsilon, delta, split, no
 
         df_train_new = pd.DataFrame(
             np.hstack(
-                [x_train_new,
+                [X_train_new,
                  y_train_new.reshape(len(y_train_new), -1)]),
             columns=cols)
 
         df_test_new = pd.DataFrame(
             np.hstack(
-                [x_test_new,
+                [X_test_new,
                  y_test_new.reshape(len(y_test_new), -1)]),
             columns=cols)
 
-        df_train.to_csv(f'{path}splits/{out_name}_real_train.csv', index=False)
-        df_test.to_csv(f'{path}splits/{out_name}_real_test.csv', index=False)
-        df_train_new.to_csv(f'{path}splits/{out_name}_synth_train.csv', index=False)
-        df_test_new.to_csv(f'{path}splits/{out_name}_synth_test.csv', index=False)
+        df_train.to_csv(f'{out_path}/{out_name}_real_train.csv', index=False)
+        df_test.to_csv(f'{out_path}/{out_name}_real_test.csv', index=False)
+        df_train_new.to_csv(f'{out_path}/{out_name}_synth_train.csv', index=False)
+        df_test_new.to_csv(f'{out_path}/{out_name}_synth_test.csv', index=False)
 
         if b is not None:
-            b.set_description_str('PATE-GAN training and generation complete.')
+            b.set_description_str('{gan_type} training and generation complete.')
 
         return df_train, df_test, df_train_new, df_test_new
 
@@ -288,6 +304,7 @@ if __name__ == '__main__':
 
     args = init_arg()
     run(
-        args.path_to_data, args.dataset_name, args.targets, args.separator,
-        args.teachers, args.iter, args.epsilon, args.delta, args.split, args.no_split, None
+        args.path_to_data, args.dataset_name, args.targets, args.separator, 
+        args.teachers, args.iter, args.epsilon, args.delta, args.split, 
+        args.no_split, args.seed, args.batch_size, args.gan_type, args.lamda, None
     )
