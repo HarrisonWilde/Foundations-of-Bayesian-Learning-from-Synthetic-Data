@@ -21,3 +21,5 @@ cmdstan-2.24.1/
 tmp/
 utils/
 papers/
+*.pdf
+*.Rhistory

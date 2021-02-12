@@ -2,6 +2,7 @@ library(rio)
 library(ggplot2)
 library(dplyr)
 library(tidyverse)
+library(Cairo)
 
 
 format_metric <- function(str) {
@@ -25,12 +26,12 @@ gg_color_hue <- function(n) {
     hcl(h = hues, l = 65, c = 100)[1:n]
 }
 
-dataset <- "framingham"
+dataset <- "heart"
 # path <- paste0("logistic_regression/outputs/noise_demo.csv")
-# path <- paste0("from_cluster/logistic_regression/outputs/final_csvs/", dataset, ".csv")
-path <- "from_cluster/logistic_regression/outputs/final_csvs/framingham_eps0p0001.csv"
+path <- paste0("from_cluster/logistic_regression/outputs/final_csvs/", dataset, ".csv")
+# path <- "from_cluster/logistic_regression/outputs/final_csvs/framingham_eps0p0001.csv"
 metrics <- c("auc", "ll", "param_mse")
-out_path <- str_remove(str_replace(paste(str_split(path, "/")[[1]][-4], collapse="/"), "outputs", "plots"), ".csv")
+out_path <- str_remove(str_replace(paste(str_split(path, "/")[[1]][-4], collapse="/"), "outputs", "plots_new"), ".csv")
 dir.create(out_path)
 
 data <- drop_na(import(path, setclass="tibble", fill=TRUE), auc)
@@ -136,7 +137,7 @@ for (i in 1:nrow(unique_branches)) {
             p <- p + ylab(paste0(format_metric(metric)))
         }
         
-        ggsave(paste0(out_path, "/many_eps_branched___", metric, "__model_full_", vars[["model_full"]], ".png"), p, height=4, dpi=320)
+        ggsave(paste0(out_path, "/many_eps_branched___", dataset, "__metric_", metric, "__model_full_", vars[["model_full"]], ".pdf"), p, height=4, dpi=320, device=cairo_pdf)
     }
 
 }
@@ -180,7 +181,7 @@ for (metric in metrics) {
         p <- p + ylab(paste0(format_metric(metric)))
     }
     
-    ggsave(paste0(out_path, "/branched_all_models___", metric, ".png"), p, height=16, width=14, dpi=320)
+    ggsave(paste0(out_path, "/branched_all_models___", dataset, "__metric_", metric, ".pdf"), p, height=16, width=14, dpi=320, device=cairo_pdf)
 }
 
 ####
@@ -223,7 +224,7 @@ if ((metric == "param_mse") || (metric == "ll")) {
     p <- p + ylab(paste0(format_metric(metric)))
 }
 
-ggsave(paste0(out_path, "/branched___", metric, "__models_together.png"), p, height=4, width=14, dpi=320)
+ggsave(paste0(out_path, "/branched___", dataset, "__metric_", metric, "__models_together.pdf"), p, height=4, width=14, dpi=320, device=cairo_pdf)
 
 ####
 
@@ -269,7 +270,7 @@ for (i in 1:nrow(unique_branches)) {
             p <- p + ylab(paste0(format_metric(metric)))
         }
         
-        ggsave(paste0(out_path, "/branched_fix_real___", metric, "__real_alpha_", vars[["real_alpha"]], ".png"), p, height=4, dpi=320)
+        ggsave(paste0(out_path, "/branched_fix_real___", dataset, "__metric_", metric, "__real_alpha_", vars[["real_alpha"]], ".pdf"), p, height=4, dpi=320, device=cairo_pdf)
     }
 
 }
@@ -304,7 +305,7 @@ for (metric in metrics) {
         p <- p + ylab(paste0(format_metric(metric)))
     }
     
-    ggsave(paste0(out_path, "/branched_all_real___", metric, ".png"), p, height=16, width=14, dpi=320)
+    ggsave(paste0(out_path, "/branched_all_real___", dataset, "__metric_", metric, ".pdf"), p, height=16, width=14, dpi=320, device=cairo_pdf)
 }
 
 ####
@@ -410,7 +411,7 @@ for (metric in metrics) {
     labs(x = "Number of Real Samples", y = "Maximum Effective Real Sample Gain\nThroough the Use of Synthetic Data", color = "Model Type") +
     scale_color_manual(values=c(w05, w1, b025, b05, b075)) +
     theme_light()
-    ggsave(paste0(out_path, "/alpha_eff___metric_", metric, ".png"), p, height=4, dpi=320)
+    ggsave(paste0(out_path, "/alpha_eff___metric_", dataset, "__metric_", metric, ".pdf"), p, height=4, dpi=320, device=cairo_pdf)
 }
 
 
@@ -442,7 +443,7 @@ p <- ggplot(
     labs(x = "Number of Real Samples", y = "Maximum Effective Real Sample Gain\nThroough the Use of Synthetic Data", color = "Model Type") +
     scale_color_manual(values=c(w05, w1, b025, b05, b075)) +
     theme_light()
-ggsave(paste0(out_path, "/alpha_eff___joined.png"), p, height=4, width=14, dpi=320)
+ggsave(paste0(out_path, "/alpha_eff___joined", dataset, "__metric_.pdf"), p, height=4, width=14, dpi=320, device=cairo_pdf)
 
 
 min_exp_vs_exp_min(data_without_reals)
@@ -511,7 +512,7 @@ min_exp_vs_exp_min <- function(df) {
                 geom_line(aes(color=order)) +
                 labs(x="Real Number of Samples", y=vals[3]) +
                 ggtitle(as.character(vals))
-            ggsave(paste0(out_path, "/exp_min__model_", vals[1], "__noise_", vals[2], "__metric_", vals[3], ".png"), p)
+            ggsave(paste0(out_path, "/exp_min__model_", dataset, "__metric_", vals[1], "__noise_", vals[2], "__metric_", vals[3], ".pdf"), p, device=cairo_pdf)
             
             vals = c(vals[[1]], vals[[2]], metric)
             pd <- plotting_data %>% 
@@ -522,7 +523,7 @@ min_exp_vs_exp_min <- function(df) {
                 geom_line(aes(color=order)) +
                 labs(x="Real Number of Samples", y=vals[3]) +
                 ggtitle(as.character(vals))
-            ggsave(paste0(out_path, "/exp_min_alpha__model_", vals[1], "__noise_", vals[2], "__metric_", vals[3], ".png"), p)
+            ggsave(paste0(out_path, "/exp_min_alpha__model_", dataset, "__metric_", vals[1], "__noise_", vals[2], "__metric_", vals[3], ".pdf"), p, device=cairo_pdf)
 
         }
 
@@ -553,7 +554,7 @@ spaghetti_plots <- function(df) {
                 geom_hline(aes_string(yintercept=paste0("min_exp_metric_", metric), color='"Minimum Expected"')) +
                 geom_vline(aes_string(xintercept=paste0("min_exp_synth_alpha_", metric), color='"Minimum Expected"'))
                 # geom_smooth(aes_string(x="synth_alpha", y=metric))
-            ggsave(paste0(out_path, "/spag__model_", vals[[1]], "__real_alpha_", vals[[2]], "__noise_", vals[[3]], "__metric_", metric, ".png"), p)
+            ggsave(paste0(out_path, "/spag__model_", dataset, "__metric_", vals[[1]], "__real_alpha_", vals[[2]], "__noise_", vals[[3]], "__metric_", metric, ".pdf"), p, device=cairo_pdf)
         
         }
 
@@ -594,6 +595,6 @@ epsilon_demo <- function(df) {
             # scale_y_log10(breaks = breaks, minor_breaks = minor_breaks) +
             theme_light() +
             annotation_logticks()
-        ggsave(paste0(out_path, "/noise_demo_gaussian___metric_", metric, ".png"), p, height=4, width=7, dpi=320)
+        ggsave(paste0(out_path, "/noise_demo_gaussian___metric_", dataset, "__metric_", metric, ".pdf"), p, height=4, width=7, dpi=320, device=cairo_pdf)
     }
 }

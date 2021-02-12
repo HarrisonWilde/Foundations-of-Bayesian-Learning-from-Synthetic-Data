@@ -2,6 +2,7 @@ library(rio)
 library(ggplot2)
 library(dplyr)
 library(tidyverse)
+library(Cairo)
 
 
 format_metric <- function(str) {
@@ -30,10 +31,10 @@ noiseaware <- "#4caf50"
 
 
 # path <- "from_cluster/gaussian/outputs/final_csvs/neff_final.csv"
-# path <- "from_cluster/gaussian/outputs/final_csvs/neff.csv"
-path <- "gaussian/outputs/noise_demo.csv"
+path <- "from_cluster/gaussian/outputs/final_csvs/neff.csv"
+# path <- "gaussian/outputs/noise_demo.csv"
 metrics <- c("kld", "ll", "wass")
-out_path <- str_remove(str_replace(paste(str_split(path, "/")[[1]][-4], collapse="/"), "outputs", "plots"), ".csv")
+out_path <- str_remove(str_replace(paste(str_split(path, "/")[[1]][-4], collapse="/"), "outputs", "plots_new"), ".csv")
 dir.create(out_path)
 
 data <- drop_na(import(path, setclass="tibble", fill=TRUE), iter)
@@ -158,7 +159,7 @@ for (noise in noises) {
             labs(x = "Number of Real Samples", y = "Maximum Effective Real Sample Gain\nThroough the Use of Synthetic Data", color = "Model Type") +
             scale_color_manual(values=c(w05, w1, b05, b075)) +
             theme_light()
-        ggsave(paste0(out_path, "/n_eff__noise_", noise, "__metric_", metric, ".png"), p, dpi=320, height=4, width=7)
+        ggsave(paste0(out_path, "/n_eff__noise_", noise, "__metric_", metric, ".pdf"), p, dpi=320, height=4, width=7, device=cairo_pdf)
 
     }
 }
@@ -198,7 +199,7 @@ for (noise in noises) {
         labs(x = "Number of Real Samples", y = "Maximum Effective Real Sample Gain\nThroough the Use of Synthetic Data", color = "Model Type") +
         scale_color_manual(values=c(w05, w1, b05, b075)) +
         theme_light()
-    ggsave(paste0(out_path, "/n_eff_joined___noise_", noise, ".png"), p, dpi=320, height=4, width=14)
+    ggsave(paste0(out_path, "/n_eff_joined___noise_", noise, ".pdf"), p, dpi=320, height=4, width=14, device=cairo_pdf)
 
 }
 
@@ -259,7 +260,7 @@ for (noise in noises) {
         # ) +
         geom_line() +
         labs(x = "Number of Real Samples", y = "Effective Real Samples to Gain Using Synthetic Data", color = "Model Type")
-        ggsave(paste0(out_path, "/exp_n_eff__noise_", noise, "__metric_", metric, ".png"), p)
+        ggsave(paste0(out_path, "/exp_n_eff__noise_", noise, "__metric_", metric, ".pdf"), p, device=cairo_pdf)
     }
 }
 
@@ -352,7 +353,7 @@ for (noise in noises) {
         ) +
         geom_line() +
         labs(x = "Number of Real Samples", y = "Effective Real Samples to Gain Using Synthetic Data", color = "Model Type")
-        ggsave(paste0(out_path, "/n_eff__noise_", noise, "__metric_", metric, ".png"), p)
+        ggsave(paste0(out_path, "/n_eff__noise_", noise, "__metric_", metric, ".pdf"), p, device=cairo_pdf)
     }
 }
 
@@ -463,7 +464,7 @@ for (i in 1:nrow(unique_branches)) {
             p <- p + geom_hline(yintercept=make_line_beta(0, 1, vars[["noise"]], as.numeric(tail(strsplit(vars[["model_full"]], " ")[[1]], n=1))), linetype="dashed")
         }
 
-        ggsave(paste0(out_path, "/branched___", metric, "__noise_", vars[["noise"]], "__model_full_", vars[["model_full"]], ".png"), p, dpi=320, height=4, width=7)
+        ggsave(paste0(out_path, "/branched___", metric, "__noise_", vars[["noise"]], "__model_full_", vars[["model_full"]], ".pdf"), p, dpi=320, height=4, width=7, device=cairo_pdf)
     }
 
 }
@@ -519,7 +520,7 @@ for (i in 1:nrow(unique_branches)) {
         if (metric == "kld") {
             p <- p + geom_hline(data=plot_df, aes(yintercept=hline_val), linetype="dashed")
         }
-        ggsave(paste0(out_path, "/branched_all_models__", metric, "__noise_", vars[["noise"]], ".png"), p, dpi=320, height=8, width=14)
+        ggsave(paste0(out_path, "/branched_all_models__", metric, "__noise_", vars[["noise"]], ".pdf"), p, dpi=320, height=8, width=14, device=cairo_pdf)
     }
 
 }
@@ -552,7 +553,7 @@ p <- ggplot() +
     xlim(c(0, 100)) +
     # scale_y_log10() +
     labs(x="Total Number of Samples (Real + Synth)", y=format_metric(metric), color="Number of\nReal Samples")
-ggsave(paste0(out_path, "/joined_branched___", metric, ".png"), p, dpi=320, height=4, width=14)
+ggsave(paste0(out_path, "/joined_branched___", metric, ".pdf"), p, dpi=320, height=4, width=14, device=cairo_pdf)
 
 #####
 
@@ -579,7 +580,7 @@ for (i in 1:nrow(unique_branches)) {
             labs(x="Number of Synthetic Samples", y=format_metric(metric), color="Model\nConfiguration") +
             scale_color_manual(values=c(noiseaware, w0, w05, w1, b05, b075)) +
             theme_light()
-        ggsave(paste0(out_path, "/branched_fix_real___", metric, "__noise_", vars[["noise"]], "__real_n_", vars[["real_n"]], ".png"), p, dpi=320, height=8, width=14)
+        ggsave(paste0(out_path, "/branched_fix_real___", metric, "__noise_", vars[["noise"]], "__real_n_", vars[["real_n"]], ".pdf"), p, dpi=320, height=4, width=7, device=cairo_pdf)
     }
 
 }
@@ -606,7 +607,7 @@ for (i in 1:nrow(unique_branches)) {
             labs(x="Number of Synthetic Samples", y=format_metric(metric), color="Model\nConfiguration") +
             scale_color_manual(values=c(noiseaware, w0, w05, w1, b05, b075)) +
             theme_light()
-        ggsave(paste0(out_path, "/branched_all_real___", metric, "__noise_", vars[["noise"]], ".png"), p, dpi=320, height=16, width=14)
+        ggsave(paste0(out_path, "/branched_all_real___", metric, "__noise_", vars[["noise"]], ".pdf"), p, dpi=320, height=16, width=14, device=cairo_pdf)
     }
 
 }
@@ -687,7 +688,7 @@ for (i in 1:nrow(unique_plotting_data)) {
             labs(x="Number of Real Samples", y=format_metric(vals[3])) +
             ggtitle(as.character(vals)) +
             theme_light()
-        ggsave(paste0(out_path, "/exp_min__model_", vals[1], "__noise_", vals[2], "__metric_", vals[3], ".png"), p)
+        ggsave(paste0(out_path, "/exp_min__model_", vals[1], "__noise_", vals[2], "__metric_", vals[3], ".pdf"), p, device=cairo_pdf)
         
         vals = c(vals[[1]], vals[[2]], metric)
         pd <- plotting_data %>% 
@@ -699,7 +700,7 @@ for (i in 1:nrow(unique_plotting_data)) {
             labs(x="Number of Real Samples", y="Number of Synthetic Samples") +
             ggtitle(as.character(vals)) +
             theme_light()
-        ggsave(paste0(out_path, "/exp_min_n__model_", vals[1], "__noise_", vals[2], "__metric_", vals[3], ".png"), p)
+        ggsave(paste0(out_path, "/exp_min_n__model_", vals[1], "__noise_", vals[2], "__metric_", vals[3], ".pdf"), p, device=cairo_pdf)
 
     }
 
@@ -730,7 +731,7 @@ for (i in 1:nrow(distinct(select(spag_data, c(model_full, real_n, noise))))) {
             geom_vline(aes_string(xintercept=paste0("min_exp_synth_n_", metric), color='"Minimum Expected"')) +
             theme_light()
             # geom_smooth(aes_string(x="synth_n", y=metric))
-        ggsave(paste0(out_path, "/spag__model_", vals[[1]], "__real_n_", vals[[2]], "__noise_", vals[[3]], "__metric_", metric, ".png"), p)
+        ggsave(paste0(out_path, "/spag__model_", vals[[1]], "__real_n_", vals[[2]], "__noise_", vals[[3]], "__metric_", metric, ".pdf"), p, device=cairo_pdf)
     
     }
 
@@ -783,9 +784,9 @@ for (i in 1:nrow(groups)) {
         p <- ggplot(plot_df_1, aes_string(x="synth_n", y=metric)) +
             geom_smooth() +
             geom_jitter(aes_string(color=paste0(metric, "_val"))) + ylab("Alpha")
-        ggsave(paste0(out_path, "/alpha__real_n_", row[["real_n"]], "__noise_", row[["noise"]], "__metric_", metric, ".png"), p)
+        ggsave(paste0(out_path, "/alpha__real_n_", row[["real_n"]], "__noise_", row[["noise"]], "__metric_", metric, ".pdf"), p, device=cairo_pdf)
         p <- ggplot(plot_df_2, aes_string(x="alpha", y=metric, colour="synth_n")) + geom_line()
-        ggsave(paste0(out_path, "/cross_sectional__real_n_", row[["real_n"]], "__noise_", row[["noise"]], "__metric_", metric, ".png"), p)
+        ggsave(paste0(out_path, "/cross_sectional__real_n_", row[["real_n"]], "__noise_", row[["noise"]], "__metric_", metric, ".pdf"), p, device=cairo_pdf)
     }
 }
 
@@ -831,7 +832,7 @@ for (metric in metrics) {
         labs(x = "\u03B5", y=format_metric(metric)) +
         theme_light() +
         annotation_logticks()
-    ggsave(paste0(out_path, "/noise_demo_gaussian___metric_", metric, ".png"), p, width=7, height=4, dpi=320)
+    ggsave(paste0(out_path, "/noise_demo_gaussian___metric_", metric, ".pdf"), p, width=7, height=4, dpi=320, device=cairo_pdf)
 }
 
 
@@ -865,5 +866,5 @@ p <- ggplot(plotty_df) +
     labs(x = "\u03B5", y="Average Standard Deviation per Predictor", linetype="Dataset Type") +
     scale_x_log10() + scale_y_log10()
 
-ggsave(paste0("from_cluster/logistic_regression/plots/gan_std_comparison.png"), p, width=7, height=4, dpi=320)
+ggsave(paste0("from_cluster/logistic_regression/plots/gan_std_comparison.pdf"), p, width=7, height=4, dpi=320, device=cairo_pdf)
 
